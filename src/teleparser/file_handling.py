@@ -1,5 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 import zipfile
 import shutil
@@ -7,7 +8,7 @@ from typing import List, Set
 
 
 @dataclass
-class FileSetup:
+class CDRFileSetup:
     input_path: Path
     output_path: Path
     carrier: str
@@ -22,8 +23,8 @@ class OutputFormat(str, Enum):
     DATETIME = "datetime"  # Split by date/time
 
 
-class FileManager:
-    def __init__(self, file_setup: FileSetup):
+class CDRFileManager:
+    def __init__(self, file_setup: CDRFileSetup):
         self.setup = file_setup
         self.processed_files: Set[Path] = set()
         self.failed_files: Set[Path] = set()
@@ -36,9 +37,10 @@ class FileManager:
         output_dir.mkdir(parents=True, exist_ok=True)
         return output_dir
 
-    def get_input_gz_files(self) -> List[Path]:
+    @cached_property
+    def input_gz_files(self) -> List[Path]:
         """It traverses the tree to get the list of .gz files, decompressing ZIP archives if needed"""
-        files = list(self.setup.input_path.rglob("*.zip|*.gz"))
+        files = list(self.setup.input_path.rglob("*[.gz|.zip]"))
         zip_files = [f for f in files if f.suffix == ".zip"]
         gz_files = [f for f in files if f.suffix == ".gz"]
         gz_files.extend(self.decompress_zips(zip_files))
@@ -67,3 +69,17 @@ class FileManager:
         temp_dir = self.setup.output_path / "temp_extracted"
         if temp_dir.exists():
             shutil.rmtree(temp_dir)
+
+
+if __name__ == "__main__":
+    file_setup = CDRFileSetup(
+        input_path=Path(__file__).parent / "data/input",
+        output_path=Path(__file__).parent / "data/output",
+        carrier="carrier",
+        cdr_type="cdr_type",
+        timestamp="timestamp",
+    )
+    manager = CDRFileManager(file_setup)
+    manager.setup_directories()
+    print(f".gz files in folders and subfolders: {len(manager.input_gz_files)}")
+    manager.cleanup()
