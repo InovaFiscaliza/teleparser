@@ -11,7 +11,6 @@ from typing import List, Set
 class CDRFileSetup:
     input_path: Path
     output_path: Path
-    carrier: str
     cdr_type: str
     timestamp: str
 
@@ -32,7 +31,7 @@ class CDRFileManager:
     def setup_directories(self) -> Path:
         """Create necessary output directories and return working path"""
         output_dir = (
-            self.setup.output_path / f"{self.setup.carrier}_{self.setup.timestamp}"
+            self.setup.output_path / f"{self.setup.cdr_type}_{self.setup.timestamp}"
         )
         output_dir.mkdir(parents=True, exist_ok=True)
         return output_dir
@@ -77,7 +76,6 @@ if __name__ == "__main__":
     file_setup = CDRFileSetup(
         input_path=Path(__file__).parent / "data/input",
         output_path=Path(__file__).parent / "data/output",
-        carrier="carrier",
         cdr_type="cdr_type",
         timestamp=datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S"),
     )
