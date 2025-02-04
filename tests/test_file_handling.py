@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 import pytest
 from teleparser.file_handling import CDRFileSetup, CDRFileManager
@@ -10,7 +11,7 @@ def file_setup():
         output_path=Path(Path(__file__).parent / "data/output"),
         carrier="carrier",
         cdr_type="cdr_type",
-        timestamp="timestamp",
+        timestamp=datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S"),
     )
 
 
@@ -26,7 +27,9 @@ def test_file_manager_initialization(file_manager):
 
 def test_setup_directories(file_manager):
     output_dir = file_manager.setup_directories()
-    expected_path = Path(__file__).parent / "data/output/carrier_timestamp"
+    expected_path = (
+        Path(__file__).parent / f"data/output/carrier_{file_manager.setup.timestamp}"
+    )
     assert output_dir == expected_path
     assert output_dir.exists()
 

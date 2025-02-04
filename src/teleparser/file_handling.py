@@ -72,12 +72,14 @@ class CDRFileManager:
 
 
 if __name__ == "__main__":
+    from datetime import datetime, timezone
+
     file_setup = CDRFileSetup(
         input_path=Path(__file__).parent / "data/input",
         output_path=Path(__file__).parent / "data/output",
         carrier="carrier",
         cdr_type="cdr_type",
-        timestamp="timestamp",
+        timestamp=datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S"),
     )
     manager = CDRFileManager(file_setup)
     manager.setup_directories()
