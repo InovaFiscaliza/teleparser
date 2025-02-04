@@ -1,6 +1,5 @@
 from enum import Enum
-from dataclasses import dataclass, field
-from typing import List
+from dataclasses import dataclass
 
 
 @dataclass
@@ -24,53 +23,55 @@ class CDRType(str, Enum):
 
 
 @dataclass
-class CDRHeaders:
-    voice_standard: List[str] = field(
-        default_factory=lambda: [
-            "Reference",
-            "Origin",
-            "Date",
-            "Time",
-            "Call_Type",
-            "Biller",
-            "IMSI",
-            "1stCelA",
-            "Outgoing_route",
-            "Destination",
-        ]
-    )
+class CDRHeaders(Enum):
+    VOICE = [
+        "Reference",
+        "Origin",
+        "Date",
+        "Time",
+        "Call_Type",
+        "Biller",
+        "IMSI",
+        "1stCelA",
+        "Outgoing_route",
+        "Destination",
+    ]
+    DATA = [
+        "CDR_Type",
+        "listOfTrafficVolumes",
+        "Location",
+        "servedMSISDN",
+        "listOfServiceData",
+        "recordSequenceNumber",
+        "CauseforRecClosing",
+        "chargingID",
+        "duration",
+        "ggsnAddress",
+        "OpeningTime",
+        "StartTime",
+        "Diagnostics",
+        "Radio",
+        "ServedIMSI",
+        "Empty_Column",
+        "IMEI",
+        "File",
+    ]
 
-    data_standard: List[str] = field(
-        default_factory=lambda: [
-            "CDR_Type",
-            "listOfTrafficVolumes",
-            "Location",
-            "servedMSISDN",
-            "listOfServiceData",
-            "recordSequenceNumber",
-            "CauseforRecClosing",
-            "chargingID",
-            "duration",
-            "ggsnAddress",
-            "OpeningTime",
-            "StartTime",
-            "Diagnostics",
-            "Radio",
-            "ServedIMSI",
-            "Empty_Column",
-            "IMEI",
-            "File",
-        ]
-    )
-
-    volte_standard: List[str] = field(
-        default_factory=lambda: [
-            "Originator",
-            "DateTime",
-            "Time",
-            "CDR_Type",
-            "CalledParty",
-            "Duration",
-            "Cell",
-        ]
-    )
+    VOLTE_3GPP = [
+        "list-Of-Calling-Party-Address",
+        "recordOpeningTime",
+        "Time",
+        "role-of-Node",
+        "called - Party - Address",
+        "dialled-Party-Address",
+        "List-Of-Called-Asserted-Identity",
+        "Duration",
+        "accessNetworkInformation",
+        "List-of-Subscription-ID",
+        "private-User-Equipment-Info",
+        "MSC-Number",
+        "network-Call-Reference",
+        "causeForRecordClosing",
+        "interOperatorIdentifiers",
+        "sIP-Method",
+    ]
