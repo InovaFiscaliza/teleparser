@@ -43,12 +43,23 @@ class CDRHeaders:
     data_standard: List[str] = field(
         default_factory=lambda: [
             "CDR_Type",
-            "TrafficVolumes",
+            "listOfTrafficVolumes",
             "Location",
-            "MSISDN",
-            "ServiceData",
-            "RecordSequence",
-            "ClosingCause",
+            "servedMSISDN",
+            "listOfServiceData",
+            "recordSequenceNumber",
+            "CauseforRecClosing",
+            "chargingID",
+            "duration",
+            "ggsnAddress",
+            "OpeningTime",
+            "StartTime",
+            "Diagnostics",
+            "Radio",
+            "ServedIMSI",
+            "Empty_Column",
+            "IMEI",
+            "File",
         ]
     )
 
