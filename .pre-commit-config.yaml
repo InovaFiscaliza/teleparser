@@ -5,6 +5,7 @@ repos:
       - id: ruff
         args:
           - --fix
+        exclude: ./tests/legacy/
       - id: ruff-format
         exclude: ./tests/legacy
 
@@ -14,10 +15,9 @@ repos:
     rev: v0.950
     hooks:
       - id: mypy
+        exclude: ./tests/legacy/
         additional_dependencies:
           - "types-pytz"
-        exclude: ./tests/legacy/
-
 
   - repo: https://github.com/kynan/nbstripout
     rev: 0.8.1
