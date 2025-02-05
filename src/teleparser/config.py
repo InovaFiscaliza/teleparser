@@ -57,21 +57,33 @@ class CDRHeaders(Enum):
         "File",
     ]
 
-    VOLTE_3GPP = [
-        "list-Of-Calling-Party-Address",
-        "recordOpeningTime",
-        "Time",
-        "role-of-Node",
-        "called - Party - Address",
-        "dialled-Party-Address",
-        "List-Of-Called-Asserted-Identity",
-        "Duration",
-        "accessNetworkInformation",
-        "List-of-Subscription-ID",
-        "private-User-Equipment-Info",
-        "MSC-Number",
-        "network-Call-Reference",
-        "causeForRecordClosing",
-        "interOperatorIdentifiers",
-        "sIP-Method",
+    VOLTE_3GPP = {
+        "list-Of-Calling-Party-Address": "Originador",
+        "recordOpeningTime": "Data",
+        "Time": "Hora",
+        "role-of-Node": "TipodeCDR",
+        "called-Party-Address": "NúmeroChamado",
+        "dialled-Party-Address": "NúmeroTeclado",
+        "List-Of-Called-Asserted-Identity": "List-Of-Called-Asserted-Identity",
+        "Duration": "Duration",
+        "accessNetworkInformation": "Célula",
+        "List-of-Subscription-ID": "IMSI",
+        "private-User-Equipment-Info": "IMEI",
+        "MSC-Number": "MSC-Number",
+        "network-Call-Reference": "network-Call-Reference",
+        "causeForRecordClosing": "causeForRecordClosing",
+        "interOperatorIdentifiers": "interOperatorIdentifiers",
+        "sIP-Method": "sIP-Method",
+    }
+
+    VOLTE_NON_3GPP_CLARO = [
+        "Data",
+        "Hora",
+        "Originador",
+        "TipoCDR",
+        "NúmeroChamado",
+        "Duração",
+        "Célula",
     ]
+
+    STIR_TIM = VOLTE_3GPP
