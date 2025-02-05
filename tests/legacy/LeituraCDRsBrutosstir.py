@@ -1,24 +1,20 @@
+﻿import glob
 import os
-import time
-import datetime
 import shutil
-import glob
 import subprocess
-import zipfile
 import sys
+import time
+import zipfile
 from datetime import datetime
 
-# from termcolor import *
-# import colorama
-# colorama.init()
-diret = os.getcwd()
+current_directory = os.getcwd()
 
 
-lim1 = glob.glob(diret + "/arqli*")
+lim1 = glob.glob(current_directory + "/arqli*")
 for i in lim1:
     os.remove(i)
 
-sa = "5"
+selection_option = "5"
 print("Tipos de CDRs que podem ser lidos:")
 print()
 print("1 - Voz (Vivo ou Tim ou Claro-Ericsson)")
@@ -32,17 +28,40 @@ print("8 - Volte não 3gpp (Tim)")
 print("9 - Volte não 3gpp (Claro)")
 print("10 - Stir (Tim)")
 print()
-vac = ""
-op3 = ""
-c11 = 0
-c12 = 0
+output_format_option = ""
+cdr_type_selection = ""
+attempt_counter = 0
+retry_counter = 0
 
-vam = "nada"
-cpar = ["1", "2", "3", "4", "1i", "5", "5i", "6", "7", "8", "9", "10", "10i", "21"]
-emp = ["vivo", "claro", "tim", "oi", "nextel", "sercomtel", "algar", "ctbc"]
-# while op3 not in ('1','1i','2','3','4','5','5i','6','7','8','9','10','10i','21') and c11<4:
-while len(op3) != 2 and c11 < 4:
-    # while op3 not in ('1','2','3','4','5') and c11<4:
+file_format_type = "nada"
+valid_cdr_types = [
+    "1",
+    "2",
+    "3",
+    "4",
+    "1i",
+    "5",
+    "5i",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "10i",
+    "21",
+]
+telecom_operators = [
+    "vivo",
+    "claro",
+    "tim",
+    "oi",
+    "nextel",
+    "sercomtel",
+    "algar",
+    "ctbc",
+]
+
+while len(cdr_type_selection) != 2 and attempt_counter < 4:
     print(
         "Informe um número entre 1 e 9 para indicar o tipo de CDR a ser lido, acompanhado por uma letra conforme abaixo."
     )
@@ -55,119 +74,114 @@ while len(op3) != 2 and c11 < 4:
     )
     print("      - 'd' para arquivos separados por data-hora (ex.: 5d)")
     print("AGUARDANDO...:", end="")
-    op3 = input()
+    cdr_type_selection = input()
 
-    c11 = c11 + 1
-    vam = op3[-1:]
-    if vam != "i":
-        vac = "a"
-    #            if op3=='5':
-    #                print()
-    #                print('Informe uma das opções abaixo:')
-    #                print('    - "u" (Resultado em um único arquivo)')
-    #                print('    - "n" ou "Enter" (Em arquivos separados por faixa de numeração de usuário)')
-    #                print('    - "d" (Em arquivos separados para cada hora)')
-    #                print(''('AGUARDANDO...:','green'),end='')
-    #                ag=input()
-    #                print()
-    if op3[0:2] == "10" and len(op3) == 3:
+    attempt_counter = attempt_counter + 1
+    file_format_type = cdr_type_selection[-1:]
+    if file_format_type != "i":
+        output_format_option = "a"
+
+    if cdr_type_selection[0:2] == "10" and len(cdr_type_selection) == 3:
         break
-op3 = op3[:-1]
+cdr_type_selection = cdr_type_selection[:-1]
 
-if op3 in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
+if cdr_type_selection in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
     print()
 
     print(
         "Informe o caminho para leitura dos CDRs brutos (para a leitura de todos os arquivos, finalize com /*.gz). Caso os arquivos .gz estejam compactados em pastas .zip, finalize com /*.zip ao invés de /*.gz. "
     )
     print("AGUARDANDO...:", end="")
-    cdrbruto = input()
-    # cdrbruto=cdrbruto.replace("'",'').replace('"','').replace("/",'\\')
-    orig = glob.glob(cdrbruto)
-    vz = vz2 = 0
-    if cdrbruto[-3:] == "zip":
-        zo = 0
-        for tu in orig:
+    raw_cdr_path = input()
+    raw_cdr_path = raw_cdr_path.replace("'", "").replace('"', "").replace("/", "\\")
+    input_files = glob.glob(raw_cdr_path)
+    gz_file_found = zip_file_found = 0
+    if raw_cdr_path[-3:] == "zip":
+        zip_error_flag = 0
+        for tu in input_files:
             try:
-                b15 = zipfile.ZipFile(tu)
+                zip_archive_handle = zipfile.ZipFile(tu)
             except Exception:
                 print("Falha pasta", tu)
-                zo = 1
+                zip_error_flag = 1
 
-            b15.close()
+            zip_archive_handle.close()
 
-        if zo == 1:
+        if zip_error_flag == 1:
             print()
             b80 = input('Para interromper, tecle "p" e depois "Enter" ')
             if b80 == "p":
                 sys.exit()
 
-        print(cdrbruto)
-        vz2 = 1
+        print(raw_cdr_path)
+        zip_file_found = 1
 
-    for vz1 in orig:
+    for vz1 in input_files:
         if vz1[-2:] == "gz":
-            vz = 1
+            gz_file_found = 1
             break
 
     print()
-    # print(cdrbruto)
-    # print('Quantidade de arquivos para leitura:',len(orig))
-    while vz == 0 and vz2 == 0 and c12 < 3:
+
+    while gz_file_found == 0 and zip_file_found == 0 and retry_counter < 3:
         print()
         print("Não foram localizados arquivos para leitura.")
         print("Reveja o caminho informado.")
-        cdrbruto = input(
+        raw_cdr_path = input(
             "Informe o caminho para leitura dos CDRs brutos. AGUARDANDO...:"
         )
 
-        cdrbruto = cdrbruto.replace("'", "").replace('"', "").replace("/", "\\")
-        orig = glob.glob(cdrbruto)
-        vz = vz2 = 0
-        if cdrbruto[-3:] == "zip":
-            vz2 = 1
+        raw_cdr_path = raw_cdr_path.replace("'", "").replace('"', "").replace("/", "\\")
+        input_files = glob.glob(raw_cdr_path)
+        gz_file_found = zip_file_found = 0
+        if raw_cdr_path[-3:] == "zip":
+            zip_file_found = 1
 
-        for vz1 in orig:
+        for vz1 in input_files:
             if vz1[-2:] == "gz":
-                vz = 1
+                gz_file_found = 1
                 break
 
-        # print('Para interromper o processamento digite "e")
         print()
-        c12 = c12 + 1
+        retry_counter = retry_counter + 1
 
-    eo = ""
-    eb = cdrbruto.lower()
-    for tu in emp:
+    operator_name = ""
+    eb = raw_cdr_path.lower()
+    for tu in telecom_operators:
         if eb.find(tu + "\\") != -1:
-            eo = tu
+            operator_name = tu
             break
-    if eo == "":
+    if operator_name == "":
         print("- Informe o nome da operadora da qual os CDRs brutos serão lidos.")
         print("AGUARDANDO...:", end="")
-        eo = input()
-    eo = eo.upper()
+        operator_name = input()
+    operator_name = operator_name.upper()
 
-    if len(orig) != 0:
-        cdrbrutota = str(len(orig))
+    if len(input_files) != 0:
+        total_input_files = str(len(input_files))
         print()
-        print("Quantidade de arquivos para leitura:", len(orig))
+        print("Quantidade de arquivos para leitura:", len(input_files))
         print()
-        print("Estimativa para conclusão da leitura:", len(orig) * 0.3 / 1000, "horas")
+        print(
+            "Estimativa para conclusão da leitura:",
+            len(input_files) * 0.3 / 1000,
+            "horas",
+        )
         print()
 
-        # b8.close()
-        tm = time.asctime().replace(":", "").replace(" ", "")
+        timestamp = time.asctime().replace(":", "").replace(" ", "")
         print("Caminho para salvar o arquivo resultado (CDRs lidos):")
         print(
             'Tecle "Enter" para salvar o resultado nesta máquina ('
-            + diret
+            + current_directory
             + "\\Resultados\\), ou indique o caminho desejado."
         )
         print("AGUARDANDO...:", end="")
-        car = input()
-        # car = car.replace("'", "").replace('"', "").replace("/", "\\")
-        cdb = (
+        output_directory = input()
+        output_directory = (
+            output_directory.replace("'", "").replace('"', "").replace("/", "\\")
+        )
+        execution_timestamp = (
             str(datetime.now())
             .replace("\n", "")
             .replace(".", "")
@@ -175,195 +189,163 @@ if op3 in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
             .replace(" ", "")
             .replace("-", "")
         )
-        if car == "":
-            car = diret + "\\Resultados\\"
+        if output_directory == "":
+            output_directory = current_directory + "\\Resultados\\"
         else:
-            if car[-1:] != "\\":
-                car = car + "\\"
-        print("Resultado em:", car)
-        #        b9=open(car+'Inicio.txt','w')
-        #        b9.close()
-        #        b8=open('caminhobruto.txt','w')
-        #        b8.write(cdrbruto+'\n')
-        #        b8.write(car+'\n')
-        #        b8.write(cdb+'\n')
-        #        b8.write(op3+'\n')
-        #        b8.close()
+            if output_directory[-1:] != "\\":
+                output_directory = output_directory + "\\"
+        print("Resultado em:", output_directory)
 
-        if vz2 == 1:
+        if zip_file_found == 1:
             print("DESCOMPACTANDO...")
 
-            iicdrbruto = cdrbruto.split("\\")
-            xv = iicdrbruto[len(iicdrbruto) - 1]
-            cdrbrutodes = cdrbruto.replace(xv, "")
+            input_path_components = raw_cdr_path.split("\\")
+            zip_filename = input_path_components[len(input_path_components) - 1]
+            cdr_extract_base_path = raw_cdr_path.replace(zip_filename, "")
 
-            os.mkdir(cdrbrutodes + "descomp")
+            os.mkdir(cdr_extract_base_path + "descomp")
 
-            c15 = 0
-            cc15 = 0
-            a15 = 0
-            c9 = 0
-            print(len(orig))
-            ree = set()
-            ree2 = []
-            for z2 in orig:
-                c9 = c9 + 1
+            zip_entry_counter = 0
+            entry_processed_flag = 0
+            total_zip_entries = 0
+            zip_file_counter = 0
+            print(len(input_files))
+            extracted_paths_set = set()
+            extracted_paths_list = []
+            for z2 in input_files:
+                zip_file_counter = zip_file_counter + 1
 
                 try:
-                    b15 = zipfile.ZipFile(z2)
+                    zip_archive_handle = zipfile.ZipFile(z2)
                 except Exception:
                     print("falha pasta", z2)
 
-                a15 = a15 + len(b15.namelist()) - 1
+                total_zip_entries = (
+                    total_zip_entries + len(zip_archive_handle.namelist()) - 1
+                )
 
-                # if c9==1:
-                vee3 = (b15.namelist()[0]).replace("../", "")
-                vee = (vee3).split("/")
-                ree2.append(vee3)
+                zip_entry_path = (zip_archive_handle.namelist()[0]).replace("../", "")
+                path_components = (zip_entry_path).split("/")
+                extracted_paths_list.append(zip_entry_path)
 
-                vee2 = ""
-                for zd in range(len(vee) - 1):
-                    vee2 = vee2 + "\\*"
-                ree.add(vee2)
+                extracted_path = ""
+                for zd in range(len(path_components) - 1):
+                    extracted_path = extracted_path + "\\*"
+                extracted_paths_set.add(extracted_path)
 
-                for j15 in b15.namelist():
-                    c15 = c15 + 1
-                    if c15 > 1:
-                        cc15 = 1
+                for zip_entry_name in zip_archive_handle.namelist():
+                    zip_entry_counter = zip_entry_counter + 1
+                    if zip_entry_counter > 1:
+                        entry_processed_flag = 1
 
-                    if cc15 == 1:
-                        # jj15=j15.split('\\')
-                        jj15 = j15.split("/")
-
-                        # des1=cdrbruto.split('\\');des2=des1[len(des1)-1];des=cdrbruto.replace(des2,'')
+                    if entry_processed_flag == 1:
+                        entry_components = zip_entry_name.split("/")
 
                         try:
-                            b15.extract(j15, cdrbrutodes + "descomp")
+                            zip_archive_handle.extract(
+                                zip_entry_name, cdr_extract_base_path + "descomp"
+                            )
                         except Exception:
-                            print("falha arquivo", j15)
+                            print("falha arquivo", zip_entry_name)
 
-                        # d15=glob.glob(car+'descomp'+np+'\\*\\*.gz')
-                # d15=glob.glob(car+'descomp'+vee2+'\\*.gz')
-
-            # input('ver desc')
-
-            if len(ree) == 1:
-                cdrbruto = cdrbrutodes + "descomp" + vee2 + "\\*.gz"
+            if len(extracted_paths_set) == 1:
+                raw_cdr_path = (
+                    cdr_extract_base_path + "descomp" + extracted_path + "\\*.gz"
+                )
             else:
-                for zu in ree2:
-                    zu2 = zu.split("/")
-                    if len(zu2) > 2:
+                for zu in extracted_paths_list:
+                    current_range = zu.split("/")
+                    if len(current_range) > 2:
                         zu3 = zu[:-1].replace("/", "\\")
                         shutil.move(
-                            cdrbrutodes + "descomp\\" + zu3,
-                            cdrbrutodes + "descomp\\" + zu2[len(zu2) - 1],
+                            cdr_extract_base_path + "descomp\\" + zu3,
+                            cdr_extract_base_path
+                            + "descomp\\"
+                            + current_range[len(current_range) - 1],
                         )
 
-                cdrbruto = cdrbrutodes + "descomp\\*\\*.gz"
+                raw_cdr_path = cdr_extract_base_path + "descomp\\*\\*.gz"
 
 
-#        if op3=='1':
-#            #pp1=subprocess.Popen(['python3','cdrEricsson-ordem-unico001º150102Punico.py'])
-#            #pp1=subprocess.Popen(['python','cdrEricsson-ordem-unico001ºGerenciador.py'])
-#            pp2=subprocess.Popen(['python','Acumulador.py',vac,eo,car,cdb,cdrbruto,cdrbrutota,op3,sa])
-#        if op3=='2' or op3=='3':
-#            pp2=subprocess.Popen(['python','Acumulador.py',vac,eo,car,cdb,cdrbruto,cdrbrutota,op3,sa])
-#            #pp1=subprocess.Popen(['python','cdrNokiaTeste-1º.py'])
-#        if op3=='4':
-#            pp1=subprocess.Popen(['python','Acumulador.py',vac,eo,car,cdb,cdrbruto,cdrbrutota,op3,sa])
-#        if op3=='5':
-#            pp2=subprocess.Popen(['python','Acumulador.py',vac,eo,car,cdb,cdrbruto,cdrbrutota,op3,sa])
-#            #pp2=subprocess.Popen(['python','cdrDados-Gerenciador.py',vac,eo,car,cdb,cdrbruto,cdrbrutota])
 print()
 print()
 
-if vam == "i":
-    print("=/= Os arquivos individuais estarão na pasta:", eo + cdb)
-# print('O acompanhamento da leitura pode ser efetuado por meio do arquivo "AcompanhamentoLeitura".')
-# print('Há registro da execução a cada 10% de execução, aproximadamente.')
+if file_format_type == "i":
+    print(
+        "=/= Os arquivos individuais estarão na pasta:",
+        operator_name + execution_timestamp,
+    )
+
+
 print()
 print("O percentual de execução pode ser acompanhado conforme a seguir:.......")
 print()
-# print('O arquivo de acompanhamento encontra-se no mesmo diretório em que será gravado o arquivo resultado:')
-
-# print(car)
 
 
-import os
-import time
-import datetime
-import shutil
-import glob
-import sys
-from datetime import datetime
+current_directory = os.getcwd()
 
-diret = os.getcwd()
-# cdb=''
-ti = datetime.now()
+start_time = datetime.now()
 print()
-print("Início de leitura...", ti)
+print("Início de leitura...", start_time)
 print()
-tp3 = 2
-aacc = 0
-td9 = 0
-# vac=sys.argv[1];eo=sys.argv[2];car=sys.argv[3];cdb=sys.argv[4];cdrbruto=sys.argv[5];cdrbrutota=sys.argv[6];tip=sys.argv[7];sa=sys.argv[8]
-tip = op3
+process_count = 2
+accumulated_count = 0
+duration_counter = 0
 
-tip2 = ""
-if op3 == "8":
-    tip2 = op3
-    tip = "1"
+cdr_type = cdr_type_selection
 
-qp = 5  # define o número de processos que atuam simultaneamente. Sugere-se que esse número seja igual ao número de nucleos de processamento da máquina menos um ou dois
-aca2 = 5
-print(vac, eo)
+volte_cdr_type = ""
+if cdr_type_selection == "8":
+    volte_cdr_type = cdr_type_selection
+    cdr_type = "1"
 
-arli = open("arquivosparaleitura.txt", "w")
-arnli = open("arquivosnaolidos.txt", "w")
-ar = set()
-anr = set()
-tcd = ""
-vo = ["1", "2", "3", "4", "5"]
+parallel_processes = 5
+progress_percentage = 5
+print(output_format_option, operator_name)
 
-##if tip=='1':
-##    vac1=vac
-##    vac='1'
-vac1 = vac
-pas = set()
-arqb = glob.glob(cdrbruto)
-
-# zc1=0
-# for zc in arqb:
-#    zc1=zc1+1
-#    if zc1==981:
-#        print(zc)
-#        break
-# print(kk)
-
-eee = ""
-if tip == "1":
-    eee = "Ericsson"
-if tip == "2":
-    eee = "Nokia"
+processed_files_log = open("arquivosparaleitura.txt", "w")
+failed_files_log = open("arquivosnaolidos.txt", "w")
+processed_files_set = set()
+failed_files_set = set()
+cdr_type_name = ""
+voice_cdr_types = ["1", "2", "3", "4", "5"]
 
 
-if tip in vo:
-    tcd = "Voz" + eee
-if tip == "6":
-    tcd = "Dados"
-if tip2 == "8" or tip == "9" or tip == "7":  # or tip=='6':
-    tcd = "Volte"
-if tip == "10":
-    tcd = "Stir"
-if vac == "a":
-    da = car + eo + "-" + tcd + cdb[0:12] + ".txt"
-    # acu=open(da,'a')
+vac1 = output_format_option
+zip_directories = set()
+input_file_list = glob.glob(raw_cdr_path)
 
-    if tip in vo or vam == "u":
-        acu = open(da, "w")
-    if tip == "6":  # or tip=='7' or tip=='8' or tip=='9':
-        if vam == "u":
-            acu.write(
+
+vendor_name = ""
+if cdr_type == "1":
+    vendor_name = "Ericsson"
+if cdr_type == "2":
+    vendor_name = "Nokia"
+
+
+if cdr_type in voice_cdr_types:
+    cdr_type_name = "Voz" + vendor_name
+if cdr_type == "6":
+    cdr_type_name = "Dados"
+if volte_cdr_type == "8" or cdr_type == "9" or cdr_type == "7":
+    cdr_type_name = "Volte"
+if cdr_type == "10":
+    cdr_type_name = "Stir"
+if output_format_option == "a":
+    consolidated_output_path = (
+        output_directory
+        + operator_name
+        + "-"
+        + cdr_type_name
+        + execution_timestamp[0:12]
+        + ".txt"
+    )
+
+    if cdr_type in voice_cdr_types or file_format_type == "u":
+        consolidated_output_file = open(consolidated_output_path, "w")
+    if cdr_type == "6":
+        if file_format_type == "u":
+            consolidated_output_file.write(
                 "Tipo de CDR"
                 + ";"
                 + "listOfTrafficVolumes"
@@ -388,284 +370,255 @@ if vac == "a":
                 + "\n"
             )
         else:
-            os.mkdir(car + eo + cdb + tcd)
-    if tip == "7":
-        if vam == "u":
-            acu.write(
+            os.mkdir(
+                output_directory + operator_name + execution_timestamp + cdr_type_name
+            )
+    if cdr_type == "7":
+        if file_format_type == "u":
+            consolidated_output_file.write(
                 "Originador(list-Of-Calling-Party-Address);Data(recordOpeningTime);Hora;TipodeCDR(role-of-Node);called-Party-Address(NúmeroChamado);dialled-Party-Address(NúmeroTeclado);List-Of-Called-Asserted-Identity;Duration;Célula(accessNetworkInformation);IMSI(List-of-Subscription-ID);IMEI(private-User-Equipment-Info);MSC-Number;network-Call-Reference;causeForRecordClosing;interOperatorIdentifiers;sIP-Method\n"
             )
         else:
-            os.mkdir(car + eo + cdb + tcd)
+            os.mkdir(
+                output_directory + operator_name + execution_timestamp + cdr_type_name
+            )
 
-    if tip == "10":
-        if vam == "u":
-            acu.write(
+    if cdr_type == "10":
+        if file_format_type == "u":
+            consolidated_output_file.write(
                 "Originador(list-Of-Calling-Party-Address);Data(recordOpeningTime);Hora;TipodeCDR(role-of-Node);called-Party-Address(NúmeroChamado);dialled-Party-Address(NúmeroTeclado);List-Of-Called-Asserted-Identity;Duration;Célula(accessNetworkInformation);IMSI(List-of-Subscription-ID);IMEI(private-User-Equipment-Info);MSC-Number;network-Call-Reference;causeForRecordClosing;interOperatorIdentifiers;sIP-Method\n"
             )
         else:
-            os.mkdir(car + eo + cdb + tcd)
+            os.mkdir(
+                output_directory + operator_name + execution_timestamp + cdr_type_name
+            )
 
-    if tip == "9":
-        if vam == "u":
-            acu.write("Data;Hora;Originador;TipoCDR;NúmeroChamado;Duração;Célula\n")
+    if cdr_type == "9":
+        if file_format_type == "u":
+            consolidated_output_file.write(
+                "Data;Hora;Originador;TipoCDR;NúmeroChamado;Duração;Célula\n"
+            )
         else:
-            os.mkdir(car + eo + cdb + tcd)
-    #            ca10=open(car+eo+cdb+'\\Cabeçalho.txt','w')
-    #            ca10.write('Tipo de CDR'+';'+'listOfTrafficVolumes'+';'+'Location'+';'+'servedMSISDN'+';'+'listOfServiceData'+';'+'recordSequenceNumber'+';'+'CauseforRecClosing'+';'+'ChargingID'+';'+'duration'+';'+'ggsnAddress'+';'+'openning time;StartTime;Diagnostics;Radio;ServedIMSI;;;Arquivo'+'\n')
-    #            ca10.close()
-    if tip in vo and vam != "u":
-        os.mkdir(car + eo + cdb + tcd)
+            os.mkdir(
+                output_directory + operator_name + execution_timestamp + cdr_type_name
+            )
+
+    if cdr_type in voice_cdr_types and file_format_type != "u":
+        os.mkdir(output_directory + operator_name + execution_timestamp + cdr_type_name)
 else:
-    # os.mkdir(car+eo+cdb+tcd)
-    os.mkdir(car + eo + cdb)
-    for i in arqb:
+    os.mkdir(output_directory + operator_name + execution_timestamp)
+    for i in input_file_list:
         ii = i.split("\\")
-        pas.add(ii[len(ii) - 2])
-    for i in pas:
-        # os.mkdir(car+eo+cdb+tcd+'\\'+i)
-        os.mkdir(car + eo + cdb + "\\" + i)
-#    if tip=='5' or tip=='10':
-#        ca10=open(car+eo+cdb+'\\Cabeçalho.txt','w')
-#        ca10.write('Tipo de CDR'+';'+'listOfTrafficVolumes'+';'+'Location'+';'+'servedMSISDN'+';'+'listOfServiceData'+';'+'recordSequenceNumber'+';'+'CauseforRecClosing'+';'+'ChargingID'+';'+'duration'+';'+'ggsnAddress'+';'+'openning time;StartTime;Diagnostics;Radio;ServedIMSI;;;Arquivo'+'\n')
-#        ca10.close()
+        zip_directories.add(ii[len(ii) - 2])
+    for i in zip_directories:
+        os.mkdir(output_directory + operator_name + execution_timestamp + "\\" + i)
 
 
-# vac=eo=car=cdb=''
-##cpp=open('caminhobruto.txt')
-##cdrbruto=cpp.readline().replace('\n','')
-##car=cpp.readline().replace('\n','')
-##cdb=cpp.readline().replace('\n','')
-##cpp.close()
-##pro=str(os.getpid())
-
-##ev=open(car+'AcompanhamentoLeitura'+'-'+cdb+'.txt','w')
-
-for i15 in range(1, qp + 1):
+for i15 in range(1, parallel_processes + 1):
     npc = str(i15)
 
     pp = "pp" + npc
 
-    if tip == "7":
-        # pp=subprocess.Popen(['python',diret+'\cdrDados-Gerenciado.py',npc,vac,eo,car,cdb,cdrbruto,str(qp)])
+    if cdr_type == "7":
         pp = subprocess.Popen(
             [
                 "python",
-                diret + "\\Volte3gpp.py",
+                current_directory + "\\Volte3gpp.py",
                 npc,
-                vac,
-                eo,
-                car,
-                cdb,
-                cdrbruto,
-                str(qp),
-                sa,
+                output_format_option,
+                operator_name,
+                output_directory,
+                execution_timestamp,
+                raw_cdr_path,
+                str(parallel_processes),
+                selection_option,
             ]
         )
 
-    if tip == "10":
-        # pp=subprocess.Popen(['python',diret+'\cdrDados-Gerenciado.py',npc,vac,eo,car,cdb,cdrbruto,str(qp)])
+    if cdr_type == "10":
         pp = subprocess.Popen(
             [
                 "python",
-                diret + "\\stirtim.py",
+                current_directory + "\\stirtim.py",
                 npc,
-                vac,
-                eo,
-                car,
-                cdb,
-                cdrbruto,
-                str(qp),
-                sa,
+                output_format_option,
+                operator_name,
+                output_directory,
+                execution_timestamp,
+                raw_cdr_path,
+                str(parallel_processes),
+                selection_option,
             ]
         )
 
-    if tip == "9":
-        # pp=subprocess.Popen(['python',diret+'\cdrDados-Gerenciado.py',npc,vac,eo,car,cdb,cdrbruto,str(qp)])
+    if cdr_type == "9":
         pp = subprocess.Popen(
             [
                 "python",
-                diret + "\\VolteClaro.py",
+                current_directory + "\\VolteClaro.py",
                 npc,
-                vac,
-                eo,
-                car,
-                cdb,
-                cdrbruto,
-                str(qp),
-                sa,
+                output_format_option,
+                operator_name,
+                output_directory,
+                execution_timestamp,
+                raw_cdr_path,
+                str(parallel_processes),
+                selection_option,
             ]
         )
 
-    if tip == "6":
-        # pp=subprocess.Popen(['python',diret+'\cdrDados-Gerenciado.py',npc,vac,eo,car,cdb,cdrbruto,str(qp)])
-        # pp=subprocess.Popen(['python',diret+'\\rodaDados.py',npc,vac,eo,car,cdb,cdrbruto,str(qp),sa])
+    if cdr_type == "6":
         pp = subprocess.Popen(
             [
                 "python",
-                diret + "\\cdrDados.py",
+                current_directory + "\\cdrDados.py",
                 npc,
-                vac,
-                eo,
-                car,
-                cdb,
-                cdrbruto,
-                str(qp),
-                sa,
+                output_format_option,
+                operator_name,
+                output_directory,
+                execution_timestamp,
+                raw_cdr_path,
+                str(parallel_processes),
+                selection_option,
             ]
         )
 
-    if tip == "1":
-        # pp=subprocess.Popen(['python',diret+'\cdrDados-Gerenciado.py',npc,vac,eo,car,cdb,cdrbruto,str(qp)])
-        # pp=subprocess.Popen(['python',diret+'\\rodaericsson.py',npc,vac,eo,car,cdb,cdrbruto,str(qp),sa,tip2])
+    if cdr_type == "1":
         pp = subprocess.Popen(
             [
                 "python",
-                # diret + "\\cdrVozEricsson.py",
+                current_directory + "\\cdrVozEricsson.py",
                 npc,
-                vac,
-                eo,
-                car,
-                cdb,
-                cdrbruto,
-                str(qp),
-                sa,
-                tip2,
+                output_format_option,
+                operator_name,
+                output_directory,
+                execution_timestamp,
+                raw_cdr_path,
+                str(parallel_processes),
+                selection_option,
+                volte_cdr_type,
             ]
         )
-    if tip == "4":
-        # pp=subprocess.Popen(['python',diret+'\cdrDados-Gerenciado.py',npc,vac,eo,car,cdb,cdrbruto,str(qp)])
+    if cdr_type == "4":
         pp = subprocess.Popen(
             [
                 "python",
-                diret + "\\rodahuawei.py",
+                current_directory + "\\rodahuawei.py",
                 npc,
-                vac,
-                eo,
-                car,
-                cdb,
-                cdrbruto,
-                str(qp),
-                sa,
+                output_format_option,
+                operator_name,
+                output_directory,
+                execution_timestamp,
+                raw_cdr_path,
+                str(parallel_processes),
+                selection_option,
             ]
         )
-    if tip == "2" or tip == "3" or tip == "5":
-        # pp=subprocess.Popen(['python',diret+'\cdrDados-Gerenciado.py',npc,vac,eo,car,cdb,cdrbruto,str(qp)])
-        # pp=subprocess.Popen(['python',diret+'\\rodanokia.py',npc,vac,eo,car,cdb,cdrbruto,str(qp),sa,tip])
+    if cdr_type == "2" or cdr_type == "3" or cdr_type == "5":
         pp = subprocess.Popen(
             [
                 "python",
-                diret + "\\cdrVozNokia.py",
+                current_directory + "\\cdrVozNokia.py",
                 npc,
-                vac,
-                eo,
-                car,
-                cdb,
-                cdrbruto,
-                str(qp),
-                sa,
-                tip,
+                output_format_option,
+                operator_name,
+                output_directory,
+                execution_timestamp,
+                raw_cdr_path,
+                str(parallel_processes),
+                selection_option,
+                cdr_type,
             ]
         )
-# cdb=cdrbruto[-30:].replace("/",'').replace('.','').replace('*','')
+
 opera = ""
 
+breakpoint()
 
-k6 = 0
-k5 = 0
-ld = []
-nldo = []
+processed_count = 0
+file_count = 0
+processed_list = []
+not_processed_list = []
 
-# aux=os.listdir('sinalfim/')
-# e1=''
 
-k55 = 0
-k56 = 0  ##                                    if ve[4:14]=='a229bf4582' and ve[-6:]=='800145':
-##                                        m=m+24
-##                                        #print(na,dt,dh,nb,du)
-##                                        ca2=dtf+' '+dhf;ca1=dt+' '+dh
-##                                        if len(ca2)==len(ca1):
-##                                            s = datetime.strptime(ca2,'%Y-%m-%d %H-%M-%S')
-##
-##                                            t = datetime.strptime(ca1,'%Y-%m-%d %H-%M-%S')
-##
-##                                            dif = (s-t);dif=dif.total_seconds()
-##                                            du2=str(int(dif))
-##
-##
-##                                    #vv=na+';'+dt+';'+dh+';'+tch+';'+nb+';'+ntt+';'+nbb+';'+du+';'+cel+';'+imsi+';'+imei+';'+msc+';'+ref+';'+ctt+';'+ro+'&'+rd+';'+me
-##                                    vv=dt+';'+dh+';'+tcd+';'+me3+';'+me+';'+ho4+';'+ho5+';'+ho6+';'+ho7
-##
-##                                    pp.append(vv)
-##                                    #tas.add(tag)#+tas2)
-##                                    tas2=''
-##
-##                                    na=nb=dt=dh=du=cel=dtf=dhf=tch=ho=me=vm=dt2=dh2=dt3=dh3=du2=zc=ro=rd=ref=ctt=''
-##                                    tu=imsi=ntt=tu2=imei=msc=nbb=zc2=''
+total_files_processed = 0
+current_files_processed = 0
 
-k57 = 0
 
-pr = set()
-tam = {}
-rea = 0
+checkpoint_counter = 0
 
-print(len(arqb))
-aca = int(len(arqb) * aca2 / 100)
-aca4 = aca
+processed_ranges = set()
+range_files_dict = {}
+range_counter = 0
 
-if vac == "a":
-    n11 = 0
-    nas3 = set()
+print(len(input_file_list))
+progress_checkpoint = int(len(input_file_list) * progress_percentage / 100)
+next_checkpoint = progress_checkpoint
+
+if output_format_option == "a":
+    range_batch_number = 0
+    number_ranges_set = set()
     nr11 = ""
-    ve11 = 0
-    while k56 != len(arqb):
-        tp41 = glob.glob(car + "f" + cdb + "*")
+    range_file_counter = 0
+    while current_files_processed != len(input_file_list):
+        consolidated_output_files = glob.glob(
+            output_directory + "f" + execution_timestamp + "*"
+        )
         try:
-            for z2 in tp41:
-                cp = open(z2)
+            for z2 in consolidated_output_files:
+                input_file_handle = open(z2)
 
-                if vam == "u" or tip in vo:
-                    for y2 in cp:
-                        # print(y2)
-                        #                        ve8=y2.find('05/09/2018')
-                        #                        if ve8!=-1:
-                        # if y2[0:2]=='55':
-                        # print(y2);print(kk)
+                if file_format_type == "u" or cdr_type in voice_cdr_types:
+                    for y2 in input_file_handle:
+                        consolidated_output_file.write(y2)
 
-                        acu.write(y2)
+                    input_file_handle.close()
 
-                    cp.close()
+                if cdr_type == "6" and (
+                    file_format_type == "n"
+                    or file_format_type == "d"
+                    or file_format_type == "nada"
+                ):
+                    range_counter = 0
 
-                if tip == "6" and (vam == "n" or vam == "d" or vam == "nada"):
-                    rea = 0
-
-                    for y2 in cp:
-                        #                        print(y2)
-                        y22 = y2.split(";")
-                        if vam == "d":
-                            sar = y22[11][0:13].replace("/", "-").replace(" ", "-")
-                            if y22[11] == "":
-                                if y22[10] == "":
-                                    sar = "semdata"
+                    for y2 in input_file_handle:
+                        cdr_fields = y2.split(";")
+                        if file_format_type == "d":
+                            range_identifier = (
+                                cdr_fields[11][0:13].replace("/", "-").replace(" ", "-")
+                            )
+                            if cdr_fields[11] == "":
+                                if cdr_fields[10] == "":
+                                    range_identifier = "semdata"
                                 else:
-                                    sar = (
-                                        y22[10][0:13]
+                                    range_identifier = (
+                                        cdr_fields[10][0:13]
                                         .replace("/", "-")
                                         .replace(" ", "-")
                                     )
                         else:
-                            # sar=(y22[3].replace('f',''))[-11:][0:5]
-                            sar = (y22[3].replace("f", ""))[-11:][0:4]
+                            range_identifier = (cdr_fields[3].replace("f", ""))[-11:][
+                                0:4
+                            ]
 
-                            if y22[3] == "":
-                                sar = "semnumero"
+                            if cdr_fields[3] == "":
+                                range_identifier = "semnumero"
 
-                        if sar + nr11 not in pr:
-                            rea = rea + 1
-                            reas = str(rea)
-                            reas = open(
-                                car + eo + cdb + tcd + "\\" + sar + nr11 + ".txt", "w"
+                        if range_identifier + nr11 not in processed_ranges:
+                            range_counter = range_counter + 1
+                            range_output_file = str(range_counter)
+                            range_output_file = open(
+                                output_directory
+                                + operator_name
+                                + execution_timestamp
+                                + cdr_type_name
+                                + "\\"
+                                + range_identifier
+                                + nr11
+                                + ".txt",
+                                "w",
                             )
-                            reas.write(
+                            range_output_file.write(
                                 "TipodeCDR"
                                 + ";"
                                 + "listOfTrafficVolumes"
@@ -689,466 +642,470 @@ if vac == "a":
                                 + "OpenningTime;StartTime;Diagnostics;Radio;ServedIMSI;;IMEI;Arquivo"
                                 + "\n"
                             )
-                            pr.add(sar + nr11)
-                            tam[sar + nr11] = reas
-                            # reas.write(y2)
-                            nas3.add(sar)
+                            processed_ranges.add(range_identifier + nr11)
+                            range_files_dict[range_identifier + nr11] = (
+                                range_output_file
+                            )
 
-                        if sar + nr11 in pr:
-                            #                            ve9=0
-                            #                            try:
-                            #                                y22=y2.split(';')
-                            #                                y23=y22[2].split('-')
-                            #                                if y22[0]=='55' and y23[2] in lac9:
-                            #                                    ve9=1
-                            #                            except IndexError:
-                            #                                pass
-                            #
-                            #
-                            #                            if ve9==1:
+                            number_ranges_set.add(range_identifier)
+
+                        if range_identifier + nr11 in processed_ranges:
                             if 4 > 3:
                                 try:
-                                    tam[sar + nr11].write(y2)
+                                    range_files_dict[range_identifier + nr11].write(y2)
                                 except OSError:
-                                    tam[sar + nr11].write(y2)
+                                    range_files_dict[range_identifier + nr11].write(y2)
 
-                    #                            print(sar)
-                    #                            input()
-                    cp.close()
-                    if len(tam) > 7999:
-                        n11 = n11 + 1
-                        nr11 = "-" + str(n11)
-                        for zu2 in tam:
-                            tam[zu2].close()
+                    input_file_handle.close()
+                    if len(range_files_dict) > 7999:
+                        range_batch_number = range_batch_number + 1
+                        nr11 = "-" + str(range_batch_number)
+                        for current_range in range_files_dict:
+                            range_files_dict[current_range].close()
 
-                if (tip == "9") and (vam == "n" or vam == "d" or vam == "nada"):
-                    rea = 0
+                if (cdr_type == "9") and (
+                    file_format_type == "n"
+                    or file_format_type == "d"
+                    or file_format_type == "nada"
+                ):
+                    range_counter = 0
 
-                    for y2 in cp:
-                        #                        print(y2)
-                        y22 = y2.split(";")
-                        if vam == "d":
-                            sar = (
-                                y22[0] + "-" + y22[1][0:2]
-                            )  # [0:13].replace('/','-').replace(' ','-')
-                            if y22[0] == "":
-                                if y22[7] == "":
-                                    sar = "semdata"
+                    for y2 in input_file_handle:
+                        cdr_fields = y2.split(";")
+                        if file_format_type == "d":
+                            range_identifier = cdr_fields[0] + "-" + cdr_fields[1][0:2]
+                            if cdr_fields[0] == "":
+                                if cdr_fields[7] == "":
+                                    range_identifier = "semdata"
                                 else:
-                                    sar == y22[7] + "-" + y22[8][
-                                        0:2
-                                    ]  # y22[10][0:13].replace('/','-').replace(' ','-')
+                                    range_identifier == cdr_fields[
+                                        7
+                                    ] + "-" + cdr_fields[8][0:2]
                         else:
-                            # sar=(y22[2].replace('f',''))[-11:][0:4]
-
-                            if len(y22[2]) > 9:
-                                # sar=(y22[0].replace('f',''))[-11:][0:4]
-
-                                if y22[2][0:2] == "55" and (
-                                    len(y22[2].replace("f", "")) == 12
-                                    or len(y22[2].replace("f", "")) == 13
+                            if len(cdr_fields[2]) > 9:
+                                if cdr_fields[2][0:2] == "55" and (
+                                    len(cdr_fields[2].replace("f", "")) == 12
+                                    or len(cdr_fields[2].replace("f", "")) == 13
                                 ):
-                                    sar = y22[2][2:6]
+                                    range_identifier = cdr_fields[2][2:6]
                                 else:
-                                    if len(y22[2].replace("f", "")) == 10:
-                                        sar = y22[2][0:4]
+                                    if len(cdr_fields[2].replace("f", "")) == 10:
+                                        range_identifier = cdr_fields[2][0:4]
                                     else:
-                                        sar = (y22[2].replace("f", ""))[-11:][0:4]
+                                        range_identifier = (
+                                            cdr_fields[2].replace("f", "")
+                                        )[-11:][0:4]
 
-                            if y22[2] == "":
-                                sar = "semnumero"
+                            if cdr_fields[2] == "":
+                                range_identifier = "semnumero"
 
-                        if sar + nr11 not in pr:
-                            rea = rea + 1
-                            reas = str(rea)
-                            reas = open(
-                                car + eo + cdb + tcd + "\\" + sar + nr11 + ".txt", "w"
+                        if range_identifier + nr11 not in processed_ranges:
+                            range_counter = range_counter + 1
+                            range_output_file = str(range_counter)
+                            range_output_file = open(
+                                output_directory
+                                + operator_name
+                                + execution_timestamp
+                                + cdr_type_name
+                                + "\\"
+                                + range_identifier
+                                + nr11
+                                + ".txt",
+                                "w",
                             )
-                            reas.write(
+                            range_output_file.write(
                                 "Data;Hora;Originador;TipoCDR;NúmeroChamado;Duração;Célula\n"
                             )
-                            pr.add(sar + nr11)
-                            tam[sar + nr11] = reas
-                            # reas.write(y2)
-                            nas3.add(sar)
+                            processed_ranges.add(range_identifier + nr11)
+                            range_files_dict[range_identifier + nr11] = (
+                                range_output_file
+                            )
 
-                        if sar + nr11 in pr:
-                            #                            ve9=0
-                            #                            try:
-                            #                                y22=y2.split(';')
-                            #                                y23=y22[2].split('-')
-                            #                                if y22[0]=='55' and y23[2] in lac9:
-                            #                                    ve9=1
-                            #                            except IndexError:
-                            #                                pass
-                            #
-                            #
-                            #                            if ve9==1:
+                            number_ranges_set.add(range_identifier)
+
+                        if range_identifier + nr11 in processed_ranges:
                             if 4 > 3:
-                                tam[sar + nr11].write(y2)
+                                range_files_dict[range_identifier + nr11].write(y2)
 
-                    #                            print(sar)
-                    #                            input()
-                    cp.close()
-                    if len(tam) > 7999:
-                        n11 = n11 + 1
-                        nr11 = "-" + str(n11)
-                        for zu2 in tam:
-                            tam[zu2].close()
+                    input_file_handle.close()
+                    if len(range_files_dict) > 7999:
+                        range_batch_number = range_batch_number + 1
+                        nr11 = "-" + str(range_batch_number)
+                        for current_range in range_files_dict:
+                            range_files_dict[current_range].close()
 
-                if (tip == "7" or tip == "10") and (
-                    vam == "n" or vam == "d" or vam == "nada"
+                if (cdr_type == "7" or cdr_type == "10") and (
+                    file_format_type == "n"
+                    or file_format_type == "d"
+                    or file_format_type == "nada"
                 ):
-                    rea = 0
+                    range_counter = 0
 
-                    for y2 in cp:
-                        #                        print(y2)
-                        y22 = y2.split(";")
-                        if vam == "d":
-                            sar = (
-                                y22[1] + "-" + y22[2][0:2]
-                            )  # [0:13].replace('/','-').replace(' ','-')
-                            if y22[1] == "":
-                                sar = "semdata"
+                    for y2 in input_file_handle:
+                        cdr_fields = y2.split(";")
+                        if file_format_type == "d":
+                            range_identifier = cdr_fields[1] + "-" + cdr_fields[2][0:2]
+                            if cdr_fields[1] == "":
+                                range_identifier = "semdata"
 
-                        #                                if y22[7]=='':
-                        #                                    sar='semdata'
-                        #                                else:
-                        #                                    sar==y22[7]+'-'+y22[8][0:2]#y22[10][0:13].replace('/','-').replace(' ','-')
                         else:
-                            if len(y22[0]) > 9:
-                                # sar=(y22[0].replace('F','''10'))[-11:][0:4]
-
-                                if y22[0][0:2] == "55" and (
-                                    len(y22[0].replace("F", "")) == 12
-                                    or len(y22[0].replace("F", "")) == 13
+                            if len(cdr_fields[0]) > 9:
+                                if cdr_fields[0][0:2] == "55" and (
+                                    len(cdr_fields[0].replace("F", "")) == 12
+                                    or len(cdr_fields[0].replace("F", "")) == 13
                                 ):
-                                    sar = y22[0][2:6]
+                                    range_identifier = cdr_fields[0][2:6]
                                 else:
-                                    if len(y22[0].replace("F", "")) == 10:
-                                        sar = y22[0][0:4]
+                                    if len(cdr_fields[0].replace("F", "")) == 10:
+                                        range_identifier = cdr_fields[0][0:4]
 
                                     else:
-                                        sar = (y22[0].replace("F", ""))[-11:][0:4]
+                                        range_identifier = (
+                                            cdr_fields[0].replace("F", "")
+                                        )[-11:][0:4]
 
                             else:
-                                if y22[0] == "":
-                                    sar = "semnumero"
+                                if cdr_fields[0] == "":
+                                    range_identifier = "semnumero"
                                 else:
-                                    sar = "poucosdigitos"
+                                    range_identifier = "poucosdigitos"
 
-                        if sar + nr11 not in pr:
-                            rea = rea + 1
-                            reas = str(rea)
+                        if range_identifier + nr11 not in processed_ranges:
+                            range_counter = range_counter + 1
+                            range_output_file = str(range_counter)
 
-                            reas = open(
-                                car + eo + cdb + tcd + "\\" + sar + nr11 + ".txt", "w"
+                            range_output_file = open(
+                                output_directory
+                                + operator_name
+                                + execution_timestamp
+                                + cdr_type_name
+                                + "\\"
+                                + range_identifier
+                                + nr11
+                                + ".txt",
+                                "w",
                             )
-                            reas.write(
+                            range_output_file.write(
                                 "Originador(list-Of-Calling-Party-Address);Data(recordOpeningTime);Hora;TipodeCDR(role-of-Node);called-Party-Address(NúmeroChamado);dialled-Party-Address(NúmeroTeclado);List-Of-Called-Asserted-Identity;Duration;Célula(accessNetworkInformation);IMSI(List-of-Subscription-ID);IMEI(private-User-Equipment-Info);MSC-Number;network-Call-Reference;causeForRecordClosing;interOperatorIdentifiers;sIP-Method\n"
                             )
-                            pr.add(sar + nr11)
-                            tam[sar + nr11] = reas
-                            # reas.write(y2)
-                            nas3.add(sar)
+                            processed_ranges.add(range_identifier + nr11)
+                            range_files_dict[range_identifier + nr11] = (
+                                range_output_file
+                            )
 
-                        if sar + nr11 in pr:
-                            #                            ve9=0
-                            #                            try:
-                            #                                y22=y2.split(';')
-                            #                                y23=y22[2].split('-')
-                            #                                if y22[0]=='55' and y23[2] in lac9:
-                            #                                    ve9=1
-                            #                            except IndexError:
-                            #                                pass
-                            #
-                            #
-                            #                            if ve9==1:
+                            number_ranges_set.add(range_identifier)
+
+                        if range_identifier + nr11 in processed_ranges:
                             if 4 > 3:
-                                tam[sar + nr11].write(y2)
+                                range_files_dict[range_identifier + nr11].write(y2)
 
-                    #                            print(sar)
-                    #                            input()
-                    cp.close()
-                    if len(tam) > 7999:
-                        n11 = n11 + 1
-                        nr11 = "-" + str(n11)
+                    input_file_handle.close()
+                    if len(range_files_dict) > 7999:
+                        range_batch_number = range_batch_number + 1
+                        nr11 = "-" + str(range_batch_number)
 
-                        for zu2 in tam:
-                            tam[zu2].close()
+                        for current_range in range_files_dict:
+                            range_files_dict[current_range].close()
 
-                pj2 = z2.find("N.txt")
-                if pj2 != -1:
-                    nldo.append(z2)
-                #                else:
-                #                    arli.write(z2+'\n')
+                not_processed_marker = z2.find("N.txt")
+                if not_processed_marker != -1:
+                    not_processed_list.append(z2)
+
                 os.remove(z2)
-                k56 = k56 + 1
-                k57 = k57 + 1
+                current_files_processed = current_files_processed + 1
+                checkpoint_counter = checkpoint_counter + 1
 
-                #                if k56>aca:
-                #                    print(int(k56*100/len(arqb)),'%')
-                #                aca=k56+aca
-                if k57 == aca:
-                    # print(''('AGUARDANDO...','green'),end='')
-                    print(str(int(k56 * 100 / len(arqb))) + "%")
-                    k57 = 0
+                if checkpoint_counter == progress_checkpoint:
+                    print(
+                        str(int(current_files_processed * 100 / len(input_file_list)))
+                        + "%"
+                    )
+                    checkpoint_counter = 0
 
         except PermissionError:
             pass
         except FileNotFoundError:
             pass
 
-    for zu in tam:
-        tam[zu].close()
+    for zu in range_files_dict:
+        range_files_dict[zu].close()
 
     if nr11 != "":
-        for z11 in nas3:
-            t53 = glob.glob(car + eo + cdb + tcd + "\\" + z11 + "*")
+        for z11 in number_ranges_set:
+            t53 = glob.glob(
+                output_directory
+                + operator_name
+                + execution_timestamp
+                + cdr_type_name
+                + "\\"
+                + z11
+                + "*"
+            )
 
             ve15 = 0
             for z12 in t53:
                 ve15 = ve15 + 1
                 if ve15 == 1:
-                    a50 = open(z12, "a")
-                    req = z12
+                    main_range_file = open(z12, "a")
+                    range_file_path = z12
                 else:
-                    a51 = open(z12)
-                    a51.readline()
-                    for z13 in a51:
-                        a50.write(z13)
-                    a51.close()
+                    temp_range_file = open(z12)
+                    temp_range_file.readline()
+                    for z13 in temp_range_file:
+                        main_range_file.write(z13)
+                    temp_range_file.close()
                     os.remove(z12)
-            a50.close()
-            b4 = req.split("-")
+            main_range_file.close()
+            file_parts = range_file_path.split("-")
 
-            b5 = b4[len(b4) - 1].replace(".txt", "")
+            range_number = file_parts[len(file_parts) - 1].replace(".txt", "")
 
-            b6 = req.replace("-" + b5, "")
-            os.rename(req, b6)
-    #    else:
-    #            t56=glob.glob(car+eo+cdb+tcd+'\\*.txt')
-    #            for z20 in t56:
-    #                req2=z20.replace('-0','')
-    #                os.rename(z20,req2)
+            base_filename = range_file_path.replace("-" + range_number, "")
+            os.rename(range_file_path, base_filename)
 
-    if tip in vo or vam == "u":
-        acu.close()
-    for r6 in nldo:
-        r6 = (r6.split(";"))[1].replace("N.txt", "")
-        arnli.write(r6 + "\n")
+    if cdr_type in voice_cdr_types or file_format_type == "u":
+        consolidated_output_file.close()
+    for failed_file_path in not_processed_list:
+        failed_file_path = (failed_file_path.split(";"))[1].replace("N.txt", "")
+        failed_files_log.write(failed_file_path + "\n")
         print()
         print()
         print(
             'Não lido ou lido parcialmente (veja arquivos "arquivosnaolidos" e "arquivosparaleitura"):'
         )
-        print(r6)
+        print(failed_file_path)
 else:
-    tp42 = glob.glob(car + eo + cdb + "\\*\\*f*.txt")
-    aca3 = len(tp42)
-    while len(tp42) != len(arqb):
-        tp42 = glob.glob(car + eo + cdb + "\\*\\*f*.txt")
+    individual_output_files = glob.glob(
+        output_directory + operator_name + execution_timestamp + "\\*\\*f*.txt"
+    )
+    aca3 = len(individual_output_files)
+    while len(individual_output_files) != len(input_file_list):
+        individual_output_files = glob.glob(
+            output_directory + operator_name + execution_timestamp + "\\*\\*f*.txt"
+        )
 
-        if len(tp42) > aca3:
-            if len(tp42) > aca4:
-                print(str(int(len(tp42) * 100 / len(arqb))) + "%", end=" ")
-                aca4 = len(tp42) + aca
-        aca3 = len(tp42)
-    for pj in tp42:
+        if len(individual_output_files) > aca3:
+            if len(individual_output_files) > next_checkpoint:
+                print(
+                    str(int(len(individual_output_files) * 100 / len(input_file_list)))
+                    + "%",
+                    end=" ",
+                )
+                next_checkpoint = len(individual_output_files) + progress_checkpoint
+        aca3 = len(individual_output_files)
+    for pj in individual_output_files:
         pj1 = pj.find("N.txt")
         if pj1 != -1:
-            arnli.write(pj)
+            failed_files_log.write(pj)
             print()
             print()
             print(
                 'Não lido ou lido parcialmente (veja arquivos "arquivosnaolidos" e "arquivosparaleitura"):'
             )
             print(pj)
-pz1 = 0
-for pz in arqb:
-    pz1 = pz1 + 1
-    arli.write(str(pz1) + ";" + pz + "\n")
-arli.close()
-arnli.close()
+file_sequence = 0
+for pz in input_file_list:
+    file_sequence = file_sequence + 1
+    processed_files_log.write(str(file_sequence) + ";" + pz + "\n")
+processed_files_log.close()
+failed_files_log.close()
 print()
-print("Duração da leitura: ", datetime.now() - ti)
+print("Duração da leitura: ", datetime.now() - start_time)
 print()
-ti2 = datetime.now()
-if vac1 == "a" and tip in vo:
-    print("Início de consolidação e ordenação...", ti2)
+consolidation_start_time = datetime.now()
+if vac1 == "a" and cdr_type in voice_cdr_types:
+    print("Início de consolidação e ordenação...", consolidation_start_time)
     print()
-    if tip == "1":
-        # p=subprocess.call(['python3','setupOrdena.py','build_ext','--inplace'])
+    if cdr_type == "1":
         p = subprocess.call(
-            ["python", "cdrEricssonVozOrdenaAglutina.py", car, cdb, eo, da]
+            [
+                "python",
+                "cdrEricssonVozOrdenaAglutina.py",
+                output_directory,
+                execution_timestamp,
+                operator_name,
+                consolidated_output_path,
+            ]
         )
 
-        # p2=subprocess.call(['python3','rodaOrdena.py',car,cin,eo,da])
-    ##    print(p,p2,'ok')
-    if tip == "2" or tip == "3" or tip == "5":
-        # p=subprocess.call(['python3','cdrNokiaVozOrdenaAglutina.py',car,cin,eo,da])
-        # p=subprocess.call(['python','setupOrdenaNokia.py','build_ext','--inplace'])
-        # p=subprocess.call(['python','rodaOrdenaNokia.py',car,cdb,eo,da])
+    if cdr_type == "2" or cdr_type == "3" or cdr_type == "5":
         p = subprocess.call(
-            ["python", diret + "\\cdrNokiaVozOrdenaAglutina.py", car, cdb, eo, da]
+            [
+                "python",
+                current_directory + "\\cdrNokiaVozOrdenaAglutina.py",
+                output_directory,
+                execution_timestamp,
+                operator_name,
+                consolidated_output_path,
+            ]
         )
-    if tip == "4":
+    if cdr_type == "4":
         p = subprocess.call(
-            ["python", "cdrHuaweiVozOrdenaAglutina.py", car, cdb, eo, da]
+            [
+                "python",
+                "cdrHuaweiVozOrdenaAglutina.py",
+                output_directory,
+                execution_timestamp,
+                operator_name,
+                consolidated_output_path,
+            ]
         )
 
 
-if vac == "a" and tip in vo and vam == "u":
-    print("Duração da consolidação e ordenação: ", datetime.now() - ti2)
+if (
+    output_format_option == "a"
+    and cdr_type in voice_cdr_types
+    and file_format_type == "u"
+):
+    print(
+        "Duração da consolidação e ordenação: ",
+        datetime.now() - consolidation_start_time,
+    )
     print()
-    print("Duração total: ", datetime.now() - ti)
+    print("Duração total: ", datetime.now() - start_time)
 
 
-if tip in vo and (vam == "n" or vam == "d" or vam == "nada") and vac == "a":
-    print("Duração da consolidação e ordenação: ", datetime.now() - ti2)
+if (
+    cdr_type in voice_cdr_types
+    and (
+        file_format_type == "n" or file_format_type == "d" or file_format_type == "nada"
+    )
+    and output_format_option == "a"
+):
+    print(
+        "Duração da consolidação e ordenação: ",
+        datetime.now() - consolidation_start_time,
+    )
     print()
     print("Início da redistribuição de CDRs nos tipos escolhidos de arquivos de saída")
 
-    tp41 = glob.glob(car + "Voz*" + cdb + "*")
-    if len(tp41) == 1:
-        sar = ""
-        pr = set()
-        tam = {}
-        rea = 0
-        n9 = 0
-        nas3 = set()
-        te30 = 1
-        nas4 = set()
-        n3 = 0
-        while te30 == 1:
-            cp = open(tp41[0])
+    consolidated_output_files = glob.glob(
+        output_directory + "Voz*" + execution_timestamp + "*"
+    )
+    if len(consolidated_output_files) == 1:
+        range_identifier = ""
+        processed_ranges = set()
+        range_files_dict = {}
+        range_counter = 0
+        processing_batch_counter = 0
+        number_ranges_set = set()
+        processing_complete_flag = 1
+        processed_ranges_set = set()
+        processed_ranges_counter = 0
+        while processing_complete_flag == 1:
+            input_file_handle = open(consolidated_output_files[0])
 
-            # rea=0
-            cp.readline()
-            pr = set()
-            tam = {}
-            rea = 0
-            sar = ""
-            y28 = ""
-            for y2 in cp:
-                #                        print(y2)
-                y22 = y2.split(";")
-                if vam == "d":
-                    if tip == "2" or tip == "3" or tip == "5":
-                        sar = y22[3][0:13].replace("/", "-").replace(" ", "-")
-                        if y22[3] == "":
-                            sar = "semdata"
-                    if tip == "1":
-                        sar = (
-                            y22[2].replace("/", "-").replace(" ", "-")
-                            + "-"
-                            + y22[3][0:2]
+            input_file_handle.readline()
+            processed_ranges = set()
+            range_files_dict = {}
+            range_counter = 0
+            range_identifier = ""
+            msisdn_field = ""
+            for y2 in input_file_handle:
+                cdr_fields = y2.split(";")
+                if file_format_type == "d":
+                    if cdr_type == "2" or cdr_type == "3" or cdr_type == "5":
+                        range_identifier = (
+                            cdr_fields[3][0:13].replace("/", "-").replace(" ", "-")
                         )
-                        if y22[2] == "":
-                            sar = "semdata"
-                    if tip == "4":
-                        sar = y22[2][0:13].replace("/", "-").replace(" ", "-")
-                        if y22[2] == "":
-                            sar = "semdata"
+                        if cdr_fields[3] == "":
+                            range_identifier = "semdata"
+                    if cdr_type == "1":
+                        range_identifier = (
+                            cdr_fields[2].replace("/", "-").replace(" ", "-")
+                            + "-"
+                            + cdr_fields[3][0:2]
+                        )
+                        if cdr_fields[2] == "":
+                            range_identifier = "semdata"
+                    if cdr_type == "4":
+                        range_identifier = (
+                            cdr_fields[2][0:13].replace("/", "-").replace(" ", "-")
+                        )
+                        if cdr_fields[2] == "":
+                            range_identifier = "semdata"
                 else:
-                    if tip == "2" or tip == "3" or tip == "5":
-                        y28 = y22[7].replace("f", "")
-                        if len(y28) > 9:
-                            if y28[0:2] == "55" and (len(y28) == 12 or len(y28) == 13):
-                                sar = y28[2:6]
-                            else:
-                                if len(y28) == 10:
-                                    sar = y28[0:4]
-                                else:
-                                    sar = (y28)[-11:][0:4]
-
-                        else:
-                            if y28 == "":
-                                sar = "semnumero"
-                            else:
-                                sar = "poucosdigitos"
-
-                    #                                        if y22[7][0:2]=='55':
-                    #                                            sar=y22[7][2:6]
-                    #                                        else:
-                    #                                            sar=(y22[7].replace('f',''))[-11:][0:4]
-                    #
-                    #                                        if y22[7]=='':
-                    #                                            sar='semnumero'
-                    if tip == "1":
-                        y28 = y22[1].replace("f", "")
-                        if len(y28) > 9:
-                            if y28[0:2] == "55" and (len(y28) == 12 or len(y28) == 13):
-                                sar = y28[2:6]
-                            else:
-                                if len(y28) == 10:
-                                    sar = y28[0:4]
-                                else:
-                                    sar = (y28)[-11:][0:4]
-
-                        else:
-                            if y28 == "":
-                                sar = "semnumero"
-                            else:
-                                sar = "poucosdigitos"
-                        # if len(y22[1]).replace('f','')
-                    #                                        sar=(y22[1].replace('f',''))[-11:][0:4]
-                    #
-                    #                                        if y22[1]=='':
-                    #                                            sar='semnumero'
-                    if tip == "4":
-                        y28 = y22[3].replace("f", "")
-                        if len(y28) > 9:
-                            if y28[0:4] == "1955" and (
-                                len(y28) == 14 or len(y28) == 15
+                    if cdr_type == "2" or cdr_type == "3" or cdr_type == "5":
+                        msisdn_field = cdr_fields[7].replace("f", "")
+                        if len(msisdn_field) > 9:
+                            if msisdn_field[0:2] == "55" and (
+                                len(msisdn_field) == 12 or len(msisdn_field) == 13
                             ):
-                                sar = y28[4:8]
+                                range_identifier = msisdn_field[2:6]
                             else:
-                                if len(y28) == 10:
-                                    sar = y28[0:4]
+                                if len(msisdn_field) == 10:
+                                    range_identifier = msisdn_field[0:4]
                                 else:
-                                    sar = (y28)[-11:][0:4]
+                                    range_identifier = (msisdn_field)[-11:][0:4]
 
                         else:
-                            if y28 == "":
-                                sar = "semnumero"
+                            if msisdn_field == "":
+                                range_identifier = "semnumero"
                             else:
-                                sar = "poucosdigitos"
+                                range_identifier = "poucosdigitos"
 
-                #                                        sar=(y22[3].replace('f',''))[-11:][0:4]
-                #
-                #                                        if y22[3]=='':
-                #                                            sar='semnumero'
+                    if cdr_type == "1":
+                        msisdn_field = cdr_fields[1].replace("f", "")
+                        if len(msisdn_field) > 9:
+                            if msisdn_field[0:2] == "55" and (
+                                len(msisdn_field) == 12 or len(msisdn_field) == 13
+                            ):
+                                range_identifier = msisdn_field[2:6]
+                            else:
+                                if len(msisdn_field) == 10:
+                                    range_identifier = msisdn_field[0:4]
+                                else:
+                                    range_identifier = (msisdn_field)[-11:][0:4]
 
-                #                                if len(nas)<8000 and na not in nas4:
-                #            if na not in nas:
-                #                nas.add(na)
-                #                naq=naq+1
-                #                naq2=str(naq)
-                #                naq2=open(db+'/'+na+'.txt','w')
-                #                naq2.write('Referencia;Origem;Data;Hora;Tipo_de_chamada;Bilhetador;PMM;1stCelA;Outgoing_route;Destino;Type_of_calling_subscriber;TTC;Call_position;Fault_code;EOS_info;Internal_cause_and_location;Disconnecting_party;BSSMAP_cause_code;Time_for_calling_party_traffic_channel_seizure;Time_for_called_party_traffic_channel_seizure;Call_identification_number;Translated_number;Subscription_Type_ou_IMEI;TimefromRregistertoStartofCharging;InterruptionTime;Arquivobruto'+'\n')
-                #                tam[na]=naq2
-                #                nas4.add(na)
-                #
-                #        if na in tam:
-                #            tam[na].write(i)
-                #        if n==0:
-                #            nas3.add(na)
-                #
-                #    a.close()
+                        else:
+                            if msisdn_field == "":
+                                range_identifier = "semnumero"
+                            else:
+                                range_identifier = "poucosdigitos"
 
-                if len(pr) < 8000 and sar not in nas4:
-                    if sar not in pr:
-                        rea = rea + 1
-                        reas = str(rea)
-                        reas = open(car + eo + cdb + tcd + "\\" + sar + ".txt", "w")
-                        if tip == "1":
-                            reas.write(
+                    if cdr_type == "4":
+                        msisdn_field = cdr_fields[3].replace("f", "")
+                        if len(msisdn_field) > 9:
+                            if msisdn_field[0:4] == "1955" and (
+                                len(msisdn_field) == 14 or len(msisdn_field) == 15
+                            ):
+                                range_identifier = msisdn_field[4:8]
+                            else:
+                                if len(msisdn_field) == 10:
+                                    range_identifier = msisdn_field[0:4]
+                                else:
+                                    range_identifier = (msisdn_field)[-11:][0:4]
+
+                        else:
+                            if msisdn_field == "":
+                                range_identifier = "semnumero"
+                            else:
+                                range_identifier = "poucosdigitos"
+
+                if (
+                    len(processed_ranges) < 8000
+                    and range_identifier not in processed_ranges_set
+                ):
+                    if range_identifier not in processed_ranges:
+                        range_counter = range_counter + 1
+                        range_output_file = str(range_counter)
+                        range_output_file = open(
+                            output_directory
+                            + operator_name
+                            + execution_timestamp
+                            + cdr_type_name
+                            + "\\"
+                            + range_identifier
+                            + ".txt",
+                            "w",
+                        )
+                        if cdr_type == "1":
+                            range_output_file.write(
                                 "Referencia;Origem;Data;Hora;Tipo_de_chamada;Bilhetador;IMSI;1stCelA;Outgoing_route;Destino;Type_of_calling_subscriber;TTC;Call_position;Fault_code;EOS_info;Internal_cause_and_location;Disconnecting_party;BSSMAP_cause_code;Time_for_calling_party_traffic_channel_seizure;Time_for_called_party_traffic_channel_seizure;Call_identification_number;Translated_number;IMEI;TimefromRregistertoStartofCharging;InterruptionTime;Arquivobruto"
                                 + "\n"
                             )
-                        if tip == "2" or tip == "3" or tip == "5":
-                            reas.write(
+                        if cdr_type == "2" or cdr_type == "3" or cdr_type == "5":
+                            range_output_file.write(
                                 "TipodeCDR"
                                 + ";"
                                 + "Exch_id"
@@ -1198,73 +1155,59 @@ if tip in vo and (vam == "n" or vam == "d" or vam == "nada") and vac == "a":
                                 + "Arquivo"
                                 + "\n"
                             )
-                        if tip == "4":
-                            reas.write(
+                        if cdr_type == "4":
+                            range_output_file.write(
                                 "TipodeCDR;ReferenciadeRede;DataHora;Origem;Destino;Duracao;Causefortermination;Diagnóstico;Célula;ReferenciaCentral;Atendimento;Ocupaçãocanaltráfego;Arquivo"
                                 + "\n"
                             )
-                        pr.add(sar)
-                        tam[sar] = reas
+                        processed_ranges.add(range_identifier)
+                        range_files_dict[range_identifier] = range_output_file
 
-                        nas4.add(sar)
-                        # reas.write(y2)
+                        processed_ranges_set.add(range_identifier)
 
-                if sar in tam:
-                    tam[sar].write(y2)
+                if range_identifier in range_files_dict:
+                    range_files_dict[range_identifier].write(y2)
 
-                if n9 == 0:
-                    nas3.add(sar)
+                if processing_batch_counter == 0:
+                    number_ranges_set.add(range_identifier)
 
-            #                            print(sar)
-            #                            input()
-            cp.close()
-            n9 = n9 + 1
+            input_file_handle.close()
+            processing_batch_counter = processing_batch_counter + 1
 
-            for z in tam:
-                tam[z].close()
-                n3 = n3 + 1
+            for z in range_files_dict:
+                range_files_dict[z].close()
+                processed_ranges_counter = processed_ranges_counter + 1
 
-            if len(nas3) == n3:
-                te30 = 0
+            if len(number_ranges_set) == processed_ranges_counter:
+                processing_complete_flag = 0
 
-        sar = ""
-        pr = set()
-        tam = {}
-        rea = 0
-        n9 = 0
-        nas3 = set()
-        te30 = 1
-        nas4 = set()
-        n3 = 0
+        range_identifier = ""
+        processed_ranges = set()
+        range_files_dict = {}
+        range_counter = 0
+        processing_batch_counter = 0
+        number_ranges_set = set()
+        processing_complete_flag = 1
+        processed_ranges_set = set()
+        processed_ranges_counter = 0
 
-        os.remove(tp41[0])
+        os.remove(consolidated_output_files[0])
 
-    #                        tp48=glob.glob(car+cdb+'*')
-    #                        for zi in tp48:
-    #                            zii=zi.split('\\')
-    #                            cons=zii[len(zii)-1]
-    #                            os.rename(zi,car+eo+cdb+'\\'+cons+'.txt')
     else:
         print("Não foi identificado arquivo para separação")
         print()
-if vz2 == 1:
+if zip_file_found == 1:
     print("Excluindo descompactação...")
-    shutil.rmtree(cdrbrutodes + "descomp")
+    shutil.rmtree(cdr_extract_base_path + "descomp")
 
 print("Processamento encerrado.")
-if tip in vo and (vam == "n" or vam == "d"):
+if cdr_type in voice_cdr_types and (file_format_type == "n" or file_format_type == "d"):
     print()
-    print("Duração total:", datetime.now() - ti)
+    print("Duração total:", datetime.now() - start_time)
     print()
 
-rff = open(car + eo + cdb + tcd + "FIM.txt", "w")
-rff.close()
-
-##print('Tecle "Enter" para finalizar')
-##
-##input()
-
-
-# for i in range(80000000):
-#    b8=1
-# quit()
+completion_marker_file = open(
+    output_directory + operator_name + execution_timestamp + cdr_type_name + "FIM.txt",
+    "w",
+)
+completion_marker_file.close()
