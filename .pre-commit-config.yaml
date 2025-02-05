@@ -15,7 +15,7 @@ repos:
     rev: v0.950
     hooks:
       - id: mypy
-        exclude: ./tests/legacy/
+        exclude: ^tests/legacy/.*$
         additional_dependencies:
           - "types-pytz"
 
