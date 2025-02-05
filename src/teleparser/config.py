@@ -24,18 +24,35 @@ class CDRType(str, Enum):
 
 @dataclass
 class CDRHeaders(Enum):
-    VOICE = [
-        "Reference",
-        "Origin",
-        "Date",
-        "Time",
-        "Call_Type",
-        "Biller",
+    VOICE_VIVO_TIM_CLARO = [
+        "Referencia",
+        "Origem",
+        "Data",
+        "Hora",
+        "Tipo_de_chamada",
+        "Bilhetador",
         "IMSI",
         "1stCelA",
         "Outgoing_route",
-        "Destination",
+        "Destino",
+        "Type_of_calling_subscriber",
+        "TTC",
+        "Call_position",
+        "Fault_code",
+        "EOS_info",
+        "Internal_cause_and_location",
+        "Disconnecting_party",
+        "BSSMAP_cause_code",
+        "Time_for_calling_party_traffic_channel_seizure",
+        "Time_for_called_party_traffic_channel_seizure",
+        "Call_identification_number",
+        "Translated_number",
+        "IMEI",
+        "TimefromRregistertoStartofCharging",
+        "InterruptionTime",
+        "Arquivobruto",
     ]
+
     DATA = [
         "CDR_Type",
         "listOfTrafficVolumes",
