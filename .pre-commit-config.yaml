@@ -6,6 +6,9 @@ repos:
         args:
           - --fix
       - id: ruff-format
+        exclude: ./tests/legacy
+
+
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.950
@@ -13,6 +16,8 @@ repos:
       - id: mypy
         additional_dependencies:
           - "types-pytz"
+        exclude: ./tests/legacy/
+
 
   - repo: https://github.com/kynan/nbstripout
     rev: 0.8.1
