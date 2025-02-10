@@ -29,9 +29,9 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: ./tests/
+        exclude: ^tests/legacy/.*$
       - id: end-of-file-fixer
-        exclude: ./tests/
+        exclude: ^tests/legacy/.*$
       - id: check-yaml
       - id: check-toml
 
