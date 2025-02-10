@@ -22,7 +22,7 @@ current_directory = os.getcwd()
 
 
 timestamp = time.asctime().replace(":", "").replace(" ", "")
-oper = {
+carrier_names = {
     "VI": "VIVO",
     "TI": "TIM",
     "OI": "OI",
@@ -35,7 +35,7 @@ oper = {
 res = "ResDados" + "&" + process_id + "&" + cdr_database + "-" + process_number
 
 
-opid = {
+operator_ids = {
     "0": "sID",
     "02": "TIM",
     "03": "TIM",
@@ -60,38 +60,38 @@ opid = {
     "32": "CTBC",
     "33": "CTBC",
 }
-dictb = {}
-dicterro = {}
-diax = {}
-dicnb = {}
-dicna = {}
-lb = []
-la = []
-la1 = []
-la2 = set()
-la3 = []
-la4 = []
+billing_dict = {}
+error_dict = {}
+date_dict = {}
+destination_numbers_dict = {}
+origin_numbers_dict = {}
+billing_list = []
+numbers_list = []
+filtered_numbers = []
+unique_numbers = set()
+processed_numbers = []
+result_numbers = []
 dicna1 = {}
 dicna2 = {}
-dicha = {}
+cell_a_dict = {}
 dicha2 = {}
-dicnb = {}
-lb1 = []
-lb2 = set()
-lb3 = []
-lb4 = []
+destination_numbers_dict = {}
+billing_filtered = []
+unique_billing = set()
+processed_billing = []
+result_billing = []
 dicnb1 = {}
 dicnb2 = {}
-dichb = {}
+cell_b_dict = {}
 dichb2 = {}
-lac = set()
-dilac = {}
-m4 = set()
-m8 = set()
+location_areas = set()
+location_area_dict = {}
+processed_records = set()
+failed_records = set()
 he = 0
 
 
-tcar = 1000000
+max_records = 1000000
 orig = glob.glob(raw_cdr_path)
 
 process_counter = 0
@@ -99,9 +99,9 @@ file_counter = 0
 total_counter = 0
 a17 = -1
 
-ana = ["a0", "a1", "a2", "a3", "a4"]
-hor1 = ["10", "11", "12"]
-hor2 = ["18", "19", "20"]
+record_types = ["a0", "a1", "a2", "a3", "a4"]
+morning_hours = ["10", "11", "12"]
+evening_hours = ["18", "19", "20"]
 
 
 for i in orig:
@@ -128,32 +128,34 @@ for i in orig:
             file_content = gzip.open(i, "rb")
 
             if validation_mode == "a":
-                g = open(base_path + cdr_database + ";" + str(file_counter) + ".txt", "w")
+                g = open(
+                    base_path + cdr_database + ";" + str(file_counter) + ".txt", "w"
+                )
             else:
-                iii = i.split("\\")
+                file_path_parts = i.split("\\")
 
                 g = open(
                     base_path
                     + output_path
                     + cdr_database
                     + "\\"
-                    + iii[len(iii) - 2]
+                    + file_path_parts[len(file_path_parts) - 2]
                     + "\\"
-                    + iii[len(iii) - 1].replace("gz", "txt"),
+                    + file_path_parts[len(file_path_parts) - 1].replace("gz", "txt"),
                     "w",
                 )
                 g.write(
                     "Tipo_de_chamada;Bilhetador;Referencia;Data;Hora;IMSI;1stCelA;Outgoing_route;Origem;Destino;Type_of_calling_subscriber;TTC;Call_position;Fault_code;EOS_info;Internal_cause_and_location;Disconnecting_party;BSSMAP_cause_code;Time_for_calling_party_traffic_channel_seizure;Time_for_called_party_traffic_channel_seizure;Call_identification_number;Translated_number;IMEI;TimefromRregistertoStartofCharging;InterruptionTime;Arquivobruto"
                     + "\n"
                 )
-                ali = (
+                output_file_path = (
                     base_path
                     + output_path
                     + cdr_database
                     + "\\"
-                    + iii[len(iii) - 2]
+                    + file_path_parts[len(file_path_parts) - 2]
                     + "\\"
-                    + iii[len(iii) - 1].replace(".gz", "")
+                    + file_path_parts[len(file_path_parts) - 1].replace(".gz", "")
                 )
             processing_status = "-2"
 
@@ -172,31 +174,44 @@ for i in orig:
                         current_tag = hex_data[current_position : current_position + 2]
 
                         if current_tag != "00":
-                            h = 1
-                            if int(current_tag[1], 16) == 15 and int(current_tag[0], 16) % 2 != 0:
+                            tag_length = 1
+                            if (
+                                int(current_tag[1], 16) == 15
+                                and int(current_tag[0], 16) % 2 != 0
+                            ):
                                 current_position = current_position + 2
                                 a12 = hex_data[current_position : current_position + 2]
-                                h = h + 1
+                                tag_length = tag_length + 1
                                 while int(a12[0:2], 16) > 127:
                                     current_position = current_position + 2
-                                    a12 = hex_data[current_position : current_position + 2]
-                                    h = h + 1
-                            record_tag = hex_data[(current_position - (h * 2)) + 2 : current_position + 2]
+                                    a12 = hex_data[
+                                        current_position : current_position + 2
+                                    ]
+                                    tag_length = tag_length + 1
+                            record_tag = hex_data[
+                                (current_position - (tag_length * 2))
+                                + 2 : current_position + 2
+                            ]
 
-                            mta = current_position - (h * 2) + 2
+                            mta = current_position - (tag_length * 2) + 2
 
                             current_position = current_position + 2
                             a3 = hex_data[current_position : current_position + 2]
                             field_length = int(a3[0:2], 16)
                             if field_length > 127:
-                                c = field_length - 128
-                                if c == 0:
+                                length_indicator = field_length - 128
+                                if length_indicator == 0:
                                     field_length = 0
                                 else:
                                     current_position = current_position + 2
-                                    c2 = hex_data[current_position : current_position + c * 2]
-                                    field_length = int(c2, 16)
-                                    current_position = (current_position - 2) + c * 2
+                                    actual_length = hex_data[
+                                        current_position : current_position
+                                        + length_indicator * 2
+                                    ]
+                                    field_length = int(actual_length, 16)
+                                    current_position = (
+                                        current_position - 2
+                                    ) + length_indicator * 2
 
                             timestamp = -2
                             if 2 * buffer_size - current_position < 10000:
@@ -217,17 +232,29 @@ for i in orig:
                             else:
                                 current_position = current_position + 2
                                 if record_tag == "a0":
-                                    ab = hex_data[current_position : current_position + field_length * 2]
-                                    current_position = current_position + field_length * 2
+                                    ab = hex_data[
+                                        current_position : current_position
+                                        + field_length * 2
+                                    ]
+                                    current_position = (
+                                        current_position + field_length * 2
+                                    )
 
                                     if 4 > 3:
-                                        if ab[0:2] in ana:
+                                        if ab[0:2] in record_types:
                                             ca = int(ab[2:4], 16)
                                             if ca > 127:
                                                 ca1 = ca - 128
                                             else:
                                                 ca1 = 0
-                                            x = ab[2 + ca1 * 2 + 2 : (field_length * 2 + 2)] + "."
+                                            record_data = (
+                                                ab[
+                                                    2 + ca1 * 2 + 2 : (
+                                                        field_length * 2 + 2
+                                                    )
+                                                ]
+                                                + "."
+                                            )
 
                                             record_type = ""
                                             carrier_code = ""
@@ -259,201 +286,408 @@ for i in orig:
                                             if ab[0:2] == "a0":
                                                 record_type = "TRA"
 
-                                                i1 = 0
+                                                field_position = 0
 
-                                                while x[i1] != ".":
-                                                    h = i1
+                                                while (
+                                                    record_data[field_position] != "."
+                                                ):
+                                                    tag_length = field_position
                                                     if (
-                                                        int(x[i1 + 1], 16) == 15
-                                                        and int(x[i1], 16) % 2 != 0
+                                                        int(
+                                                            record_data[
+                                                                field_position + 1
+                                                            ],
+                                                            16,
+                                                        )
+                                                        == 15
+                                                        and int(
+                                                            record_data[field_position],
+                                                            16,
+                                                        )
+                                                        % 2
+                                                        != 0
                                                     ):
-                                                        i1 = i1 + 2
+                                                        field_position = (
+                                                            field_position + 2
+                                                        )
                                                         while (
-                                                            int(x[i1 : i1 + 2], 16)
+                                                            int(
+                                                                record_data[
+                                                                    field_position : field_position
+                                                                    + 2
+                                                                ],
+                                                                16,
+                                                            )
                                                             > 127
                                                         ):
-                                                            i1 = i1 + 2
-                                                    t = x[h : i1 + 2]
-                                                    i1 = i1 + 2
-                                                    field_length = int(x[i1 : i1 + 2], 16)
+                                                            field_position = (
+                                                                field_position + 2
+                                                            )
+                                                    t = record_data[
+                                                        tag_length : field_position + 2
+                                                    ]
+                                                    field_position = field_position + 2
+                                                    field_length = int(
+                                                        record_data[
+                                                            field_position : field_position
+                                                            + 2
+                                                        ],
+                                                        16,
+                                                    )
                                                     if field_length > 127:
-                                                        c = field_length - 128
-                                                        if c == 0:
+                                                        length_indicator = (
+                                                            field_length - 128
+                                                        )
+                                                        if length_indicator == 0:
                                                             field_length = 0
                                                         else:
-                                                            i1 = i1 + 2
+                                                            field_position = (
+                                                                field_position + 2
+                                                            )
                                                             field_length = int(
-                                                                x[i1 : i1 + c * 2], 16
+                                                                record_data[
+                                                                    field_position : field_position
+                                                                    + length_indicator
+                                                                    * 2
+                                                                ],
+                                                                16,
                                                             )
 
                                                     if t == "84":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         origin_number = ""
-                                                        for i in range(2, len(field_data), 2):
+                                                        for i in range(
+                                                            2, len(field_data), 2
+                                                        ):
                                                             origin_number = (
-                                                                origin_number + field_data[i + 1] + field_data[i]
+                                                                origin_number
+                                                                + field_data[i + 1]
+                                                                + field_data[i]
                                                             )
                                                     if t == "96":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        rou1 = str.encode(field_data)
-                                                        carrier_code = str(binascii.a2b_hex(rou1))
-                                                        carrier_code = carrier_code[2:].replace("'", "")
+                                                        route_bytes = str.encode(
+                                                            field_data
+                                                        )
+                                                        carrier_code = str(
+                                                            binascii.a2b_hex(
+                                                                route_bytes
+                                                            )
+                                                        )
+                                                        carrier_code = carrier_code[
+                                                            2:
+                                                        ].replace("'", "")
 
                                                     if t == "86":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
 
                                                         imsi = ""
-                                                        for i in range(0, len(field_data), 2):
+                                                        for i in range(
+                                                            0, len(field_data), 2
+                                                        ):
                                                             imsi = (
                                                                 imsi
                                                                 + field_data[i + 1]
                                                                 + field_data[i]
                                                             )
                                                     if t == "9f2e":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         reference_id = field_data
                                                     if t == "85":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         destination_number = ""
-                                                        for i in range(2, len(field_data), 2):
+                                                        for i in range(
+                                                            2, len(field_data), 2
+                                                        ):
                                                             destination_number = (
-                                                                destination_number + field_data[i + 1] + field_data[i]
+                                                                destination_number
+                                                                + field_data[i + 1]
+                                                                + field_data[i]
                                                             )
                                                     if t == "88":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         date = (
-                                                            str(int(field_data[4:6], 16))
+                                                            str(
+                                                                int(field_data[4:6], 16)
+                                                            )
                                                             + "/"
-                                                            + str(int(field_data[2:4], 16))
+                                                            + str(
+                                                                int(field_data[2:4], 16)
+                                                            )
                                                             + "/"
-                                                            + str(int(field_data[0:2], 16))
+                                                            + str(
+                                                                int(field_data[0:2], 16)
+                                                            )
                                                         )
                                                     if t == "89":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         time = (
-                                                            str(int(field_data[0:2], 16))
+                                                            str(
+                                                                int(field_data[0:2], 16)
+                                                            )
                                                             + ":"
-                                                            + str(int(field_data[2:4], 16))
+                                                            + str(
+                                                                int(field_data[2:4], 16)
+                                                            )
                                                             + ":"
-                                                            + str(int(field_data[4:6], 16))
+                                                            + str(
+                                                                int(field_data[4:6], 16)
+                                                            )
                                                         )
                                                     if t == "93":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        bi2 = str.encode(field_data)
-                                                        billing_id = str(binascii.a2b_hex(bi2))
+                                                        billing_bytes = str.encode(
+                                                            field_data
+                                                        )
+                                                        billing_id = str(
+                                                            binascii.a2b_hex(
+                                                                billing_bytes
+                                                            )
+                                                        )
                                                     if t == "8b":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         duration = (
-                                                            str(int(field_data[0:2], 16))
+                                                            str(
+                                                                int(field_data[0:2], 16)
+                                                            )
                                                             + ":"
-                                                            + str(int(field_data[2:4], 16))
+                                                            + str(
+                                                                int(field_data[2:4], 16)
+                                                            )
                                                             + ":"
-                                                            + str(int(field_data[4:6], 16))
+                                                            + str(
+                                                                int(field_data[4:6], 16)
+                                                            )
                                                         )
                                                     if t == "9f29":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        fault_code = str(int(field_data, 16))
+                                                        fault_code = str(
+                                                            int(field_data, 16)
+                                                        )
                                                     if t == "9b":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        eos_info = str(int(field_data, 16))
+                                                        eos_info = str(
+                                                            int(field_data, 16)
+                                                        )
                                                     if t == "9c":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        internal_cause = str(int(field_data, 16))
+                                                        internal_cause = str(
+                                                            int(field_data, 16)
+                                                        )
                                                     if t == "83":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        call_type = str(int(field_data, 16))
+                                                        call_type = str(
+                                                            int(field_data, 16)
+                                                        )
 
                                                     if t == "9a":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        call_position = str(int(field_data, 16))
+                                                        call_position = str(
+                                                            int(field_data, 16)
+                                                        )
                                                     if t == "95":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        rou1 = str.encode(field_data)
+                                                        route_bytes = str.encode(
+                                                            field_data
+                                                        )
                                                         route = str(
-                                                            binascii.a2b_hex(rou1)
+                                                            binascii.a2b_hex(
+                                                                route_bytes
+                                                            )
                                                         )
 
                                                     if t == "87":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        disconnecting_party = str(int(field_data, 16))
+                                                        disconnecting_party = str(
+                                                            int(field_data, 16)
+                                                        )
                                                     if t == "8d":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         trssc = (
-                                                            str(int(field_data[0:2], 16))
+                                                            str(
+                                                                int(field_data[0:2], 16)
+                                                            )
                                                             + ":"
-                                                            + str(int(field_data[2:4], 16))
+                                                            + str(
+                                                                int(field_data[2:4], 16)
+                                                            )
                                                             + ":"
-                                                            + str(int(field_data[4:6], 16))
+                                                            + str(
+                                                                int(field_data[4:6], 16)
+                                                            )
                                                         )
-                                                    i1 = i1 + 2 + field_length * 2
+                                                    field_position = (
+                                                        field_position
+                                                        + 2
+                                                        + field_length * 2
+                                                    )
 
                                             if ab[0:2] == "a1":
                                                 record_type = "ORI"
-                                                i1 = 0
+                                                field_position = 0
                                                 try:
-                                                    while x[i1] != ".":
-                                                        h = i1
+                                                    while (
+                                                        record_data[field_position]
+                                                        != "."
+                                                    ):
+                                                        tag_length = field_position
                                                         if (
-                                                            int(x[i1 + 1], 16) == 15
-                                                            and int(x[i1], 16) % 2 != 0
+                                                            int(
+                                                                record_data[
+                                                                    field_position + 1
+                                                                ],
+                                                                16,
+                                                            )
+                                                            == 15
+                                                            and int(
+                                                                record_data[
+                                                                    field_position
+                                                                ],
+                                                                16,
+                                                            )
+                                                            % 2
+                                                            != 0
                                                         ):
-                                                            i1 = i1 + 2
+                                                            field_position = (
+                                                                field_position + 2
+                                                            )
                                                             while (
-                                                                int(x[i1 : i1 + 2], 16)
+                                                                int(
+                                                                    record_data[
+                                                                        field_position : field_position
+                                                                        + 2
+                                                                    ],
+                                                                    16,
+                                                                )
                                                                 > 127
                                                             ):
-                                                                i1 = i1 + 2
-                                                        t = x[h : i1 + 2]
-                                                        i1 = i1 + 2
-                                                        field_length = int(x[i1 : i1 + 2], 16)
+                                                                field_position = (
+                                                                    field_position + 2
+                                                                )
+                                                        t = record_data[
+                                                            tag_length : field_position
+                                                            + 2
+                                                        ]
+                                                        field_position = (
+                                                            field_position + 2
+                                                        )
+                                                        field_length = int(
+                                                            record_data[
+                                                                field_position : field_position
+                                                                + 2
+                                                            ],
+                                                            16,
+                                                        )
                                                         if field_length > 127:
-                                                            c = field_length - 128
-                                                            if c == 0:
+                                                            length_indicator = (
+                                                                field_length - 128
+                                                            )
+                                                            if length_indicator == 0:
                                                                 field_length = 0
                                                             else:
-                                                                i1 = i1 + 2
+                                                                field_position = (
+                                                                    field_position + 2
+                                                                )
                                                                 field_length = int(
-                                                                    x[i1 : i1 + c * 2],
+                                                                    record_data[
+                                                                        field_position : field_position
+                                                                        + length_indicator
+                                                                        * 2
+                                                                    ],
                                                                     16,
                                                                 )
 
                                                         if t == "84":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             origin_number = ""
                                                             for i in range(
@@ -466,18 +700,30 @@ for i in orig:
                                                                 )
 
                                                         if t == "97":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            rou1 = str.encode(field_data)
-                                                            carrier_code = str(
-                                                                binascii.a2b_hex(rou1)
+                                                            route_bytes = str.encode(
+                                                                field_data
                                                             )
-                                                            carrier_code = carrier_code[2:].replace("'", "")
+                                                            carrier_code = str(
+                                                                binascii.a2b_hex(
+                                                                    route_bytes
+                                                                )
+                                                            )
+                                                            carrier_code = carrier_code[
+                                                                2:
+                                                            ].replace("'", "")
 
                                                         if t == "86":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
 
                                                             imei = ""
@@ -490,8 +736,11 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
                                                         if t == "85":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
 
                                                             imsi = ""
@@ -504,13 +753,19 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
                                                         if t == "9f44":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             reference_id = field_data
                                                         if t == "87":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             destination_number = ""
                                                             for i in range(
@@ -522,8 +777,11 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
                                                         if t == "9f4a":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             tn = ""
                                                             for i in range(
@@ -535,184 +793,436 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
                                                         if t == "89":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             date = (
-                                                                str(int(field_data[4:6], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + "/"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + "/"
-                                                                + str(int(field_data[0:2], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "8a":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             time = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "94":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            bi2 = str.encode(field_data)
+                                                            billing_bytes = str.encode(
+                                                                field_data
+                                                            )
                                                             billing_id = str(
-                                                                binascii.a2b_hex(bi2)
+                                                                binascii.a2b_hex(
+                                                                    billing_bytes
+                                                                )
                                                             )
                                                         if t == "8c":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             duration = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "8d":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             intt = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "9f3b":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            fault_code = str(int(field_data, 16))
+                                                            fault_code = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9f22":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            eos_info = str(int(field_data, 16))
+                                                            eos_info = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9f23":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            internal_cause = str(int(field_data, 16))
+                                                            internal_cause = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "83":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            call_type = str(int(field_data, 16))
+                                                            call_type = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9f21":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            call_position = str(int(field_data, 16))
+                                                            call_position = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "96":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            rou1 = str.encode(field_data)
+                                                            route_bytes = str.encode(
+                                                                field_data
+                                                            )
                                                             route = str(
-                                                                binascii.a2b_hex(rou1)
+                                                                binascii.a2b_hex(
+                                                                    route_bytes
+                                                                )
                                                             )
 
                                                         if t == "88":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            disconnecting_party = str(int(field_data, 16))
+                                                            disconnecting_party = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9a":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             cs = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "9f62":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            cco = str(int(field_data, 16))
+                                                            cco = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9b":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             location_info = (
-                                                                str(int(field_data[1], 16))
-                                                                + str(int(field_data[0], 16))
-                                                                + str(int(field_data[3], 16))
-                                                                + "-"
-                                                                + str(int(field_data[5], 16))
-                                                                + str(int(field_data[4], 16))
-                                                                + str(int(field_data[2], 16))
-                                                                + "-"
+                                                                str(
+                                                                    int(
+                                                                        field_data[1],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + str(
-                                                                    int(field_data[6:10], 16)
+                                                                    int(
+                                                                        field_data[0],
+                                                                        16,
+                                                                    )
+                                                                )
+                                                                + str(
+                                                                    int(
+                                                                        field_data[3],
+                                                                        16,
+                                                                    )
                                                                 )
                                                                 + "-"
                                                                 + str(
-                                                                    int(field_data[10:14], 16)
+                                                                    int(
+                                                                        field_data[5],
+                                                                        16,
+                                                                    )
+                                                                )
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4],
+                                                                        16,
+                                                                    )
+                                                                )
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2],
+                                                                        16,
+                                                                    )
+                                                                )
+                                                                + "-"
+                                                                + str(
+                                                                    int(
+                                                                        field_data[
+                                                                            6:10
+                                                                        ],
+                                                                        16,
+                                                                    )
+                                                                )
+                                                                + "-"
+                                                                + str(
+                                                                    int(
+                                                                        field_data[
+                                                                            10:14
+                                                                        ],
+                                                                        16,
+                                                                    )
                                                                 )
                                                                 + "|"
                                                                 + field_data
                                                             )
                                                         if t == "8e":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             trssc = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
-                                                        i1 = i1 + 2 + field_length * 2
+                                                        field_position = (
+                                                            field_position
+                                                            + 2
+                                                            + field_length * 2
+                                                        )
                                                 except IndexError:
                                                     print(current_position)
                                                     print(i)
                                                     pass
                                             if ab[0:2] == "a2":
                                                 record_type = "ROA"
-                                                i1 = 0
+                                                field_position = 0
                                                 try:
-                                                    while x[i1] != ".":
-                                                        h = i1
+                                                    while (
+                                                        record_data[field_position]
+                                                        != "."
+                                                    ):
+                                                        tag_length = field_position
                                                         if (
-                                                            int(x[i1 + 1], 16) == 15
-                                                            and int(x[i1], 16) % 2 != 0
+                                                            int(
+                                                                record_data[
+                                                                    field_position + 1
+                                                                ],
+                                                                16,
+                                                            )
+                                                            == 15
+                                                            and int(
+                                                                record_data[
+                                                                    field_position
+                                                                ],
+                                                                16,
+                                                            )
+                                                            % 2
+                                                            != 0
                                                         ):
-                                                            i1 = i1 + 2
+                                                            field_position = (
+                                                                field_position + 2
+                                                            )
                                                             while (
-                                                                int(x[i1 : i1 + 2], 16)
+                                                                int(
+                                                                    record_data[
+                                                                        field_position : field_position
+                                                                        + 2
+                                                                    ],
+                                                                    16,
+                                                                )
                                                                 > 127
                                                             ):
-                                                                i1 = i1 + 2
-                                                        t = x[h : i1 + 2]
-                                                        i1 = i1 + 2
-                                                        field_length = int(x[i1 : i1 + 2], 16)
+                                                                field_position = (
+                                                                    field_position + 2
+                                                                )
+                                                        t = record_data[
+                                                            tag_length : field_position
+                                                            + 2
+                                                        ]
+                                                        field_position = (
+                                                            field_position + 2
+                                                        )
+                                                        field_length = int(
+                                                            record_data[
+                                                                field_position : field_position
+                                                                + 2
+                                                            ],
+                                                            16,
+                                                        )
                                                         if field_length > 127:
-                                                            c = field_length - 128
-                                                            if c == 0:
+                                                            length_indicator = (
+                                                                field_length - 128
+                                                            )
+                                                            if length_indicator == 0:
                                                                 field_length = 0
                                                             else:
-                                                                i1 = i1 + 2
+                                                                field_position = (
+                                                                    field_position + 2
+                                                                )
                                                                 field_length = int(
-                                                                    x[i1 : i1 + c * 2],
+                                                                    record_data[
+                                                                        field_position : field_position
+                                                                        + length_indicator
+                                                                        * 2
+                                                                    ],
                                                                     16,
                                                                 )
 
                                                         if t == "84":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             origin_number = ""
                                                             for i in range(
@@ -725,18 +1235,30 @@ for i in orig:
                                                                 )
 
                                                         if t == "96":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            rou1 = str.encode(field_data)
-                                                            carrier_code = str(
-                                                                binascii.a2b_hex(rou1)
+                                                            route_bytes = str.encode(
+                                                                field_data
                                                             )
-                                                            carrier_code = carrier_code[2:].replace("'", "")
+                                                            carrier_code = str(
+                                                                binascii.a2b_hex(
+                                                                    route_bytes
+                                                                )
+                                                            )
+                                                            carrier_code = carrier_code[
+                                                                2:
+                                                            ].replace("'", "")
 
                                                         if t == "86":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
 
                                                             imsi = ""
@@ -749,13 +1271,19 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
                                                         if t == "9f31":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             reference_id = field_data
                                                         if t == "85":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             destination_number = ""
                                                             for i in range(
@@ -767,319 +1295,691 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
                                                         if t == "89":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             date = (
-                                                                str(int(field_data[4:6], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + "/"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + "/"
-                                                                + str(int(field_data[0:2], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "8a":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             time = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "93":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            bi2 = str.encode(field_data)
+                                                            billing_bytes = str.encode(
+                                                                field_data
+                                                            )
                                                             billing_id = str(
-                                                                binascii.a2b_hex(bi2)
+                                                                binascii.a2b_hex(
+                                                                    billing_bytes
+                                                                )
                                                             )
                                                         if t == "8c":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             duration = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "9f2d":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            fault_code = str(int(field_data, 16))
+                                                            fault_code = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9a":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            eos_info = str(int(field_data, 16))
+                                                            eos_info = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9b":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            internal_cause = str(int(field_data, 16))
+                                                            internal_cause = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "83":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            call_type = str(int(field_data, 16))
+                                                            call_type = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "99":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            call_position = str(int(field_data, 16))
+                                                            call_position = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "95":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            rou1 = str.encode(field_data)
+                                                            route_bytes = str.encode(
+                                                                field_data
+                                                            )
                                                             route = str(
-                                                                binascii.a2b_hex(rou1)
+                                                                binascii.a2b_hex(
+                                                                    route_bytes
+                                                                )
                                                             )
                                                         if t == "88":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            disconnecting_party = str(int(field_data, 16))
+                                                            disconnecting_party = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "8e":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             trssc = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
-                                                        i1 = i1 + 2 + field_length * 2
+                                                        field_position = (
+                                                            field_position
+                                                            + 2
+                                                            + field_length * 2
+                                                        )
                                                 except IndexError:
                                                     print(current_position)
                                                     print(i)
                                                     pass
                                             if ab[0:2] == "a5":
                                                 record_type = "SMSo"
-                                                i1 = 0
+                                                field_position = 0
 
-                                                while x[i1] != ".":
-                                                    h = i1
+                                                while (
+                                                    record_data[field_position] != "."
+                                                ):
+                                                    tag_length = field_position
                                                     if (
-                                                        int(x[i1 + 1], 16) == 15
-                                                        and int(x[i1], 16) % 2 != 0
+                                                        int(
+                                                            record_data[
+                                                                field_position + 1
+                                                            ],
+                                                            16,
+                                                        )
+                                                        == 15
+                                                        and int(
+                                                            record_data[field_position],
+                                                            16,
+                                                        )
+                                                        % 2
+                                                        != 0
                                                     ):
-                                                        i1 = i1 + 2
+                                                        field_position = (
+                                                            field_position + 2
+                                                        )
                                                         while (
-                                                            int(x[i1 : i1 + 2], 16)
+                                                            int(
+                                                                record_data[
+                                                                    field_position : field_position
+                                                                    + 2
+                                                                ],
+                                                                16,
+                                                            )
                                                             > 127
                                                         ):
-                                                            i1 = i1 + 2
-                                                    t = x[h : i1 + 2]
-                                                    i1 = i1 + 2
-                                                    field_length = int(x[i1 : i1 + 2], 16)
+                                                            field_position = (
+                                                                field_position + 2
+                                                            )
+                                                    t = record_data[
+                                                        tag_length : field_position + 2
+                                                    ]
+                                                    field_position = field_position + 2
+                                                    field_length = int(
+                                                        record_data[
+                                                            field_position : field_position
+                                                            + 2
+                                                        ],
+                                                        16,
+                                                    )
                                                     if field_length > 127:
-                                                        c = field_length - 128
-                                                        if c == 0:
+                                                        length_indicator = (
+                                                            field_length - 128
+                                                        )
+                                                        if length_indicator == 0:
                                                             field_length = 0
                                                         else:
-                                                            i1 = i1 + 2
+                                                            field_position = (
+                                                                field_position + 2
+                                                            )
                                                             field_length = int(
-                                                                x[i1 : i1 + c * 2], 16
+                                                                record_data[
+                                                                    field_position : field_position
+                                                                    + length_indicator
+                                                                    * 2
+                                                                ],
+                                                                16,
                                                             )
 
                                                     if t == "8e":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         location_info = (
                                                             str(int(field_data[1], 16))
-                                                            + str(int(field_data[0], 16))
-                                                            + str(int(field_data[3], 16))
+                                                            + str(
+                                                                int(field_data[0], 16)
+                                                            )
+                                                            + str(
+                                                                int(field_data[3], 16)
+                                                            )
                                                             + "-"
-                                                            + str(int(field_data[5], 16))
-                                                            + str(int(field_data[4], 16))
-                                                            + str(int(field_data[2], 16))
+                                                            + str(
+                                                                int(field_data[5], 16)
+                                                            )
+                                                            + str(
+                                                                int(field_data[4], 16)
+                                                            )
+                                                            + str(
+                                                                int(field_data[2], 16)
+                                                            )
                                                             + "-"
-                                                            + str(int(field_data[6:10], 16))
+                                                            + str(
+                                                                int(
+                                                                    field_data[6:10], 16
+                                                                )
+                                                            )
                                                             + "-"
-                                                            + str(int(field_data[10:14], 16))
+                                                            + str(
+                                                                int(
+                                                                    field_data[10:14],
+                                                                    16,
+                                                                )
+                                                            )
                                                         )
                                                     if t == "84":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         origin_number = ""
-                                                        for i in range(2, len(field_data), 2):
+                                                        for i in range(
+                                                            2, len(field_data), 2
+                                                        ):
                                                             origin_number = (
-                                                                origin_number + field_data[i + 1] + field_data[i]
+                                                                origin_number
+                                                                + field_data[i + 1]
+                                                                + field_data[i]
                                                             )
                                                     if t == "81":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        carrier_code = str(int(field_data, 16))
+                                                        carrier_code = str(
+                                                            int(field_data, 16)
+                                                        )
                                                     if t == "9f2a":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         imei = str(int(field_data, 16))
                                                     if t == "9f2b":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         reference_id = field_data
 
                                                     if t == "87":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         date = (
-                                                            str(int(field_data[4:6], 16))
+                                                            str(
+                                                                int(field_data[4:6], 16)
+                                                            )
                                                             + "/"
-                                                            + str(int(field_data[2:4], 16))
+                                                            + str(
+                                                                int(field_data[2:4], 16)
+                                                            )
                                                             + "/"
-                                                            + str(int(field_data[0:2], 16))
+                                                            + str(
+                                                                int(field_data[0:2], 16)
+                                                            )
                                                         )
                                                     if t == "88":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         time = (
-                                                            str(int(field_data[0:2], 16))
+                                                            str(
+                                                                int(field_data[0:2], 16)
+                                                            )
                                                             + ":"
-                                                            + str(int(field_data[2:4], 16))
+                                                            + str(
+                                                                int(field_data[2:4], 16)
+                                                            )
                                                             + ":"
-                                                            + str(int(field_data[4:6], 16))
+                                                            + str(
+                                                                int(field_data[4:6], 16)
+                                                            )
                                                         )
                                                     if t == "8b":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        bi2 = str.encode(field_data)
-                                                        billing_id = str(binascii.a2b_hex(bi2))
+                                                        billing_bytes = str.encode(
+                                                            field_data
+                                                        )
+                                                        billing_id = str(
+                                                            binascii.a2b_hex(
+                                                                billing_bytes
+                                                            )
+                                                        )
 
                                                     if t == "83":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        call_type = str(int(field_data, 16))
+                                                        call_type = str(
+                                                            int(field_data, 16)
+                                                        )
                                                     if t == "9f2a":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        call_position = str(int(field_data, 16))
+                                                        call_position = str(
+                                                            int(field_data, 16)
+                                                        )
 
-                                                    i1 = i1 + 2 + field_length * 2
+                                                    field_position = (
+                                                        field_position
+                                                        + 2
+                                                        + field_length * 2
+                                                    )
                                             if ab[0:2] == "a7":
                                                 record_type = "SMSt"
-                                                i1 = 0
+                                                field_position = 0
 
-                                                while x[i1] != ".":
-                                                    h = i1
+                                                while (
+                                                    record_data[field_position] != "."
+                                                ):
+                                                    tag_length = field_position
                                                     if (
-                                                        int(x[i1 + 1], 16) == 15
-                                                        and int(x[i1], 16) % 2 != 0
+                                                        int(
+                                                            record_data[
+                                                                field_position + 1
+                                                            ],
+                                                            16,
+                                                        )
+                                                        == 15
+                                                        and int(
+                                                            record_data[field_position],
+                                                            16,
+                                                        )
+                                                        % 2
+                                                        != 0
                                                     ):
-                                                        i1 = i1 + 2
+                                                        field_position = (
+                                                            field_position + 2
+                                                        )
                                                         while (
-                                                            int(x[i1 : i1 + 2], 16)
+                                                            int(
+                                                                record_data[
+                                                                    field_position : field_position
+                                                                    + 2
+                                                                ],
+                                                                16,
+                                                            )
                                                             > 127
                                                         ):
-                                                            i1 = i1 + 2
-                                                    t = x[h : i1 + 2]
-                                                    i1 = i1 + 2
-                                                    field_length = int(x[i1 : i1 + 2], 16)
+                                                            field_position = (
+                                                                field_position + 2
+                                                            )
+                                                    t = record_data[
+                                                        tag_length : field_position + 2
+                                                    ]
+                                                    field_position = field_position + 2
+                                                    field_length = int(
+                                                        record_data[
+                                                            field_position : field_position
+                                                            + 2
+                                                        ],
+                                                        16,
+                                                    )
                                                     if field_length > 127:
-                                                        c = field_length - 128
-                                                        if c == 0:
+                                                        length_indicator = (
+                                                            field_length - 128
+                                                        )
+                                                        if length_indicator == 0:
                                                             field_length = 0
                                                         else:
-                                                            i1 = i1 + 2
+                                                            field_position = (
+                                                                field_position + 2
+                                                            )
                                                             field_length = int(
-                                                                x[i1 : i1 + c * 2], 16
+                                                                record_data[
+                                                                    field_position : field_position
+                                                                    + length_indicator
+                                                                    * 2
+                                                                ],
+                                                                16,
                                                             )
 
                                                     if t == "81":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        carrier_code = str(int(field_data, 16))
+                                                        carrier_code = str(
+                                                            int(field_data, 16)
+                                                        )
 
                                                     if t == "83":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         destination_number = ""
-                                                        for i in range(2, len(field_data), 2):
+                                                        for i in range(
+                                                            2, len(field_data), 2
+                                                        ):
                                                             destination_number = (
-                                                                destination_number + field_data[i + 1] + field_data[i]
+                                                                destination_number
+                                                                + field_data[i + 1]
+                                                                + field_data[i]
                                                             )
                                                     if t == "86":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         date = (
-                                                            str(int(field_data[4:6], 16))
+                                                            str(
+                                                                int(field_data[4:6], 16)
+                                                            )
                                                             + "/"
-                                                            + str(int(field_data[2:4], 16))
+                                                            + str(
+                                                                int(field_data[2:4], 16)
+                                                            )
                                                             + "/"
-                                                            + str(int(field_data[0:2], 16))
+                                                            + str(
+                                                                int(field_data[0:2], 16)
+                                                            )
                                                         )
                                                     if t == "87":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
                                                         time = (
-                                                            str(int(field_data[0:2], 16))
+                                                            str(
+                                                                int(field_data[0:2], 16)
+                                                            )
                                                             + ":"
-                                                            + str(int(field_data[2:4], 16))
+                                                            + str(
+                                                                int(field_data[2:4], 16)
+                                                            )
                                                             + ":"
-                                                            + str(int(field_data[4:6], 16))
+                                                            + str(
+                                                                int(field_data[4:6], 16)
+                                                            )
                                                         )
                                                     if t == "8a":
-                                                        field_data = x[
-                                                            i1 + 2 : i1 + field_length * 2 + 2
+                                                        field_data = record_data[
+                                                            field_position
+                                                            + 2 : field_position
+                                                            + field_length * 2
+                                                            + 2
                                                         ]
-                                                        bi2 = str.encode(field_data)
-                                                        billing_id = str(binascii.a2b_hex(bi2))
+                                                        billing_bytes = str.encode(
+                                                            field_data
+                                                        )
+                                                        billing_id = str(
+                                                            binascii.a2b_hex(
+                                                                billing_bytes
+                                                            )
+                                                        )
 
-                                                    i1 = i1 + 2 + field_length * 2
+                                                    field_position = (
+                                                        field_position
+                                                        + 2
+                                                        + field_length * 2
+                                                    )
                                             if ab[0:2] == "a3":
                                                 record_type = "FOR"
-                                                i1 = 0
+                                                field_position = 0
                                                 try:
-                                                    while x[i1] != ".":
-                                                        h = i1
+                                                    while (
+                                                        record_data[field_position]
+                                                        != "."
+                                                    ):
+                                                        tag_length = field_position
                                                         if (
-                                                            int(x[i1 + 1], 16) == 15
-                                                            and int(x[i1], 16) % 2 != 0
+                                                            int(
+                                                                record_data[
+                                                                    field_position + 1
+                                                                ],
+                                                                16,
+                                                            )
+                                                            == 15
+                                                            and int(
+                                                                record_data[
+                                                                    field_position
+                                                                ],
+                                                                16,
+                                                            )
+                                                            % 2
+                                                            != 0
                                                         ):
-                                                            i1 = i1 + 2
+                                                            field_position = (
+                                                                field_position + 2
+                                                            )
                                                             while (
-                                                                int(x[i1 : i1 + 2], 16)
+                                                                int(
+                                                                    record_data[
+                                                                        field_position : field_position
+                                                                        + 2
+                                                                    ],
+                                                                    16,
+                                                                )
                                                                 > 127
                                                             ):
-                                                                i1 = i1 + 2
-                                                        t = x[h : i1 + 2]
-                                                        i1 = i1 + 2
-                                                        field_length = int(x[i1 : i1 + 2], 16)
+                                                                field_position = (
+                                                                    field_position + 2
+                                                                )
+                                                        t = record_data[
+                                                            tag_length : field_position
+                                                            + 2
+                                                        ]
+                                                        field_position = (
+                                                            field_position + 2
+                                                        )
+                                                        field_length = int(
+                                                            record_data[
+                                                                field_position : field_position
+                                                                + 2
+                                                            ],
+                                                            16,
+                                                        )
                                                         if field_length > 127:
-                                                            c = field_length - 128
-                                                            if c == 0:
+                                                            length_indicator = (
+                                                                field_length - 128
+                                                            )
+                                                            if length_indicator == 0:
                                                                 field_length = 0
                                                             else:
-                                                                i1 = i1 + 2
+                                                                field_position = (
+                                                                    field_position + 2
+                                                                )
                                                                 field_length = int(
-                                                                    x[i1 : i1 + c * 2],
+                                                                    record_data[
+                                                                        field_position : field_position
+                                                                        + length_indicator
+                                                                        * 2
+                                                                    ],
                                                                     16,
                                                                 )
 
                                                         if t == "84":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             origin_number = ""
                                                             for i in range(
@@ -1092,18 +1992,30 @@ for i in orig:
                                                                 )
 
                                                         if t == "9a":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            rou1 = str.encode(field_data)
-                                                            carrier_code = str(
-                                                                binascii.a2b_hex(rou1)
+                                                            route_bytes = str.encode(
+                                                                field_data
                                                             )
-                                                            carrier_code = carrier_code[2:].replace("'", "")
+                                                            carrier_code = str(
+                                                                binascii.a2b_hex(
+                                                                    route_bytes
+                                                                )
+                                                            )
+                                                            carrier_code = carrier_code[
+                                                                2:
+                                                            ].replace("'", "")
 
                                                         if t == "8a":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
 
                                                             imsi = ""
@@ -1116,13 +2028,19 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
                                                         if t == "9f39":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             reference_id = field_data
                                                         if t == "85":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             destination_number = ""
                                                             for i in range(
@@ -1134,96 +2052,216 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
                                                         if t == "8d":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             date = (
-                                                                str(int(field_data[4:6], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + "/"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + "/"
-                                                                + str(int(field_data[0:2], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "8e":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             time = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "97":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            bi2 = str.encode(field_data)
+                                                            billing_bytes = str.encode(
+                                                                field_data
+                                                            )
                                                             billing_id = str(
-                                                                binascii.a2b_hex(bi2)
+                                                                binascii.a2b_hex(
+                                                                    billing_bytes
+                                                                )
                                                             )
                                                         if t == "90":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             duration = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "9f33":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            fault_code = str(int(field_data, 16))
+                                                            fault_code = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9e":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            eos_info = str(int(field_data, 16))
+                                                            eos_info = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9f1f":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            internal_cause = str(int(field_data, 16))
+                                                            internal_cause = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "83":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            call_type = str(int(field_data, 16))
+                                                            call_type = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9d":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            call_position = str(int(field_data, 16))
+                                                            call_position = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "99":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            rou1 = str.encode(field_data)
+                                                            route_bytes = str.encode(
+                                                                field_data
+                                                            )
                                                             route = str(
-                                                                binascii.a2b_hex(rou1)
+                                                                binascii.a2b_hex(
+                                                                    route_bytes
+                                                                )
                                                             )
                                                         if t == "8c":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            disconnecting_party = str(int(field_data, 16))
+                                                            disconnecting_party = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "92":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             trssc = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
-                                                        i1 = i1 + 2 + field_length * 2
+                                                        field_position = (
+                                                            field_position
+                                                            + 2
+                                                            + field_length * 2
+                                                        )
                                                 except IndexError:
                                                     print(current_position)
                                                     print(i)
@@ -1231,37 +2269,85 @@ for i in orig:
 
                                             if ab[0:2] == "a4":
                                                 record_type = "TER"
-                                                i1 = 0
+                                                field_position = 0
                                                 try:
-                                                    while x[i1] != ".":
-                                                        h = i1
+                                                    while (
+                                                        record_data[field_position]
+                                                        != "."
+                                                    ):
+                                                        tag_length = field_position
                                                         if (
-                                                            int(x[i1 + 1], 16) == 15
-                                                            and int(x[i1], 16) % 2 != 0
+                                                            int(
+                                                                record_data[
+                                                                    field_position + 1
+                                                                ],
+                                                                16,
+                                                            )
+                                                            == 15
+                                                            and int(
+                                                                record_data[
+                                                                    field_position
+                                                                ],
+                                                                16,
+                                                            )
+                                                            % 2
+                                                            != 0
                                                         ):
-                                                            i1 = i1 + 2
+                                                            field_position = (
+                                                                field_position + 2
+                                                            )
                                                             while (
-                                                                int(x[i1 : i1 + 2], 16)
+                                                                int(
+                                                                    record_data[
+                                                                        field_position : field_position
+                                                                        + 2
+                                                                    ],
+                                                                    16,
+                                                                )
                                                                 > 127
                                                             ):
-                                                                i1 = i1 + 2
-                                                        t = x[h : i1 + 2]
-                                                        i1 = i1 + 2
-                                                        field_length = int(x[i1 : i1 + 2], 16)
+                                                                field_position = (
+                                                                    field_position + 2
+                                                                )
+                                                        t = record_data[
+                                                            tag_length : field_position
+                                                            + 2
+                                                        ]
+                                                        field_position = (
+                                                            field_position + 2
+                                                        )
+                                                        field_length = int(
+                                                            record_data[
+                                                                field_position : field_position
+                                                                + 2
+                                                            ],
+                                                            16,
+                                                        )
                                                         if field_length > 127:
-                                                            c = field_length - 128
-                                                            if c == 0:
+                                                            length_indicator = (
+                                                                field_length - 128
+                                                            )
+                                                            if length_indicator == 0:
                                                                 field_length = 0
                                                             else:
-                                                                i1 = i1 + 2
+                                                                field_position = (
+                                                                    field_position + 2
+                                                                )
                                                                 field_length = int(
-                                                                    x[i1 : i1 + c * 2],
+                                                                    record_data[
+                                                                        field_position : field_position
+                                                                        + length_indicator
+                                                                        * 2
+                                                                    ],
                                                                     16,
                                                                 )
 
                                                         if t == "84":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             origin_number = ""
                                                             for i in range(
@@ -1274,23 +2360,40 @@ for i in orig:
                                                                 )
 
                                                         if t == "97":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            carrier_code = str(int(field_data, 16))
-
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
-                                                            ]
-                                                            rou1 = str.encode(field_data)
                                                             carrier_code = str(
-                                                                binascii.a2b_hex(rou1)
+                                                                int(field_data, 16)
                                                             )
-                                                            carrier_code = carrier_code[2:].replace("'", "")
+
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
+                                                            ]
+                                                            route_bytes = str.encode(
+                                                                field_data
+                                                            )
+                                                            carrier_code = str(
+                                                                binascii.a2b_hex(
+                                                                    route_bytes
+                                                                )
+                                                            )
+                                                            carrier_code = carrier_code[
+                                                                2:
+                                                            ].replace("'", "")
 
                                                         if t == "87":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
 
                                                             imei = ""
@@ -1303,8 +2406,11 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
                                                         if t == "86":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
 
                                                             imsi = ""
@@ -1317,13 +2423,19 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
                                                         if t == "9f43":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             reference_id = field_data
                                                         if t == "85":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             destination_number = ""
                                                             for i in range(
@@ -1335,166 +2447,352 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
                                                         if t == "8a":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             date = (
-                                                                str(int(field_data[4:6], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + "/"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + "/"
-                                                                + str(int(field_data[0:2], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "8b":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             time = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "94":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            bi2 = str.encode(field_data)
+                                                            billing_bytes = str.encode(
+                                                                field_data
+                                                            )
                                                             billing_id = str(
-                                                                binascii.a2b_hex(bi2)
+                                                                binascii.a2b_hex(
+                                                                    billing_bytes
+                                                                )
                                                             )
 
                                                         if t == "8d":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             duration = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "9f3b":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            fault_code = str(int(field_data, 16))
+                                                            fault_code = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9f22":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            eos_info = str(int(field_data, 16))
+                                                            eos_info = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9f23":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            internal_cause = str(int(field_data, 16))
+                                                            internal_cause = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "83":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            call_type = str(int(field_data, 16))
+                                                            call_type = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9f21":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            call_position = str(int(field_data, 16))
+                                                            call_position = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "96":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            rou1 = str.encode(field_data)
+                                                            route_bytes = str.encode(
+                                                                field_data
+                                                            )
                                                             route = str(
-                                                                binascii.a2b_hex(rou1)
+                                                                binascii.a2b_hex(
+                                                                    route_bytes
+                                                                )
                                                             )
                                                         if t == "89":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            disconnecting_party = str(int(field_data, 16))
+                                                            disconnecting_party = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9a":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             cst = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
                                                         if t == "9f55":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
-                                                            cco = str(int(field_data, 16))
+                                                            cco = str(
+                                                                int(field_data, 16)
+                                                            )
                                                         if t == "9b":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             location_info = (
-                                                                str(int(field_data[1], 16))
-                                                                + str(int(field_data[0], 16))
-                                                                + str(int(field_data[3], 16))
-                                                                + "-"
-                                                                + str(int(field_data[5], 16))
-                                                                + str(int(field_data[4], 16))
-                                                                + str(int(field_data[2], 16))
-                                                                + "-"
+                                                                str(
+                                                                    int(
+                                                                        field_data[1],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + str(
-                                                                    int(field_data[6:10], 16)
+                                                                    int(
+                                                                        field_data[0],
+                                                                        16,
+                                                                    )
+                                                                )
+                                                                + str(
+                                                                    int(
+                                                                        field_data[3],
+                                                                        16,
+                                                                    )
                                                                 )
                                                                 + "-"
                                                                 + str(
-                                                                    int(field_data[10:14], 16)
+                                                                    int(
+                                                                        field_data[5],
+                                                                        16,
+                                                                    )
+                                                                )
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4],
+                                                                        16,
+                                                                    )
+                                                                )
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2],
+                                                                        16,
+                                                                    )
+                                                                )
+                                                                + "-"
+                                                                + str(
+                                                                    int(
+                                                                        field_data[
+                                                                            6:10
+                                                                        ],
+                                                                        16,
+                                                                    )
+                                                                )
+                                                                + "-"
+                                                                + str(
+                                                                    int(
+                                                                        field_data[
+                                                                            10:14
+                                                                        ],
+                                                                        16,
+                                                                    )
                                                                 )
                                                             )
                                                         if t == "8f":
-                                                            field_data = x[
-                                                                i1 + 2 : i1 + field_length * 2 + 2
+                                                            field_data = record_data[
+                                                                field_position
+                                                                + 2 : field_position
+                                                                + field_length * 2
+                                                                + 2
                                                             ]
                                                             trssc = (
-                                                                str(int(field_data[0:2], 16))
+                                                                str(
+                                                                    int(
+                                                                        field_data[0:2],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[2:4], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[2:4],
+                                                                        16,
+                                                                    )
+                                                                )
                                                                 + ":"
-                                                                + str(int(field_data[4:6], 16))
+                                                                + str(
+                                                                    int(
+                                                                        field_data[4:6],
+                                                                        16,
+                                                                    )
+                                                                )
                                                             )
-                                                        i1 = i1 + 2 + field_length * 2
+                                                        field_position = (
+                                                            field_position
+                                                            + 2
+                                                            + field_length * 2
+                                                        )
                                                 except IndexError:
                                                     print(current_position)
                                                     print(i)
                                                     pass
 
-                                            dt2 = date.split("/")
-                                            dt3 = (
-                                                dt2[2].zfill(2)
+                                            date_parts = date.split("/")
+                                            formatted_date = (
+                                                date_parts[2].zfill(2)
                                                 + "/"
-                                                + dt2[1].zfill(2)
+                                                + date_parts[1].zfill(2)
                                                 + "/"
-                                                + dt2[0].zfill(2)
+                                                + date_parts[0].zfill(2)
                                             )
-                                            hr2 = time.split(":")
-                                            hr3 = (
-                                                hr2[0].zfill(2)
+                                            time_parts = time.split(":")
+                                            formatted_time = (
+                                                time_parts[0].zfill(2)
                                                 + ":"
-                                                + hr2[1].zfill(2)
+                                                + time_parts[1].zfill(2)
                                                 + ":"
-                                                + hr2[2].zfill(2)
+                                                + time_parts[2].zfill(2)
                                             )
 
-                                            li8 = location_info.split("-")
-                                            if len(li8) == 4:
+                                            location_parts = location_info.split("-")
+                                            if len(location_parts) == 4:
                                                 location_info = (
-                                                    li8[0]
+                                                    location_parts[0]
                                                     + "-"
-                                                    + li8[1][0:2]
+                                                    + location_parts[1][0:2]
                                                     + "-"
-                                                    + li8[2]
+                                                    + location_parts[2]
                                                     + "-"
-                                                    + li8[3]
+                                                    + location_parts[3]
                                                 )
 
                                             parsed_records.append(
@@ -1504,9 +2802,9 @@ for i in orig:
                                                 + ";"
                                                 + reference_id
                                                 + ";"
-                                                + dt3
+                                                + formatted_date
                                                 + ";"
-                                                + hr3
+                                                + formatted_time
                                                 + ";"
                                                 + imsi.replace("f", "")
                                                 + ";"
@@ -1553,7 +2851,9 @@ for i in orig:
 
                                 else:
                                     if record_type != "8":
-                                        current_position = current_position + field_length * 2
+                                        current_position = (
+                                            current_position + field_length * 2
+                                        )
 
                         else:
                             current_position = current_position + 2
@@ -1571,7 +2871,7 @@ for i in orig:
                     base_path + "f" + cdr_database + ";" + str(file_counter) + ".txt",
                 )
             else:
-                os.rename(ali + ".txt", ali + "f.txt")
+                os.rename(output_file_path + ".txt", output_file_path + "f.txt")
 
     except Exception as eru:
         print(eru)
@@ -1589,7 +2889,7 @@ for i in orig:
             else:
                 g.close()
 
-                os.rename(ali + ".txt", ali + "fN.txt")
+                os.rename(output_file_path + ".txt", output_file_path + "fN.txt")
             file_content.close()
 
 
