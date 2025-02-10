@@ -5,6 +5,8 @@ import sys
 import time
 from datetime import datetime
 from operator import itemgetter
+from dividearq import split_records_by_prefix
+
 
 diret = os.getcwd() + "\\"
 max_memory_sort_size = 6000000  # tamanho máximo a ordenar na memória (trecho: ordenar)
@@ -67,66 +69,66 @@ for i in d:
         else:
             prefix_counts[i[0:prefix_length]] = 1
     else:
-        jj = i.split(";")
-        j2 = jj[11].split(":")
+        record_fields = i.split(";")
+        duration_parts = record_fields[11].split(":")
         try:
-            duration_seconds = int(j2[0]) * 3600 + int(j2[1]) * 60 + int(j2[2])
+            duration_seconds = int(duration_parts[0]) * 3600 + int(duration_parts[1]) * 60 + int(duration_parts[2])
         except ValueError:
-            if jj[11] == "":
+            if record_fields[11] == "":
                 duration_seconds = 0
 
-        da2 = "20" + jj[3].replace("/", "-")
-        datetime_string = da2 + ";" + jj[4]
+        full_date = "20" + record_fields[3].replace("/", "-")
+        datetime_string = full_date + ";" + record_fields[4]
         unique_records_file.write(
-            jj[2]
+            record_fields[2]
             + ";"
-            + jj[8]
+            + record_fields[8]
             + ";"
             + datetime_string
             + ";"
-            + jj[0]
+            + record_fields[0]
             + ";"
-            + jj[1]
+            + record_fields[1]
             + ";"
-            + jj[5]
+            + record_fields[5]
             + ";"
-            + jj[6]
+            + record_fields[6]
             + ";"
-            + jj[7]
+            + record_fields[7]
             + ";"
-            + jj[9]
+            + record_fields[9]
             + ";"
-            + jj[10]
+            + record_fields[10]
             + ";"
             + str(duration_seconds)
             + ";"
-            + jj[12]
+            + record_fields[12]
             + ";"
-            + jj[13]
+            + record_fields[13]
             + ";"
-            + jj[14]
+            + record_fields[14]
             + ";"
-            + jj[15]
+            + record_fields[15]
             + ";"
-            + jj[16]
+            + record_fields[16]
             + ";"
-            + jj[17]
+            + record_fields[17]
             + ";"
-            + jj[18]
+            + record_fields[18]
             + ";"
-            + jj[19]
+            + record_fields[19]
             + ";"
-            + jj[20]
+            + record_fields[20]
             + ";"
-            + jj[21]
+            + record_fields[21]
             + ";"
-            + jj[22]
+            + record_fields[22]
             + ";"
-            + jj[23]
+            + record_fields[23]
             + ";"
-            + jj[24]
+            + record_fields[24]
             + ";"
-            + jj[25]
+            + record_fields[25]
         )
 
 
@@ -163,23 +165,23 @@ if len(prefix_counts) != 0:
 
     import dividearq
 
-    dividearq.div(prefix_length, base_path, cdr_database, input_file_path)
+    split_records_by_prefix(prefix_length, base_path, cdr_database, input_file_path)
 
-    ad = glob.glob(base_path + "Arqparciais" + cdr_database + "\\*.txt")
-    ad.sort()
+    partial_files = glob.glob(base_path + "Arqparciais" + cdr_database + "\\*.txt")
+    partial_files.sort()
     os.remove(input_file_path)
     sorted_output_file = open(base_path + cdr_database + "ord3.txt", "w")
-    ppp = []
-    for t in ad:
-        zi = t.split("\\")
-        zi = zi[len(zi) - 1].replace(".txt", "")
-        if zi in large_prefix_set:
+    temp_records = []
+    for t in partial_files:
+        file_prefix = t.split("\\")
+        file_prefix = file_prefix[len(file_prefix) - 1].replace(".txt", "")
+        if file_prefix in large_prefix_set:
             prefix_length = prefix_length + 1
             prefix_counts = {}  # ordenar - início - verificar o tamanho máximo a ordenar na memória (tord)
             prefixes_set = set()
-            pr1 = []
-            pr2 = {}
-            pp = []
+            prefix_list = []
+            prefix_chunks = {}
+            sorted_chunk = []
             import os
 
             d = open(t)
@@ -191,42 +193,42 @@ if len(prefix_counts) != 0:
                     prefix_counts[i[0:prefix_length]] = 1
             d.close()
             for i in prefixes_set:
-                pr1.append(i)
-            pr1.sort()
-            tso = 0
-            nn = 1
-            for i in pr1:
-                tso = prefix_counts[i] + tso
-                if tso <= max_memory_sort_size:
-                    pr2[i] = nn
+                prefix_list.append(i)
+            prefix_list.sort()
+            chunk_size = 0
+            chunk_number = 1
+            for i in prefix_list:
+                chunk_size = prefix_counts[i] + chunk_size
+                if chunk_size <= max_memory_sort_size:
+                    prefix_chunks[i] = chunk_number
                 else:
-                    nn = nn + 1
-                    tso = prefix_counts[i]
-                    pr2[i] = nn
-            for i in range(pr2[pr1[0]], pr2[pr1[len(pr1) - 1]] + 1):
+                    chunk_number = chunk_number + 1
+                    chunk_size = prefix_counts[i]
+                    prefix_chunks[i] = chunk_number
+            for i in range(prefix_chunks[prefix_list[0]], prefix_chunks[prefix_list[len(prefix_list) - 1]] + 1):
                 d = open(t)
                 for i1 in d:
-                    if pr2[i1[0:prefix_length]] == i:
-                        pp.append(i1)
+                    if prefix_chunks[i1[0:prefix_length]] == i:
+                        sorted_chunk.append(i1)
                 d.close()
-                pp.sort()
-                for i2 in pp:
+                sorted_chunk.sort()
+                for i2 in sorted_chunk:
                     sorted_output_file.write(i2)
-                pp = []
+                sorted_chunk = []
             os.remove(t)
             prefixes_set = set()
-            pr1 = []
-            pr2 = {}
+            prefix_list = []
+            prefix_chunks = {}
             prefix_counts = {}
         else:
             d = open(t)
             for i3 in d:
-                ppp.append(i3)
+                temp_records.append(i3)
             d.close()
-            ppp.sort()
-            for i3 in ppp:
+            temp_records.sort()
+            for i3 in temp_records:
                 sorted_output_file.write(i3)
-            ppp = []
+            temp_records = []
             os.remove(t)
     sorted_output_file.close()  # ordenar - fim
 
@@ -234,20 +236,20 @@ if len(prefix_counts) != 0:
     r = open(base_path + cdr_database + "unico.txt", "a")
     consolidated_output_file = open(base_path + cdr_database + "consolidado.txt", "w")
     j = re4.readline()
-    jj = j.split(";")
+    record_fields = j.split(";")
 
-    j2 = jj[11].split(":")
+    duration_parts = record_fields[11].split(":")
     try:
-        duration_seconds = int(j2[0]) * 3600 + int(j2[1]) * 60 + int(j2[2])
+        duration_seconds = int(duration_parts[0]) * 3600 + int(duration_parts[1]) * 60 + int(duration_parts[2])
     except ValueError:
-        if jj[11] == "":
+        if record_fields[11] == "":
             duration_seconds = 0
 
-    da2 = "20" + jj[3].replace("/", "-")
-    datetime_string = da2 + ";" + jj[4]
-    current_reference = jj[2]
-    current_origin = jj[8]
-    current_destination = jj[9]
+    full_date = "20" + record_fields[3].replace("/", "-")
+    datetime_string = full_date + ";" + record_fields[4]
+    current_reference = record_fields[2]
+    current_origin = record_fields[8]
+    current_destination = record_fields[9]
 
     for i in re4:
         record_found_flag = 1
@@ -268,8 +270,8 @@ if len(prefix_counts) != 0:
                         duration_seconds = ii[11]
 
                     current_reference = ii[2]
-                    current_origin = jj[8]
-                    current_destination = jj[9]
+                    current_origin = record_fields[8]
+                    current_destination = record_fields[9]
                     ju = i.split(";")
                     i = re4.readline()
                     if i == "":
@@ -382,141 +384,141 @@ if len(prefix_counts) != 0:
                 j = i
                 if j == "":
                     break
-                jj = i.split(";")
-                j2 = jj[11].split(":")
+                record_fields = i.split(";")
+                duration_parts = record_fields[11].split(":")
                 try:
-                    duration_seconds = int(j2[0]) * 3600 + int(j2[1]) * 60 + int(j2[2])
+                    duration_seconds = int(duration_parts[0]) * 3600 + int(duration_parts[1]) * 60 + int(duration_parts[2])
 
                 except ValueError:
-                    if jj[11] == "":
+                    if record_fields[11] == "":
                         duration_seconds = 0
                     else:
-                        duration_seconds = jj[11]
-                da2 = "20" + jj[3].replace("/", "-")
-                datetime_string = da2 + ";" + jj[4]
-                current_reference = jj[2]
-                current_origin = jj[8]
-                current_destination = jj[9]
+                        duration_seconds = record_fields[11]
+                full_date = "20" + record_fields[3].replace("/", "-")
+                datetime_string = full_date + ";" + record_fields[4]
+                current_reference = record_fields[2]
+                current_origin = record_fields[8]
+                current_destination = record_fields[9]
             else:
                 r.write(
-                    jj[2]
+                    record_fields[2]
                     + ";"
-                    + jj[8]
+                    + record_fields[8]
                     + ";"
                     + datetime_string
                     + ";"
-                    + jj[0]
+                    + record_fields[0]
                     + ";"
-                    + jj[1]
+                    + record_fields[1]
                     + ";"
-                    + jj[5]
+                    + record_fields[5]
                     + ";"
-                    + jj[6]
+                    + record_fields[6]
                     + ";"
-                    + jj[7]
+                    + record_fields[7]
                     + ";"
-                    + jj[9]
+                    + record_fields[9]
                     + ";"
-                    + jj[10]
+                    + record_fields[10]
                     + ";"
                     + str(duration_seconds)
                     + ";"
-                    + jj[12]
+                    + record_fields[12]
                     + ";"
-                    + jj[13]
+                    + record_fields[13]
                     + ";"
-                    + jj[14]
+                    + record_fields[14]
                     + ";"
-                    + jj[15]
+                    + record_fields[15]
                     + ";"
-                    + jj[16]
+                    + record_fields[16]
                     + ";"
-                    + jj[17]
+                    + record_fields[17]
                     + ";"
-                    + jj[18]
+                    + record_fields[18]
                     + ";"
-                    + jj[19]
+                    + record_fields[19]
                     + ";"
-                    + jj[20]
+                    + record_fields[20]
                     + ";"
-                    + jj[21]
+                    + record_fields[21]
                     + ";"
-                    + jj[22]
+                    + record_fields[22]
                     + ";"
-                    + jj[23]
+                    + record_fields[23]
                     + ";"
-                    + jj[24]
+                    + record_fields[24]
                     + ";"
-                    + jj[25]
+                    + record_fields[25]
                 )
                 j = i
                 if j == "":
                     break
-                jj = i.split(";")
-                j2 = jj[11].split(":")
+                record_fields = i.split(";")
+                duration_parts = record_fields[11].split(":")
                 try:
-                    duration_seconds = int(j2[0]) * 3600 + int(j2[1]) * 60 + int(j2[2])
+                    duration_seconds = int(duration_parts[0]) * 3600 + int(duration_parts[1]) * 60 + int(duration_parts[2])
                 except ValueError:
-                    if jj[11] == "":
+                    if record_fields[11] == "":
                         duration_seconds = 0
                     else:
-                        duration_seconds = jj[11]
-                da2 = "20" + jj[3].replace("/", "-")
-                datetime_string = da2 + ";" + jj[4]
-                current_reference = jj[2]
-                current_origin = jj[8]
-                current_destination = jj[9]
+                        duration_seconds = record_fields[11]
+                full_date = "20" + record_fields[3].replace("/", "-")
+                datetime_string = full_date + ";" + record_fields[4]
+                current_reference = record_fields[2]
+                current_origin = record_fields[8]
+                current_destination = record_fields[9]
     if record_found_flag == 1:
         r.write(
-            jj[2]
+            record_fields[2]
             + ";"
-            + jj[8]
+            + record_fields[8]
             + ";"
             + datetime_string
             + ";"
-            + jj[0]
+            + record_fields[0]
             + ";"
-            + jj[1]
+            + record_fields[1]
             + ";"
-            + jj[5]
+            + record_fields[5]
             + ";"
-            + jj[6]
+            + record_fields[6]
             + ";"
-            + jj[7]
+            + record_fields[7]
             + ";"
-            + jj[9]
+            + record_fields[9]
             + ";"
-            + jj[10]
+            + record_fields[10]
             + ";"
             + str(duration_seconds)
             + ";"
-            + jj[12]
+            + record_fields[12]
             + ";"
-            + jj[13]
+            + record_fields[13]
             + ";"
-            + jj[14]
+            + record_fields[14]
             + ";"
-            + jj[15]
+            + record_fields[15]
             + ";"
-            + jj[16]
+            + record_fields[16]
             + ";"
-            + jj[17]
+            + record_fields[17]
             + ";"
-            + jj[18]
+            + record_fields[18]
             + ";"
-            + jj[19]
+            + record_fields[19]
             + ";"
-            + jj[20]
+            + record_fields[20]
             + ";"
-            + jj[21]
+            + record_fields[21]
             + ";"
-            + jj[22]
+            + record_fields[22]
             + ";"
-            + jj[23]
+            + record_fields[23]
             + ";"
-            + jj[24]
+            + record_fields[24]
             + ";"
-            + jj[25]
+            + record_fields[25]
         )
     re4.close()
     r.close()
@@ -531,12 +533,12 @@ prefix_length = 2
 
 if len(glob.glob(base_path + "Arqparciais" + cdr_database)) == 1:  # Ordenar - início - versão 07/2018
     shutil.rmtree(base_path + "Arqparciais" + cdr_database)
-ap3 = glob.glob(base_path + "Arqparciais" + cdr_database)
-while len(ap3) == 1:  # teste
-    ap3 = glob.glob(base_path + "Arqparciais" + cdr_database)  # teste
+partial_dir_check = glob.glob(base_path + "Arqparciais" + cdr_database)
+while len(partial_dir_check) == 1:  # teste
+    partial_dir_check = glob.glob(base_path + "Arqparciais" + cdr_database)  # teste
 os.mkdir(base_path + "Arqparciais" + cdr_database)
-for ap8 in range(10000000):  # teste
-    ap10 = 1  # teste
+for retry_count in range(10000000):  # teste
+    retry_flag = 1  # teste
 sorted_files = []
 record_count = 0
 prefixes_set = set()
@@ -583,30 +585,29 @@ for i in prefix_mapping:
 aaea.close()
 
 
-import dividearq
 
-dividearq.div(prefix_length, base_path, cdr_database, input_file_path)
+split_records_by_prefix(prefix_length, base_path, cdr_database, input_file_path)
 
 
-ad = glob.glob(base_path + "Arqparciais" + cdr_database + "\\*.txt")
-ad.sort()
+partial_files = glob.glob(base_path + "Arqparciais" + cdr_database + "\\*.txt")
+partial_files.sort()
 sorted_output_file = open(base_path + cdr_database + "ord4.txt", "w")
 os.remove(input_file_path)
 sorted_output_file.write(
     "Referencia;Origem;Data;Hora;Tipo_de_chamada;Bilhetador;IMSI;1stCelA;Outgoing_route;Destino;Type_of_calling_subscriber;TTC;Call_position;Fault_code;EOS_info;Internal_cause_and_location;Disconnecting_party;BSSMAP_cause_code;Time_for_calling_party_traffic_channel_seizure;Time_for_called_party_traffic_channel_seizure;Call_identification_number;Translated_number;IMEI;TimefromRregistertoStartofCharging;InterruptionTime;Arquivobruto"
     + "\n"
 )
-ppp = []
-for t in ad:
-    zi = t.split("\\")
-    zi = zi[len(zi) - 1].replace(".txt", "")
-    if zi in large_prefix_set:
+temp_records = []
+for t in partial_files:
+    file_prefix = t.split("\\")
+    file_prefix = file_prefix[len(file_prefix) - 1].replace(".txt", "")
+    if file_prefix in large_prefix_set:
         prefix_length = prefix_length + 1
         prefix_counts = {}  # ordenar - início - verificar o tamanho máximo a ordenar na memória (tord)
         prefixes_set = set()
-        pr1 = []
-        pr2 = {}
-        pp = []
+        prefix_list = []
+        prefix_chunks = {}
+        sorted_chunk = []
         import os
 
         d = open(t)
@@ -618,65 +619,65 @@ for t in ad:
                 prefix_counts[i[0:prefix_length]] = 1
         d.close()
         for i in prefixes_set:
-            pr1.append(i)
-        pr1.sort()
-        tso = 0
-        nn = 1
-        for i in pr1:
-            tso = prefix_counts[i] + tso
-            if tso <= max_memory_sort_size:
-                pr2[i] = nn
+            prefix_list.append(i)
+        prefix_list.sort()
+        chunk_size = 0
+        chunk_number = 1
+        for i in prefix_list:
+            chunk_size = prefix_counts[i] + chunk_size
+            if chunk_size <= max_memory_sort_size:
+                prefix_chunks[i] = chunk_number
             else:
-                nn = nn + 1
-                tso = prefix_counts[i]
-                pr2[i] = nn
-        for i in range(pr2[pr1[0]], pr2[pr1[len(pr1) - 1]] + 1):
+                chunk_number = chunk_number + 1
+                chunk_size = prefix_counts[i]
+                prefix_chunks[i] = chunk_number
+        for i in range(prefix_chunks[prefix_list[0]], prefix_chunks[prefix_list[len(prefix_list) - 1]] + 1):
             d = open(t)
             for i1 in d:
-                if pr2[i1[0:prefix_length]] == i:
-                    pp.append(i1)
+                if prefix_chunks[i1[0:prefix_length]] == i:
+                    sorted_chunk.append(i1)
             d.close()
-            pp.sort()
-            for i2 in pp:
+            sorted_chunk.sort()
+            for i2 in sorted_chunk:
                 sorted_output_file.write(i2)
-            pp = []
+            sorted_chunk = []
         os.remove(t)
         prefixes_set = set()
-        pr1 = []
-        pr2 = {}
+        prefix_list = []
+        prefix_chunks = {}
         prefix_counts = {}
     else:
         d = open(t)
         for i3 in d:
-            ppp.append(i3)
+            temp_records.append(i3)
         d.close()
-        ppp.sort()
-        for i3 in ppp:
+        temp_records.sort()
+        for i3 in temp_records:
             sorted_output_file.write(i3)
-        ppp = []
+        temp_records = []
         os.remove(t)
 sorted_output_file.close()  # ordenar - fim
 g = open(base_path + cdr_database + "ord4.txt", "r")
-me = ""
-an = ""
-op = "0"
+month = ""
+year = ""
+operator_id  = "0"
 for i in g:
     ii = i.split(";")
     if (ii[4] == "ORI" or ii[4] == "TER") and ii[7] != "":
         ii21 = ii[2].split("-")
         ii61 = ii[7].split("-")
-        me = ii21[1]
-        an = ii21[0]
-        op = ii61[1][0:2]
+        month = ii21[1]
+        year = ii21[0]
+        operator_id  = ii61[1][0:2]
         break
 g.close()
 if voice_record_flag == 0:
-    rop = operator_code
+    resolved_operator = operator_code
 else:
-    rop = opid[op]
+    resolved_operator = opid[operator_id ]
 os.rename(
     base_path + cdr_database + "ord4.txt",
-    base_path + "VozEricsson" + "-" + cdr_database + "-" + rop + "-" + me + an + ".txt",
+    base_path + "VozEricsson" + "-" + cdr_database + "-" + resolved_operator + "-" + month + year + ".txt",
 )
 
 if len(glob.glob(base_path + "Arqparciais" + cdr_database)) == 1:
