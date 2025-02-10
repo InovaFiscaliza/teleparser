@@ -1,10 +1,13 @@
-import os, gzip, binascii, time, datetime, shutil, glob, tarfile, sys
-from datetime import datetime
-
+import binascii
+import glob
+import gzip
+import os
+import sys
+import time
 
 buffer_size = 50000
-ia6 = 10
-ia7 = 0
+input_attempt_count = 10
+input_retry_count = 0
 
 process_number = sys.argv[1]
 validation_mode = sys.argv[2]
@@ -88,7 +91,7 @@ location_areas = set()
 location_area_dict = {}
 processed_records = set()
 failed_records = set()
-he = 0
+header_flag = 0
 
 
 max_records = 1000000
@@ -97,7 +100,7 @@ orig = glob.glob(raw_cdr_path)
 process_counter = 0
 file_counter = 0
 total_counter = 0
-a17 = -1
+archive_counter = -1
 
 record_types = ["a0", "a1", "a2", "a3", "a4"]
 morning_hours = ["10", "11", "12"]
@@ -128,13 +131,13 @@ for i in orig:
             file_content = gzip.open(i, "rb")
 
             if validation_mode == "a":
-                g = open(
+                output_file = open(
                     base_path + cdr_database + ";" + str(file_counter) + ".txt", "w"
                 )
             else:
                 file_path_parts = i.split("\\")
 
-                g = open(
+                output_file = open(
                     base_path
                     + output_path
                     + cdr_database
@@ -144,7 +147,7 @@ for i in orig:
                     + file_path_parts[len(file_path_parts) - 1].replace("gz", "txt"),
                     "w",
                 )
-                g.write(
+                output_file.write(
                     "Tipo_de_chamada;Bilhetador;Referencia;Data;Hora;IMSI;1stCelA;Outgoing_route;Origem;Destino;Type_of_calling_subscriber;TTC;Call_position;Fault_code;EOS_info;Internal_cause_and_location;Disconnecting_party;BSSMAP_cause_code;Time_for_calling_party_traffic_channel_seizure;Time_for_called_party_traffic_channel_seizure;Call_identification_number;Translated_number;IMEI;TimefromRregistertoStartofCharging;InterruptionTime;Arquivobruto"
                     + "\n"
                 )
@@ -193,7 +196,7 @@ for i in orig:
                                 + 2 : current_position + 2
                             ]
 
-                            mta = current_position - (tag_length * 2) + 2
+                            tag_start_position = current_position - (tag_length * 2) + 2
 
                             current_position = current_position + 2
                             a3 = hex_data[current_position : current_position + 2]
@@ -215,24 +218,30 @@ for i in orig:
 
                             timestamp = -2
                             if 2 * buffer_size - current_position < 10000:
-                                timestamp = len(hex_data[mta:].replace("'", ""))
+                                timestamp = len(
+                                    hex_data[tag_start_position:].replace("'", "")
+                                )
 
                             if timestamp != -2 and timestamp < field_length * 2 + 30:
-                                fr = hex_data[mta:].replace("'", "")
+                                remaining_hex_data = hex_data[
+                                    tag_start_position:
+                                ].replace("'", "")
 
                                 raw_binary_data = file_content.read(buffer_size)
-                                fn = str(binascii.b2a_hex(raw_binary_data))[2:]
+                                next_hex_block = str(binascii.b2a_hex(raw_binary_data))[
+                                    2:
+                                ]
 
-                                hex_data = fr + fn
+                                hex_data = remaining_hex_data + next_hex_block
 
                                 current_position = 0
-                                for xx in parsed_records:
-                                    g.write(xx + "\n")
+                                for record_line in parsed_records:
+                                    output_file.write(record_line + "\n")
                                 parsed_records = []
                             else:
                                 current_position = current_position + 2
                                 if record_tag == "a0":
-                                    ab = hex_data[
+                                    record_block = hex_data[
                                         current_position : current_position
                                         + field_length * 2
                                     ]
@@ -241,15 +250,15 @@ for i in orig:
                                     )
 
                                     if 4 > 3:
-                                        if ab[0:2] in record_types:
-                                            ca = int(ab[2:4], 16)
-                                            if ca > 127:
-                                                ca1 = ca - 128
+                                        if record_block[0:2] in record_types:
+                                            content_length = int(record_block[2:4], 16)
+                                            if content_length > 127:
+                                                adjusted_length = content_length - 128
                                             else:
-                                                ca1 = 0
+                                                adjusted_length = 0
                                             record_data = (
-                                                ab[
-                                                    2 + ca1 * 2 + 2 : (
+                                                record_block[
+                                                    2 + adjusted_length * 2 + 2 : (
                                                         field_length * 2 + 2
                                                     )
                                                 ]
@@ -271,19 +280,19 @@ for i in orig:
                                             call_type = ""
                                             ty2 = ""
                                             route = ""
-                                            cs = ""
-                                            cst = ""
+                                            channel_seizure_time = ""
+                                            called_party_seizure_time = ""
                                             location_info = ""
                                             call_position = ""
-                                            cco = ""
+                                            bssmap_cause_code = ""
                                             imsi = ""
                                             disconnecting_party = ""
-                                            tn = ""
+                                            translated_number = ""
                                             imei = ""
                                             trssc = ""
                                             intt = ""
 
-                                            if ab[0:2] == "a0":
+                                            if record_block[0:2] == "a0":
                                                 record_type = "TRA"
 
                                                 field_position = 0
@@ -323,7 +332,7 @@ for i in orig:
                                                             field_position = (
                                                                 field_position + 2
                                                             )
-                                                    t = record_data[
+                                                    field_tag = record_data[
                                                         tag_length : field_position + 2
                                                     ]
                                                     field_position = field_position + 2
@@ -353,7 +362,7 @@ for i in orig:
                                                                 16,
                                                             )
 
-                                                    if t == "84":
+                                                    if field_tag == "84":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -369,7 +378,7 @@ for i in orig:
                                                                 + field_data[i + 1]
                                                                 + field_data[i]
                                                             )
-                                                    if t == "96":
+                                                    if field_tag == "96":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -388,7 +397,7 @@ for i in orig:
                                                             2:
                                                         ].replace("'", "")
 
-                                                    if t == "86":
+                                                    if field_tag == "86":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -405,7 +414,7 @@ for i in orig:
                                                                 + field_data[i + 1]
                                                                 + field_data[i]
                                                             )
-                                                    if t == "9f2e":
+                                                    if field_tag == "9f2e":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -413,7 +422,7 @@ for i in orig:
                                                             + 2
                                                         ]
                                                         reference_id = field_data
-                                                    if t == "85":
+                                                    if field_tag == "85":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -429,7 +438,7 @@ for i in orig:
                                                                 + field_data[i + 1]
                                                                 + field_data[i]
                                                             )
-                                                    if t == "88":
+                                                    if field_tag == "88":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -449,7 +458,7 @@ for i in orig:
                                                                 int(field_data[0:2], 16)
                                                             )
                                                         )
-                                                    if t == "89":
+                                                    if field_tag == "89":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -469,7 +478,7 @@ for i in orig:
                                                                 int(field_data[4:6], 16)
                                                             )
                                                         )
-                                                    if t == "93":
+                                                    if field_tag == "93":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -484,7 +493,7 @@ for i in orig:
                                                                 billing_bytes
                                                             )
                                                         )
-                                                    if t == "8b":
+                                                    if field_tag == "8b":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -504,7 +513,7 @@ for i in orig:
                                                                 int(field_data[4:6], 16)
                                                             )
                                                         )
-                                                    if t == "9f29":
+                                                    if field_tag == "9f29":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -514,7 +523,7 @@ for i in orig:
                                                         fault_code = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if t == "9b":
+                                                    if field_tag == "9b":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -524,7 +533,7 @@ for i in orig:
                                                         eos_info = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if t == "9c":
+                                                    if field_tag == "9c":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -534,7 +543,7 @@ for i in orig:
                                                         internal_cause = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if t == "83":
+                                                    if field_tag == "83":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -545,7 +554,7 @@ for i in orig:
                                                             int(field_data, 16)
                                                         )
 
-                                                    if t == "9a":
+                                                    if field_tag == "9a":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -555,7 +564,7 @@ for i in orig:
                                                         call_position = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if t == "95":
+                                                    if field_tag == "95":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -571,7 +580,7 @@ for i in orig:
                                                             )
                                                         )
 
-                                                    if t == "87":
+                                                    if field_tag == "87":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -581,7 +590,7 @@ for i in orig:
                                                         disconnecting_party = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if t == "8d":
+                                                    if field_tag == "8d":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -607,7 +616,7 @@ for i in orig:
                                                         + field_length * 2
                                                     )
 
-                                            if ab[0:2] == "a1":
+                                            if record_block[0:2] == "a1":
                                                 record_type = "ORI"
                                                 field_position = 0
                                                 try:
@@ -649,7 +658,7 @@ for i in orig:
                                                                 field_position = (
                                                                     field_position + 2
                                                                 )
-                                                        t = record_data[
+                                                        field_tag = record_data[
                                                             tag_length : field_position
                                                             + 2
                                                         ]
@@ -682,7 +691,7 @@ for i in orig:
                                                                     16,
                                                                 )
 
-                                                        if t == "84":
+                                                        if field_tag == "84":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -699,7 +708,7 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
 
-                                                        if t == "97":
+                                                        if field_tag == "97":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -718,7 +727,7 @@ for i in orig:
                                                                 2:
                                                             ].replace("'", "")
 
-                                                        if t == "86":
+                                                        if field_tag == "86":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -735,7 +744,7 @@ for i in orig:
                                                                     + field_data[i + 1]
                                                                     + field_data[i]
                                                                 )
-                                                        if t == "85":
+                                                        if field_tag == "85":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -752,7 +761,7 @@ for i in orig:
                                                                     + field_data[i + 1]
                                                                     + field_data[i]
                                                                 )
-                                                        if t == "9f44":
+                                                        if field_tag == "9f44":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -760,7 +769,7 @@ for i in orig:
                                                                 + 2
                                                             ]
                                                             reference_id = field_data
-                                                        if t == "87":
+                                                        if field_tag == "87":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -776,23 +785,23 @@ for i in orig:
                                                                     + field_data[i + 1]
                                                                     + field_data[i]
                                                                 )
-                                                        if t == "9f4a":
+                                                        if field_tag == "9f4a":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
                                                                 + field_length * 2
                                                                 + 2
                                                             ]
-                                                            tn = ""
+                                                            translated_number = ""
                                                             for i in range(
                                                                 2, len(field_data), 2
                                                             ):
-                                                                tn = (
-                                                                    tn
+                                                                translated_number = (
+                                                                    translated_number
                                                                     + field_data[i + 1]
                                                                     + field_data[i]
                                                                 )
-                                                        if t == "89":
+                                                        if field_tag == "89":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -821,7 +830,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "8a":
+                                                        if field_tag == "8a":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -850,7 +859,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "94":
+                                                        if field_tag == "94":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -865,7 +874,7 @@ for i in orig:
                                                                     billing_bytes
                                                                 )
                                                             )
-                                                        if t == "8c":
+                                                        if field_tag == "8c":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -894,7 +903,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "8d":
+                                                        if field_tag == "8d":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -923,7 +932,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "9f3b":
+                                                        if field_tag == "9f3b":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -933,7 +942,7 @@ for i in orig:
                                                             fault_code = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9f22":
+                                                        if field_tag == "9f22":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -943,7 +952,7 @@ for i in orig:
                                                             eos_info = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9f23":
+                                                        if field_tag == "9f23":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -953,7 +962,7 @@ for i in orig:
                                                             internal_cause = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "83":
+                                                        if field_tag == "83":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -963,7 +972,7 @@ for i in orig:
                                                             call_type = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9f21":
+                                                        if field_tag == "9f21":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -973,7 +982,7 @@ for i in orig:
                                                             call_position = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "96":
+                                                        if field_tag == "96":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -989,7 +998,7 @@ for i in orig:
                                                                 )
                                                             )
 
-                                                        if t == "88":
+                                                        if field_tag == "88":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -999,14 +1008,14 @@ for i in orig:
                                                             disconnecting_party = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9a":
+                                                        if field_tag == "9a":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
                                                                 + field_length * 2
                                                                 + 2
                                                             ]
-                                                            cs = (
+                                                            channel_seizure_time = (
                                                                 str(
                                                                     int(
                                                                         field_data[0:2],
@@ -1028,17 +1037,17 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "9f62":
+                                                        if field_tag == "9f62":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
                                                                 + field_length * 2
                                                                 + 2
                                                             ]
-                                                            cco = str(
+                                                            bssmap_cause_code = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9b":
+                                                        if field_tag == "9b":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1104,7 +1113,7 @@ for i in orig:
                                                                 + "|"
                                                                 + field_data
                                                             )
-                                                        if t == "8e":
+                                                        if field_tag == "8e":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1142,7 +1151,7 @@ for i in orig:
                                                     print(current_position)
                                                     print(i)
                                                     pass
-                                            if ab[0:2] == "a2":
+                                            if record_block[0:2] == "a2":
                                                 record_type = "ROA"
                                                 field_position = 0
                                                 try:
@@ -1184,7 +1193,7 @@ for i in orig:
                                                                 field_position = (
                                                                     field_position + 2
                                                                 )
-                                                        t = record_data[
+                                                        field_tag = record_data[
                                                             tag_length : field_position
                                                             + 2
                                                         ]
@@ -1217,7 +1226,7 @@ for i in orig:
                                                                     16,
                                                                 )
 
-                                                        if t == "84":
+                                                        if field_tag == "84":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1234,7 +1243,7 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
 
-                                                        if t == "96":
+                                                        if field_tag == "96":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1253,7 +1262,7 @@ for i in orig:
                                                                 2:
                                                             ].replace("'", "")
 
-                                                        if t == "86":
+                                                        if field_tag == "86":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1270,7 +1279,7 @@ for i in orig:
                                                                     + field_data[i + 1]
                                                                     + field_data[i]
                                                                 )
-                                                        if t == "9f31":
+                                                        if field_tag == "9f31":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1278,7 +1287,7 @@ for i in orig:
                                                                 + 2
                                                             ]
                                                             reference_id = field_data
-                                                        if t == "85":
+                                                        if field_tag == "85":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1294,7 +1303,7 @@ for i in orig:
                                                                     + field_data[i + 1]
                                                                     + field_data[i]
                                                                 )
-                                                        if t == "89":
+                                                        if field_tag == "89":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1323,7 +1332,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "8a":
+                                                        if field_tag == "8a":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1352,7 +1361,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "93":
+                                                        if field_tag == "93":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1367,7 +1376,7 @@ for i in orig:
                                                                     billing_bytes
                                                                 )
                                                             )
-                                                        if t == "8c":
+                                                        if field_tag == "8c":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1396,7 +1405,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "9f2d":
+                                                        if field_tag == "9f2d":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1406,7 +1415,7 @@ for i in orig:
                                                             fault_code = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9a":
+                                                        if field_tag == "9a":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1416,7 +1425,7 @@ for i in orig:
                                                             eos_info = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9b":
+                                                        if field_tag == "9b":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1426,7 +1435,7 @@ for i in orig:
                                                             internal_cause = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "83":
+                                                        if field_tag == "83":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1436,7 +1445,7 @@ for i in orig:
                                                             call_type = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "99":
+                                                        if field_tag == "99":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1446,7 +1455,7 @@ for i in orig:
                                                             call_position = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "95":
+                                                        if field_tag == "95":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1461,7 +1470,7 @@ for i in orig:
                                                                     route_bytes
                                                                 )
                                                             )
-                                                        if t == "88":
+                                                        if field_tag == "88":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1471,7 +1480,7 @@ for i in orig:
                                                             disconnecting_party = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "8e":
+                                                        if field_tag == "8e":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1509,7 +1518,7 @@ for i in orig:
                                                     print(current_position)
                                                     print(i)
                                                     pass
-                                            if ab[0:2] == "a5":
+                                            if record_block[0:2] == "a5":
                                                 record_type = "SMSo"
                                                 field_position = 0
 
@@ -1548,7 +1557,7 @@ for i in orig:
                                                             field_position = (
                                                                 field_position + 2
                                                             )
-                                                    t = record_data[
+                                                    field_tag = record_data[
                                                         tag_length : field_position + 2
                                                     ]
                                                     field_position = field_position + 2
@@ -1578,7 +1587,7 @@ for i in orig:
                                                                 16,
                                                             )
 
-                                                    if t == "8e":
+                                                    if field_tag == "8e":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1617,7 +1626,7 @@ for i in orig:
                                                                 )
                                                             )
                                                         )
-                                                    if t == "84":
+                                                    if field_tag == "84":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1633,7 +1642,7 @@ for i in orig:
                                                                 + field_data[i + 1]
                                                                 + field_data[i]
                                                             )
-                                                    if t == "81":
+                                                    if field_tag == "81":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1643,7 +1652,7 @@ for i in orig:
                                                         carrier_code = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if t == "9f2a":
+                                                    if field_tag == "9f2a":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1651,7 +1660,7 @@ for i in orig:
                                                             + 2
                                                         ]
                                                         imei = str(int(field_data, 16))
-                                                    if t == "9f2b":
+                                                    if field_tag == "9f2b":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1660,7 +1669,7 @@ for i in orig:
                                                         ]
                                                         reference_id = field_data
 
-                                                    if t == "87":
+                                                    if field_tag == "87":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1680,7 +1689,7 @@ for i in orig:
                                                                 int(field_data[0:2], 16)
                                                             )
                                                         )
-                                                    if t == "88":
+                                                    if field_tag == "88":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1700,7 +1709,7 @@ for i in orig:
                                                                 int(field_data[4:6], 16)
                                                             )
                                                         )
-                                                    if t == "8b":
+                                                    if field_tag == "8b":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1716,7 +1725,7 @@ for i in orig:
                                                             )
                                                         )
 
-                                                    if t == "83":
+                                                    if field_tag == "83":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1726,7 +1735,7 @@ for i in orig:
                                                         call_type = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if t == "9f2a":
+                                                    if field_tag == "9f2a":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1742,7 +1751,7 @@ for i in orig:
                                                         + 2
                                                         + field_length * 2
                                                     )
-                                            if ab[0:2] == "a7":
+                                            if record_block[0:2] == "a7":
                                                 record_type = "SMSt"
                                                 field_position = 0
 
@@ -1781,7 +1790,7 @@ for i in orig:
                                                             field_position = (
                                                                 field_position + 2
                                                             )
-                                                    t = record_data[
+                                                    field_tag = record_data[
                                                         tag_length : field_position + 2
                                                     ]
                                                     field_position = field_position + 2
@@ -1811,7 +1820,7 @@ for i in orig:
                                                                 16,
                                                             )
 
-                                                    if t == "81":
+                                                    if field_tag == "81":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1822,7 +1831,7 @@ for i in orig:
                                                             int(field_data, 16)
                                                         )
 
-                                                    if t == "83":
+                                                    if field_tag == "83":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1838,7 +1847,7 @@ for i in orig:
                                                                 + field_data[i + 1]
                                                                 + field_data[i]
                                                             )
-                                                    if t == "86":
+                                                    if field_tag == "86":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1858,7 +1867,7 @@ for i in orig:
                                                                 int(field_data[0:2], 16)
                                                             )
                                                         )
-                                                    if t == "87":
+                                                    if field_tag == "87":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1878,7 +1887,7 @@ for i in orig:
                                                                 int(field_data[4:6], 16)
                                                             )
                                                         )
-                                                    if t == "8a":
+                                                    if field_tag == "8a":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1899,7 +1908,7 @@ for i in orig:
                                                         + 2
                                                         + field_length * 2
                                                     )
-                                            if ab[0:2] == "a3":
+                                            if record_block[0:2] == "a3":
                                                 record_type = "FOR"
                                                 field_position = 0
                                                 try:
@@ -1941,7 +1950,7 @@ for i in orig:
                                                                 field_position = (
                                                                     field_position + 2
                                                                 )
-                                                        t = record_data[
+                                                        field_tag = record_data[
                                                             tag_length : field_position
                                                             + 2
                                                         ]
@@ -1974,7 +1983,7 @@ for i in orig:
                                                                     16,
                                                                 )
 
-                                                        if t == "84":
+                                                        if field_tag == "84":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -1991,7 +2000,7 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
 
-                                                        if t == "9a":
+                                                        if field_tag == "9a":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2010,7 +2019,7 @@ for i in orig:
                                                                 2:
                                                             ].replace("'", "")
 
-                                                        if t == "8a":
+                                                        if field_tag == "8a":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2027,7 +2036,7 @@ for i in orig:
                                                                     + field_data[i + 1]
                                                                     + field_data[i]
                                                                 )
-                                                        if t == "9f39":
+                                                        if field_tag == "9f39":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2035,7 +2044,7 @@ for i in orig:
                                                                 + 2
                                                             ]
                                                             reference_id = field_data
-                                                        if t == "85":
+                                                        if field_tag == "85":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2051,7 +2060,7 @@ for i in orig:
                                                                     + field_data[i + 1]
                                                                     + field_data[i]
                                                                 )
-                                                        if t == "8d":
+                                                        if field_tag == "8d":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2080,7 +2089,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "8e":
+                                                        if field_tag == "8e":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2109,7 +2118,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "97":
+                                                        if field_tag == "97":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2124,7 +2133,7 @@ for i in orig:
                                                                     billing_bytes
                                                                 )
                                                             )
-                                                        if t == "90":
+                                                        if field_tag == "90":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2153,7 +2162,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "9f33":
+                                                        if field_tag == "9f33":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2163,7 +2172,7 @@ for i in orig:
                                                             fault_code = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9e":
+                                                        if field_tag == "9e":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2173,7 +2182,7 @@ for i in orig:
                                                             eos_info = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9f1f":
+                                                        if field_tag == "9f1f":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2183,7 +2192,7 @@ for i in orig:
                                                             internal_cause = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "83":
+                                                        if field_tag == "83":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2193,7 +2202,7 @@ for i in orig:
                                                             call_type = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9d":
+                                                        if field_tag == "9d":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2203,7 +2212,7 @@ for i in orig:
                                                             call_position = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "99":
+                                                        if field_tag == "99":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2218,7 +2227,7 @@ for i in orig:
                                                                     route_bytes
                                                                 )
                                                             )
-                                                        if t == "8c":
+                                                        if field_tag == "8c":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2228,7 +2237,7 @@ for i in orig:
                                                             disconnecting_party = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "92":
+                                                        if field_tag == "92":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2267,7 +2276,7 @@ for i in orig:
                                                     print(i)
                                                     pass
 
-                                            if ab[0:2] == "a4":
+                                            if record_block[0:2] == "a4":
                                                 record_type = "TER"
                                                 field_position = 0
                                                 try:
@@ -2309,7 +2318,7 @@ for i in orig:
                                                                 field_position = (
                                                                     field_position + 2
                                                                 )
-                                                        t = record_data[
+                                                        field_tag = record_data[
                                                             tag_length : field_position
                                                             + 2
                                                         ]
@@ -2342,7 +2351,7 @@ for i in orig:
                                                                     16,
                                                                 )
 
-                                                        if t == "84":
+                                                        if field_tag == "84":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2359,7 +2368,7 @@ for i in orig:
                                                                     + field_data[i]
                                                                 )
 
-                                                        if t == "97":
+                                                        if field_tag == "97":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2388,7 +2397,7 @@ for i in orig:
                                                                 2:
                                                             ].replace("'", "")
 
-                                                        if t == "87":
+                                                        if field_tag == "87":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2405,7 +2414,7 @@ for i in orig:
                                                                     + field_data[i + 1]
                                                                     + field_data[i]
                                                                 )
-                                                        if t == "86":
+                                                        if field_tag == "86":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2422,7 +2431,7 @@ for i in orig:
                                                                     + field_data[i + 1]
                                                                     + field_data[i]
                                                                 )
-                                                        if t == "9f43":
+                                                        if field_tag == "9f43":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2430,7 +2439,7 @@ for i in orig:
                                                                 + 2
                                                             ]
                                                             reference_id = field_data
-                                                        if t == "85":
+                                                        if field_tag == "85":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2446,7 +2455,7 @@ for i in orig:
                                                                     + field_data[i + 1]
                                                                     + field_data[i]
                                                                 )
-                                                        if t == "8a":
+                                                        if field_tag == "8a":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2475,7 +2484,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "8b":
+                                                        if field_tag == "8b":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2504,7 +2513,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "94":
+                                                        if field_tag == "94":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2520,7 +2529,7 @@ for i in orig:
                                                                 )
                                                             )
 
-                                                        if t == "8d":
+                                                        if field_tag == "8d":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2549,7 +2558,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "9f3b":
+                                                        if field_tag == "9f3b":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2559,7 +2568,7 @@ for i in orig:
                                                             fault_code = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9f22":
+                                                        if field_tag == "9f22":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2569,7 +2578,7 @@ for i in orig:
                                                             eos_info = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9f23":
+                                                        if field_tag == "9f23":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2579,7 +2588,7 @@ for i in orig:
                                                             internal_cause = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "83":
+                                                        if field_tag == "83":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2589,7 +2598,7 @@ for i in orig:
                                                             call_type = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9f21":
+                                                        if field_tag == "9f21":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2599,7 +2608,7 @@ for i in orig:
                                                             call_position = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "96":
+                                                        if field_tag == "96":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2614,7 +2623,7 @@ for i in orig:
                                                                     route_bytes
                                                                 )
                                                             )
-                                                        if t == "89":
+                                                        if field_tag == "89":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2624,14 +2633,14 @@ for i in orig:
                                                             disconnecting_party = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9a":
+                                                        if field_tag == "9a":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
                                                                 + field_length * 2
                                                                 + 2
                                                             ]
-                                                            cst = (
+                                                            called_party_seizure_time = (
                                                                 str(
                                                                     int(
                                                                         field_data[0:2],
@@ -2653,17 +2662,17 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "9f55":
+                                                        if field_tag == "9f55":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
                                                                 + field_length * 2
                                                                 + 2
                                                             ]
-                                                            cco = str(
+                                                            bssmap_cause_code = str(
                                                                 int(field_data, 16)
                                                             )
-                                                        if t == "9b":
+                                                        if field_tag == "9b":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2727,7 +2736,7 @@ for i in orig:
                                                                     )
                                                                 )
                                                             )
-                                                        if t == "8f":
+                                                        if field_tag == "8f":
                                                             field_data = record_data[
                                                                 field_position
                                                                 + 2 : field_position
@@ -2830,15 +2839,15 @@ for i in orig:
                                                 + ";"
                                                 + disconnecting_party
                                                 + ";"
-                                                + cco
+                                                + bssmap_cause_code
                                                 + ";"
-                                                + cs
+                                                + channel_seizure_time
                                                 + ";"
-                                                + cst
+                                                + called_party_seizure_time
                                                 + ";"
                                                 + carrier_code
                                                 + ";"
-                                                + tn
+                                                + translated_number
                                                 + ";"
                                                 + imei.replace("f", "")
                                                 + ";"
@@ -2860,9 +2869,9 @@ for i in orig:
 
             except IndexError:
                 print(current_file)
-            for xx in parsed_records:
-                g.write(xx + "\n")
-            g.close()
+            for record_line in parsed_records:
+                output_file.write(record_line + "\n")
+            output_file.close()
             file_content.close()
             processing_status = "-3"
             if validation_mode == "a":
@@ -2873,21 +2882,21 @@ for i in orig:
             else:
                 os.rename(output_file_path + ".txt", output_file_path + "f.txt")
 
-    except Exception as eru:
-        print(eru)
+    except Exception as error_details:
+        print(error_details)
         print(current_file)
-        error_log_file.write(str(eru) + ";" + current_file + "\n")
+        error_log_file.write(str(error_details) + ";" + current_file + "\n")
     if file_processed_flag == 1 and processing_status != "-3":
         if processing_status == "-2":
             if validation_mode == "a":
-                g.close()
+                output_file.close()
 
                 os.rename(
                     base_path + cdr_database + ";" + str(file_counter) + ".txt",
                     base_path + "f" + cdr_database + ";" + str(file_counter) + "N.txt",
                 )
             else:
-                g.close()
+                output_file.close()
 
                 os.rename(output_file_path + ".txt", output_file_path + "fN.txt")
             file_content.close()
