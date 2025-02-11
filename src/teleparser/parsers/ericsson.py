@@ -875,12 +875,8 @@ class EricssonUnifiedParser:
 
     def parse_file(self, file_path: str) -> Iterator[EricssonRecord]:
         """Parse CDR file using appropriate parser based on record type"""
-        with self.buffer_manager.open(file_path) as buffer:
-            for parser in self.parsers.values():
-                parser.buffer_manager = self.buffer_manager
-                parser.validator = self.validator
-                yield from parser.parse_file(file_path)
-
+        for parser in self.parsers.values():
+            yield from parser.parse_file(file_path)
     def parse_records_to_csv(self, input_path: str, output_path: str):
         """Parse CDR file and write records to CSV"""
         with open(output_path, "w") as out_file:
