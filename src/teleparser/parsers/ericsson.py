@@ -332,6 +332,13 @@ class OriginatingRecordParser(EricssonParser):
         "85": "imei"
     }
 
+    def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
+        """Create Originating record from record block"""
+        record_type = record_block[0:2]
+        if record_type != EricssonRecordType.ORIGINATING:
+            return None
+        return self._parse_ori_record(record_block) 
+
     def _parse_ori_record(self, record_data: str) -> EricssonRecord:
         """Parse Originating record fields"""
         field_values = {}
