@@ -502,6 +502,13 @@ class TerminatingRecordParser(EricssonParser):
         "8f": "time_register_to_charging"
     }
 
+    def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
+        """Create Terminating record from record block"""
+        record_type = record_block[0:2]
+        if record_type != EricssonRecordType.TERMINATING:
+            return None
+        return self._parse_ter_record(record_block)
+
     def _parse_ter_record(self, record_data: str) -> EricssonRecord:
         """Parse Terminating record fields"""
         field_values = {}
