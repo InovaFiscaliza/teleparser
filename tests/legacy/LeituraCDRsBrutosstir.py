@@ -76,7 +76,7 @@ while len(cdr_type_selection) != 2 and attempt_counter < 4:
     )
     print("      - 'd' para arquivos separados por data-hora (ex.: 5d)")
     print("AGUARDANDO...:", end="")
-    cdr_type_selection = input()
+    cdr_type_selection = '1u' #input()
 
     attempt_counter = attempt_counter + 1
     file_format_type = cdr_type_selection[-1:]
@@ -94,7 +94,7 @@ if cdr_type_selection in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
         "Informe o caminho para leitura dos CDRs brutos (para a leitura de todos os arquivos, finalize com /*.gz). Caso os arquivos .gz estejam compactados em pastas .zip, finalize com /*.zip ao invés de /*.gz. "
     )
     print("AGUARDANDO...:", end="")
-    raw_cdr_path = input()
+    raw_cdr_path = "D:\\code\\cdr\\data\\input\*.gz" # input()
     raw_cdr_path = raw_cdr_path.replace("'", "").replace('"', "").replace("/", "\\")
     input_files = glob.glob(raw_cdr_path)
     gz_file_found = zip_file_found = 0
@@ -129,9 +129,9 @@ if cdr_type_selection in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
         print()
         print("Não foram localizados arquivos para leitura.")
         print("Reveja o caminho informado.")
-        raw_cdr_path = input(
-            "Informe o caminho para leitura dos CDRs brutos. AGUARDANDO...:"
-        )
+        raw_cdr_path = "D:\\code\\cdr\\data\\output" #input(
+        #    "Informe o caminho para leitura dos CDRs brutos. AGUARDANDO...:"
+        #)
 
         raw_cdr_path = raw_cdr_path.replace("'", "").replace('"', "").replace("/", "\\")
         input_files = glob.glob(raw_cdr_path)
@@ -147,7 +147,7 @@ if cdr_type_selection in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
         print()
         retry_counter = retry_counter + 1
 
-    operator_name = ""
+    operator_name = "tim"
     eb = raw_cdr_path.lower()
     for tu in telecom_operators:
         if eb.find(tu + "\\") != -1:
@@ -179,7 +179,7 @@ if cdr_type_selection in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
             + "\\Resultados\\), ou indique o caminho desejado."
         )
         print("AGUARDANDO...:", end="")
-        output_directory = input()
+        output_directory = "D:\\code\\cdr\\data\\output" #input()
         output_directory = (
             output_directory.replace("'", "").replace('"', "").replace("/", "\\")
         )
@@ -333,6 +333,7 @@ if volte_cdr_type == "8" or cdr_type == "9" or cdr_type == "7":
     cdr_type_name = "Volte"
 if cdr_type == "10":
     cdr_type_name = "Stir"
+
 if output_format_option == "a":
     consolidated_output_path = (
         output_directory
@@ -375,7 +376,7 @@ if output_format_option == "a":
             os.mkdir(
                 output_directory + operator_name + execution_timestamp + cdr_type_name
             )
-    if cdr_type == "7":
+    elif cdr_type == "7":
         if file_format_type == "u":
             consolidated_output_file.write(
                 "Originador(list-Of-Calling-Party-Address);Data(recordOpeningTime);Hora;TipodeCDR(role-of-Node);called-Party-Address(NúmeroChamado);dialled-Party-Address(NúmeroTeclado);List-Of-Called-Asserted-Identity;Duration;Célula(accessNetworkInformation);IMSI(List-of-Subscription-ID);IMEI(private-User-Equipment-Info);MSC-Number;network-Call-Reference;causeForRecordClosing;interOperatorIdentifiers;sIP-Method\n"
@@ -385,7 +386,7 @@ if output_format_option == "a":
                 output_directory + operator_name + execution_timestamp + cdr_type_name
             )
 
-    if cdr_type == "10":
+    elif cdr_type == "10":
         if file_format_type == "u":
             consolidated_output_file.write(
                 "Originador(list-Of-Calling-Party-Address);Data(recordOpeningTime);Hora;TipodeCDR(role-of-Node);called-Party-Address(NúmeroChamado);dialled-Party-Address(NúmeroTeclado);List-Of-Called-Asserted-Identity;Duration;Célula(accessNetworkInformation);IMSI(List-of-Subscription-ID);IMEI(private-User-Equipment-Info);MSC-Number;network-Call-Reference;causeForRecordClosing;interOperatorIdentifiers;sIP-Method\n"
@@ -395,7 +396,7 @@ if output_format_option == "a":
                 output_directory + operator_name + execution_timestamp + cdr_type_name
             )
 
-    if cdr_type == "9":
+    elif cdr_type == "9":
         if file_format_type == "u":
             consolidated_output_file.write(
                 "Data;Hora;Originador;TipoCDR;NúmeroChamado;Duração;Célula\n"
@@ -437,7 +438,7 @@ for i15 in range(1, parallel_processes + 1):
             ]
         )
 
-    if cdr_type == "10":
+    elif cdr_type == "10":
         pp = subprocess.Popen(
             [
                 "python",
@@ -453,7 +454,7 @@ for i15 in range(1, parallel_processes + 1):
             ]
         )
 
-    if cdr_type == "9":
+    elif cdr_type == "9":
         pp = subprocess.Popen(
             [
                 "python",
@@ -469,7 +470,7 @@ for i15 in range(1, parallel_processes + 1):
             ]
         )
 
-    if cdr_type == "6":
+    elif cdr_type == "6":
         pp = subprocess.Popen(
             [
                 "python",
@@ -485,7 +486,8 @@ for i15 in range(1, parallel_processes + 1):
             ]
         )
 
-    if cdr_type == "1":
+    elif cdr_type == "1":
+
         pp = process_cdr_voz_ericsson(
                 npc,
                 output_format_option,
@@ -497,7 +499,7 @@ for i15 in range(1, parallel_processes + 1):
                 selection_option,
                 volte_cdr_type,
         )
-    if cdr_type == "4":
+    elif cdr_type == "4":
         pp = subprocess.Popen(
             [
                 "python",
@@ -512,7 +514,7 @@ for i15 in range(1, parallel_processes + 1):
                 selection_option,
             ]
         )
-    if cdr_type == "2" or cdr_type == "3" or cdr_type == "5":
+    elif cdr_type == "2" or cdr_type == "3" or cdr_type == "5":
         pp = subprocess.Popen(
             [
                 "python",
@@ -570,7 +572,7 @@ if output_format_option == "a":
 
                     input_file_handle.close()
 
-                if cdr_type == "6" and (
+                elif cdr_type == "6" and (
                     file_format_type == "n"
                     or file_format_type == "d"
                     or file_format_type == "nada"
@@ -719,9 +721,8 @@ if output_format_option == "a":
 
                             number_ranges_set.add(range_identifier)
 
-                        if range_identifier + nr11 in processed_ranges:
-                            if 4 > 3:
-                                range_files_dict[range_identifier + nr11].write(y2)
+                        else:
+                            range_files_dict[range_identifier + nr11].write(y2)
 
                     input_file_handle.close()
                     if len(range_files_dict) > 7999:
