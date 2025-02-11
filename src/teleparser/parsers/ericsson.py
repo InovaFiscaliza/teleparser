@@ -195,3 +195,96 @@ class EricssonParser:
         # Record type specific parsing will be implemented in derived classes
         raise NotImplementedError("Record parsing must be implemented by specific parser classes")
 
+class TransitRecordParser(EricssonParser):
+    """Parser for Transit (TRA) records - record type a0"""
+    
+    FIELD_TAGS = {
+        "84": "origin_number",
+        "96": "carrier_code",
+        "86": "imsi",
+        "9f2e": "reference_id",
+        "85": "destination_number",
+        "88": "date",
+        "89": "time",
+        "93": "billing_id",
+        "8b": "duration",
+        "9f29": "fault_code",
+        "9b": "eos_info",
+        "9c": "internal_cause",
+        "83": "call_type",
+        "9a": "call_position",
+        "95": "route",
+        "87": "disconnecting_party",
+        "8d": "time_register_to_charging"
+    }
+
+    def _parse_tra_record(self, record_data: str) -> EricssonRecord:
+        """Parse Transit record fields"""
+        field_values = {}
+        field_position = 0
+
+        while record_data[field_position] != ".":
+            tag = self._get_field_tag(record_data, field_position)
+            field_position += len(tag) + 2  # Skip tag and length indicator
+            
+            field_length = self._get_field_length_from_data(record_data[field_position:])
+            field_data = record_data[field_position + 2:field_position + field_length * 2 + 2]
+            
+            if tag in self.FIELD_TAGS:
+                field_name = self.FIELD_TAGS[tag]
+                field_values[field_name] = self._parse_field_value(tag, field_data)
+            
+            field_position += 2 + field_length * 2
+
+        return EricssonRecord(
+            record_type="TRA",
+            billing_id=field_values.get("billing_id", ""),
+            reference_id=field_values.get("reference_id", ""),
+            date=self._format_date(field_values.get("date", "")),
+            time=self._format_time(field_values.get("time", "")),
+            imsi=field_values.get("imsi", ""),
+            location_info="",  # Not present in TRA records
+            route=field_values.get("route", ""),
+            origin_number=field_values.get("origin_number", ""),
+            destination_number=field_values.get("destination_number", ""),
+            call_type=field_values.get("call_type", ""),
+            duration=field_values.get("duration", ""),
+            call_position=field_values.get("call_position", ""),
+            fault_code=field_values.get("fault_code", ""),
+            eos_info=field_values.get("eos_info", ""),
+            internal_cause=field_values.get("internal_cause", ""),
+            disconnecting_party=field_values.get("disconnecting_party", ""),
+            bssmap_cause_code="",  # Not present in TRA records
+            channel_seizure_time="",  # Not present in TRA records
+            called_party_seizure_time="",  # Not present in TRA records
+            carrier_code=field_values.get("carrier_code", ""),
+            translated_number="",  # Not present in TRA records
+            imei="",  # Not present in TRA records
+            time_register_to_charging=field_values.get("time_register_to_charging", ""),
+            interruption_time=""  # Not present in TRA records
+        )
+
+    def _parse_field_value(self, tag: str, field_data: str) -> str:
+        """Parse field value based on tag type"""
+        if tag in ("84", "85"):  # Phone numbers
+            return self._parse_phone_number(field_data)
+        elif tag in ("88", "89", "8b", "8d"):  # Time fields
+            return self._parse_time_field(field_data)
+        elif tag in ("96", "93", "95"):  # ASCII fields
+            return self._parse_ascii_field(field_data)
+        elif tag in ("9f29", "9b", "9c", "83", "9a", "87"):  # Hex integers
+            return str(int(field_data, 16))
+        return field_data
+
+    def _parse_phone_number(self, field_data: str) -> str:
+        number = ""
+        for i in range(2, len(field_data), 2):
+            number += field_data[i + 1] + field_data[i]
+        return number
+
+    def _parse_time_field(self, field_data: str) -> str:
+        return f"{int(field_data[0:2], 16)}:{int(field_data[2:4], 16)}:{int(field_data[4:6], 16)}"
+
+    def _parse_ascii_field(self, field_data: str) -> str:
+        ascii_bytes = str.encode(field_data)
+        return str(binascii.a2b_hex(ascii_bytes))[2:].replace("'", "")
