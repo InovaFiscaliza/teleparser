@@ -1,22 +1,20 @@
 ﻿import glob
-import os
 import shutil
-import sys
 from time import asctime
 from datetime import datetime
 from operator import itemgetter
 from dividearq import split_records_by_prefix
 
-def cdr_ericsson_sort_merge(base_path, cdr_database, operator_code, input_file_path):
-    diret = os.getcwd() + "\\"
+def process_cdr_voz_ericsson_sort_merge(
+    base_path, cdr_database, operator_code, input_file_path
+):
+    import os
+
     max_memory_sort_size = 6000000  # tamanho máximo a ordenar na memória (trecho: ordenar)
     max_file_sort_size = 5000000  # tamanho máximo de arquivo a ser ordenado de uma vez na memória (trecho: ordenar)
     original_input_file = input_file_path
     prefix_length = 15
 
-    timestamp = asctime().replace(":", "").replace(" ", "")
-    start_time = datetime.now()
-    consolidation_flag = "s"
     opid = {
         "0": "sID",
         "02": "TIM",
