@@ -660,6 +660,13 @@ class SMSTerminatingRecordParser(EricssonParser):
         "8a": "billing_id",
     }
 
+    def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
+        """Create SMS Terminating record from record block"""
+        record_type = record_block[0:2]
+        if record_type != EricssonRecordType.SMS_TERM:
+            return None
+        return self._parse_smst_record(record_block)
+
     def _parse_smst_record(self, record_data: str) -> EricssonRecord:
         """Parse SMS Terminating record fields"""
         field_values = {}
