@@ -766,15 +766,16 @@ class SMSTerminatingRecordParser(EricssonParser):
         "8a": "billing_id",
     }
 
-    def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
+    def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
         """Create SMS Terminating record from record block"""
-        record_type = record_block[0:2]
+        record_type = record_data[0:2]
         if record_type != EricssonRecordType.SMS_TERM:
             return None
-        return self._parse_smst_record(record_block)
 
-    def _parse_smst_record(self, record_data: str) -> EricssonRecord:
-        """Parse SMS Terminating record fields"""
+        field_values = self._parse_fields(record_data)
+        return self._create_sms_terminating_record(field_values)
+
+    def _parse_fields(self, record_data: str) -> Dict[str, str]:
         field_values = {}
         field_position = 0
 
@@ -791,49 +792,42 @@ class SMSTerminatingRecordParser(EricssonParser):
 
             if tag in self.FIELD_TAGS:
                 field_name = self.FIELD_TAGS[tag]
-                field_values[field_name] = self._parse_field_value(tag, field_data)
+                field_values[field_name] = self.parse_field(tag, field_data)
 
             field_position += 2 + field_length * 2
 
+        return field_values
+
+    def _create_sms_terminating_record(
+        self, field_values: Dict[str, str]
+    ) -> EricssonRecord:
         return EricssonRecord(
             record_type="SMSt",
             billing_id=field_values.get("billing_id", ""),
-            reference_id="",  # Not present in SMSt records
-            date=self._format_date(field_values.get("date", "")),
-            time=self._format_time(field_values.get("time", "")),
-            imsi="",  # Not present in SMSt records
-            location_info="",  # Not present in SMSt records
-            route="",  # Not present in SMSt records
-            origin_number="",  # Not present in SMSt records
+            reference_id="",
+            date=field_values.get("date", ""),
+            time=field_values.get("time", ""),
+            imsi="",
+            location_info="",
+            route="",
+            origin_number="",
             destination_number=field_values.get("destination_number", ""),
-            call_type="",  # Not present in SMSt records
-            duration="",  # Not present in SMSt records
-            call_position="",  # Not present in SMSt records
-            fault_code="",  # Not present in SMSt records
-            eos_info="",  # Not present in SMSt records
-            internal_cause="",  # Not present in SMSt records
-            disconnecting_party="",  # Not present in SMSt records
-            bssmap_cause_code="",  # Not present in SMSt records
-            channel_seizure_time="",  # Not present in SMSt records
-            called_party_seizure_time="",  # Not present in SMSt records
+            call_type="",
+            duration="",
+            call_position="",
+            fault_code="",
+            eos_info="",
+            internal_cause="",
+            disconnecting_party="",
+            bssmap_cause_code="",
+            channel_seizure_time="",
+            called_party_seizure_time="",
             carrier_code=field_values.get("carrier_code", ""),
-            translated_number="",  # Not present in SMSt records
-            imei="",  # Not present in SMSt records
-            time_register_to_charging="",  # Not present in SMSt records
-            interruption_time="",  # Not present in SMSt records
+            translated_number="",
+            imei="",
+            time_register_to_charging="",
+            interruption_time="",
         )
-
-    def _parse_field_value(self, tag: str, field_data: str) -> str:
-        """Parse field value based on tag type"""
-        if tag == "83":  # Destination number
-            return self._parse_phone_number(field_data)
-        elif tag in ("86", "87"):  # Date and time fields
-            return self._parse_time_field(field_data)
-        elif tag == "81":  # Carrier code
-            return str(int(field_data, 16))
-        elif tag == "8a":  # Billing ID
-            return self._parse_ascii_field(field_data)
-        return field_data
 
 
 class EricssonUnifiedParser:
