@@ -3,11 +3,11 @@ repos:
     rev: v0.9.4
     hooks:
       - id: ruff
-        exclude: (^tests/legacy/.*$|^ericsson\.py$)
+        exclude: (^tests/legacy/.*$|.*ericsson\.py$)
         args:
           - --fix
       - id: ruff-format
-        exclude: (^tests/legacy/.*$|^ericsson\.py$)
+        exclude: (^tests/legacy/.*$|.*ericsson\.py$)
 
 
 
@@ -15,7 +15,7 @@ repos:
     rev: v0.950
     hooks:
       - id: mypy
-        exclude: ^tests/legacy/.*$
+        exclude: (^tests/legacy/.*$|.*ericsson\.py$)
         additional_dependencies:
           - "types-pytz"
 
@@ -29,9 +29,9 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: ^tests/legacy/.*$
+        exclude: (^tests/legacy/.*$|.*ericsson\.py$)
       - id: end-of-file-fixer
-        exclude: ^tests/legacy/.*$
+        exclude: (^tests/legacy/.*$|.*ericsson\.py$)
       - id: check-yaml
       - id: check-toml
 
