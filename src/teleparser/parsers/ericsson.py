@@ -127,14 +127,46 @@ class EricssonParser:
                     break
                 yield from records
 
-    def _process_buffer(self, file_content: BinaryIO) -> List[EricssonRecord]:
+    def _validate_timestamp(self, hex_data: str, position: int) -> bool:
+        """Validate timestamp in current buffer"""
+        if 2 * self.BUFFER_SIZE - position < 10000:
+            return len(hex_data[position:].replace("'", ""))
+        return True
+    
+    def _handle_remaining_data(self, hex_data: str, position: int) -> str:
+        """Process remaining hex data between buffers"""
+        remaining = hex_data[position:].replace("'", "")
+        next_block = self._read_next_block()
+        return remaining + next_block
+    
+    def _read_next_block(self) -> str:
+        """Read next block of binary data and convert to hex string"""
+        raw_binary_data = self.file_content.read(self.BUFFER_SIZE)
+        if not raw_binary_data:
+            return ""
+        return str(binascii.b2a_hex(raw_binary_data))[2:]
+
+
+
+    def _process_buffer(self) -> List[EricssonRecord]:
         """Process a buffer of binary data"""
-        raw_binary_data = file_content.read(self.BUFFER_SIZE)
+        raw_binary_data = self.file_content.read(self.BUFFER_SIZE)
         if not raw_binary_data:
             return []
 
         self.hex_data = str(binascii.b2a_hex(raw_binary_data))
-        return self._parse_records()
+
+        records = []
+        while self.current_position < len(self.hex_data):
+            if not self._validate_timestamp(self.hex_data, self.current_position):
+                self.hex_data = self._handle_remaining_data(self.hex_data, self.current_position)
+                self.current_position = 0
+                break
+                
+            if record := self._parse_single_record():
+                records.append(record)
+                
+        return records
 
     def _parse_records(self) -> List[EricssonRecord]:
         """Parse individual records from hex data"""
@@ -216,7 +248,7 @@ class EricssonParser:
             return int(actual_length, 16)
 
         return length
-
+    
     def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
         """Create EricssonRecord instance based on record type"""
         record_type = record_block[0:2]
@@ -227,6 +259,7 @@ class EricssonParser:
         raise NotImplementedError(
             "Record parsing must be implemented by specific parser classes"
         )
+
 
 
 class TransitRecordParser(EricssonParser):
