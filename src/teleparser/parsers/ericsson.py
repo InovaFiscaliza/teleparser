@@ -1,16 +1,18 @@
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Iterator, BinaryIO
 import binascii
 import gzip
+from dataclasses import dataclass
 from enum import Enum
+from typing import BinaryIO, Iterator, List, Optional
+
 
 class EricssonRecordType(str, Enum):
     TRANSIT = "a0"  # TRA
-    ORIGINATING = "a1"  # ORI 
+    ORIGINATING = "a1"  # ORI
     FORWARDING = "a3"  # FOR
     TERMINATING = "a4"  # TER
     SMS_ORIGIN = "a5"  # SMSo
     SMS_TERM = "a7"  # SMSt
+
 
 class EricssonFieldParser:
     @staticmethod
@@ -26,11 +28,13 @@ class EricssonFieldParser:
         """Parse date/time fields"""
         return f"{int(field_data[0:2], 16):02d}:{int(field_data[2:4], 16):02d}:{int(field_data[4:6], 16):02d}"
 
+
 @dataclass
 class EricssonRecord:
     """Represents a parsed Ericsson CDR record"""
+
     record_type: str
-    billing_id: str 
+    billing_id: str
     reference_id: str
     date: str
     time: str
@@ -57,33 +61,35 @@ class EricssonRecord:
 
     def to_csv_row(self) -> str:
         """Convert record to CSV row format matching original output"""
-        return ";".join([
-            self.record_type,
-            self.billing_id.replace("'", "")[2:],
-            self.reference_id,
-            self.format_date(),
-            self.format_time(),
-            self.imsi.replace("f", ""),
-            self.location_info,
-            self.route.replace("'", "")[2:],
-            self.origin_number,
-            self.destination_number.replace("f", ""),
-            self.call_type,
-            self.duration,
-            self.call_position,
-            self.fault_code,
-            self.eos_info,
-            self.internal_cause,
-            self.disconnecting_party,
-            self.bssmap_cause_code,
-            self.channel_seizure_time,
-            self.called_party_seizure_time,
-            self.carrier_code,
-            self.translated_number,
-            self.imei.replace("f", ""),
-            self.time_register_to_charging,
-            self.interruption_time
-        ])
+        return ";".join(
+            [
+                self.record_type,
+                self.billing_id.replace("'", "")[2:],
+                self.reference_id,
+                self.format_date(),
+                self.format_time(),
+                self.imsi.replace("f", ""),
+                self.location_info,
+                self.route.replace("'", "")[2:],
+                self.origin_number,
+                self.destination_number.replace("f", ""),
+                self.call_type,
+                self.duration,
+                self.call_position,
+                self.fault_code,
+                self.eos_info,
+                self.internal_cause,
+                self.disconnecting_party,
+                self.bssmap_cause_code,
+                self.channel_seizure_time,
+                self.called_party_seizure_time,
+                self.carrier_code,
+                self.translated_number,
+                self.imei.replace("f", ""),
+                self.time_register_to_charging,
+                self.interruption_time,
+            ]
+        )
 
     def format_date(self) -> str:
         """Format date as DD/MM/YY"""
@@ -95,21 +101,23 @@ class EricssonRecord:
         time_parts = self.time.split(":")
         return f"{time_parts[0].zfill(2)}:{time_parts[1].zfill(2)}:{time_parts[2].zfill(2)}"
 
+
 FIELD_PARSERS = {
     "84": EricssonFieldParser.parse_number_field,
     "89": EricssonFieldParser.parse_datetime,
     # Add other field parsers...
 }
 
+
 class EricssonParser:
     """Base parser for Ericsson CDR binary format"""
-    
+
     BUFFER_SIZE = 1024 * 1024  # 1MB buffer
-    
+
     def __init__(self):
         self.current_position: int = 2
         self.hex_data: str = ""
-        
+
     def parse_file(self, file_path: str) -> Iterator[EricssonRecord]:
         """Main entry point for parsing a CDR file"""
         with gzip.open(file_path, "rb") as file_content:
@@ -124,55 +132,67 @@ class EricssonParser:
         raw_binary_data = file_content.read(self.BUFFER_SIZE)
         if not raw_binary_data:
             return []
-            
+
         self.hex_data = str(binascii.b2a_hex(raw_binary_data))
         return self._parse_records()
 
     def _parse_records(self) -> List[EricssonRecord]:
         """Parse individual records from hex data"""
         records = []
-        
-        while self.current_position < len(self.hex_data) and self.hex_data[self.current_position] != "'":
+
+        while (
+            self.current_position < len(self.hex_data)
+            and self.hex_data[self.current_position] != "'"
+        ):
             record = self._parse_single_record()
             if record:
                 records.append(record)
-                
+
         return records
 
     def _parse_single_record(self) -> Optional[EricssonRecord]:
         """Parse a single CDR record"""
-        current_tag = self.hex_data[self.current_position:self.current_position + 2]
-        
+        current_tag = self.hex_data[self.current_position : self.current_position + 2]
+
         if current_tag == "00":
             self.current_position += 2
             return None
-            
+
         record_block = self._read_record_block()
         if not record_block:
             return None
-            
+
         return self._create_record(record_block)
 
     def _read_record_block(self) -> Optional[str]:
         """Read a record block and handle length indicators"""
         tag_length = self._get_tag_length()
         field_length = self._get_field_length()
-        
+
         if field_length is None:
             return None
-            
-        record_data = self.hex_data[self.current_position:self.current_position + field_length * 2]
+
+        record_data = self.hex_data[
+            self.current_position : self.current_position + field_length * 2
+        ]
         self.current_position += field_length * 2
-        
+
         return record_data
 
     def _get_tag_length(self) -> int:
         """Calculate tag length based on format indicators"""
         tag_length = 1
-        if (int(self.hex_data[self.current_position + 1], 16) == 15 and 
-            int(self.hex_data[self.current_position], 16) % 2 != 0):
+        if (
+            int(self.hex_data[self.current_position + 1], 16) == 15
+            and int(self.hex_data[self.current_position], 16) % 2 != 0
+        ):
             self.current_position += 2
-            while int(self.hex_data[self.current_position:self.current_position + 2], 16) > 127:
+            while (
+                int(
+                    self.hex_data[self.current_position : self.current_position + 2], 16
+                )
+                > 127
+            ):
                 self.current_position += 2
                 tag_length += 1
         return tag_length
@@ -180,17 +200,21 @@ class EricssonParser:
     def _get_field_length(self) -> Optional[int]:
         """Get field length accounting for extended length format"""
         self.current_position += 2
-        length = int(self.hex_data[self.current_position:self.current_position + 2], 16)
-        
+        length = int(
+            self.hex_data[self.current_position : self.current_position + 2], 16
+        )
+
         if length > 127:
             length_indicator = length - 128
             if length_indicator == 0:
                 return 0
-            
+
             self.current_position += 2
-            actual_length = self.hex_data[self.current_position:self.current_position + length_indicator * 2]
+            actual_length = self.hex_data[
+                self.current_position : self.current_position + length_indicator * 2
+            ]
             return int(actual_length, 16)
-            
+
         return length
 
     def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
@@ -198,13 +222,16 @@ class EricssonParser:
         record_type = record_block[0:2]
         if record_type not in EricssonRecordType.__members__.values():
             return None
-            
+
         # Record type specific parsing will be implemented in derived classes
-        raise NotImplementedError("Record parsing must be implemented by specific parser classes")
+        raise NotImplementedError(
+            "Record parsing must be implemented by specific parser classes"
+        )
+
 
 class TransitRecordParser(EricssonParser):
     """Parser for Transit (TRA) records - record type a0"""
-    
+
     FIELD_TAGS = {
         "84": "origin_number",
         "96": "carrier_code",
@@ -222,7 +249,7 @@ class TransitRecordParser(EricssonParser):
         "9a": "call_position",
         "95": "route",
         "87": "disconnecting_party",
-        "8d": "time_register_to_charging"
+        "8d": "time_register_to_charging",
     }
 
     def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
@@ -232,7 +259,6 @@ class TransitRecordParser(EricssonParser):
             return None
         return self._parse_tra_record(record_block)
 
-
     def _parse_tra_record(self, record_data: str) -> EricssonRecord:
         """Parse Transit record fields"""
         field_values = {}
@@ -241,14 +267,18 @@ class TransitRecordParser(EricssonParser):
         while record_data[field_position] != ".":
             tag = self._get_field_tag(record_data, field_position)
             field_position += len(tag) + 2  # Skip tag and length indicator
-            
-            field_length = self._get_field_length_from_data(record_data[field_position:])
-            field_data = record_data[field_position + 2:field_position + field_length * 2 + 2]
-            
+
+            field_length = self._get_field_length_from_data(
+                record_data[field_position:]
+            )
+            field_data = record_data[
+                field_position + 2 : field_position + field_length * 2 + 2
+            ]
+
             if tag in self.FIELD_TAGS:
                 field_name = self.FIELD_TAGS[tag]
                 field_values[field_name] = self._parse_field_value(tag, field_data)
-            
+
             field_position += 2 + field_length * 2
 
         return EricssonRecord(
@@ -276,7 +306,7 @@ class TransitRecordParser(EricssonParser):
             translated_number="",  # Not present in TRA records
             imei="",  # Not present in TRA records
             time_register_to_charging=field_values.get("time_register_to_charging", ""),
-            interruption_time=""  # Not present in TRA records
+            interruption_time="",  # Not present in TRA records
         )
 
     def _parse_field_value(self, tag: str, field_data: str) -> str:
@@ -304,9 +334,10 @@ class TransitRecordParser(EricssonParser):
         ascii_bytes = str.encode(field_data)
         return str(binascii.a2b_hex(ascii_bytes))[2:].replace("'", "")
 
+
 class OriginatingRecordParser(EricssonParser):
     """Parser for Originating (ORI) records - record type a1"""
-    
+
     FIELD_TAGS = {
         "84": "origin_number",
         "97": "carrier_code",
@@ -329,7 +360,7 @@ class OriginatingRecordParser(EricssonParser):
         "9b": "location_info",
         "8e": "time_register_to_charging",
         "9f4a": "translated_number",
-        "85": "imei"
+        "85": "imei",
     }
 
     def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
@@ -337,7 +368,7 @@ class OriginatingRecordParser(EricssonParser):
         record_type = record_block[0:2]
         if record_type != EricssonRecordType.ORIGINATING:
             return None
-        return self._parse_ori_record(record_block) 
+        return self._parse_ori_record(record_block)
 
     def _parse_ori_record(self, record_data: str) -> EricssonRecord:
         """Parse Originating record fields"""
@@ -347,14 +378,18 @@ class OriginatingRecordParser(EricssonParser):
         while record_data[field_position] != ".":
             tag = self._get_field_tag(record_data, field_position)
             field_position += len(tag) + 2
-            
-            field_length = self._get_field_length_from_data(record_data[field_position:])
-            field_data = record_data[field_position + 2:field_position + field_length * 2 + 2]
-            
+
+            field_length = self._get_field_length_from_data(
+                record_data[field_position:]
+            )
+            field_data = record_data[
+                field_position + 2 : field_position + field_length * 2 + 2
+            ]
+
             if tag in self.FIELD_TAGS:
                 field_name = self.FIELD_TAGS[tag]
                 field_values[field_name] = self._parse_field_value(tag, field_data)
-            
+
             field_position += 2 + field_length * 2
 
         return EricssonRecord(
@@ -364,7 +399,9 @@ class OriginatingRecordParser(EricssonParser):
             date=self._format_date(field_values.get("date", "")),
             time=self._format_time(field_values.get("time", "")),
             imsi=field_values.get("imsi", ""),
-            location_info=self._format_location_info(field_values.get("location_info", "")),
+            location_info=self._format_location_info(
+                field_values.get("location_info", "")
+            ),
             route=field_values.get("route", ""),
             origin_number=field_values.get("origin_number", ""),
             destination_number=field_values.get("destination_number", ""),
@@ -382,25 +419,26 @@ class OriginatingRecordParser(EricssonParser):
             translated_number=field_values.get("translated_number", ""),
             imei=field_values.get("imei", ""),
             time_register_to_charging=field_values.get("time_register_to_charging", ""),
-            interruption_time=""  # Not present in ORI records
+            interruption_time="",  # Not present in ORI records
         )
 
     def _format_location_info(self, location_data: str) -> str:
         """Format location information specific to ORI records"""
         if not location_data:
             return ""
-            
+
         parts = [
             f"{int(location_data[1], 16)}{int(location_data[0], 16)}{int(location_data[3], 16)}",
             f"{int(location_data[5], 16)}{int(location_data[4], 16)}{int(location_data[2], 16)}",
             str(int(location_data[6:10], 16)),
-            str(int(location_data[10:14], 16))
+            str(int(location_data[10:14], 16)),
         ]
         return "-".join(parts)
 
+
 class ForwardingRecordParser(EricssonParser):
     """Parser for Forwarding (FOR) records - record type a3"""
-    
+
     FIELD_TAGS = {
         "84": "origin_number",
         "9a": "carrier_code",
@@ -419,7 +457,7 @@ class ForwardingRecordParser(EricssonParser):
         "99": "route",
         "8c": "disconnecting_party",
         "92": "time_register_to_charging",
-        "86": "imei"
+        "86": "imei",
     }
 
     def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
@@ -437,14 +475,18 @@ class ForwardingRecordParser(EricssonParser):
         while record_data[field_position] != ".":
             tag = self._get_field_tag(record_data, field_position)
             field_position += len(tag) + 2
-            
-            field_length = self._get_field_length_from_data(record_data[field_position:])
-            field_data = record_data[field_position + 2:field_position + field_length * 2 + 2]
-            
+
+            field_length = self._get_field_length_from_data(
+                record_data[field_position:]
+            )
+            field_data = record_data[
+                field_position + 2 : field_position + field_length * 2 + 2
+            ]
+
             if tag in self.FIELD_TAGS:
                 field_name = self.FIELD_TAGS[tag]
                 field_values[field_name] = self._parse_field_value(tag, field_data)
-            
+
             field_position += 2 + field_length * 2
 
         return EricssonRecord(
@@ -472,12 +514,13 @@ class ForwardingRecordParser(EricssonParser):
             translated_number="",  # Not present in FOR records
             imei=field_values.get("imei", ""),
             time_register_to_charging=field_values.get("time_register_to_charging", ""),
-            interruption_time=""  # Not present in FOR records
+            interruption_time="",  # Not present in FOR records
         )
+
 
 class TerminatingRecordParser(EricssonParser):
     """Parser for Terminating (TER) records - record type a4"""
-    
+
     FIELD_TAGS = {
         "84": "origin_number",
         "97": "carrier_code",
@@ -499,7 +542,7 @@ class TerminatingRecordParser(EricssonParser):
         "9a": "called_party_seizure_time",
         "9f55": "bssmap_cause_code",
         "9b": "location_info",
-        "8f": "time_register_to_charging"
+        "8f": "time_register_to_charging",
     }
 
     def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
@@ -517,14 +560,18 @@ class TerminatingRecordParser(EricssonParser):
         while record_data[field_position] != ".":
             tag = self._get_field_tag(record_data, field_position)
             field_position += len(tag) + 2
-            
-            field_length = self._get_field_length_from_data(record_data[field_position:])
-            field_data = record_data[field_position + 2:field_position + field_length * 2 + 2]
-            
+
+            field_length = self._get_field_length_from_data(
+                record_data[field_position:]
+            )
+            field_data = record_data[
+                field_position + 2 : field_position + field_length * 2 + 2
+            ]
+
             if tag in self.FIELD_TAGS:
                 field_name = self.FIELD_TAGS[tag]
                 field_values[field_name] = self._parse_field_value(tag, field_data)
-            
+
             field_position += 2 + field_length * 2
 
         return EricssonRecord(
@@ -534,7 +581,9 @@ class TerminatingRecordParser(EricssonParser):
             date=self._format_date(field_values.get("date", "")),
             time=self._format_time(field_values.get("time", "")),
             imsi=field_values.get("imsi", ""),
-            location_info=self._format_location_info(field_values.get("location_info", "")),
+            location_info=self._format_location_info(
+                field_values.get("location_info", "")
+            ),
             route=field_values.get("route", ""),
             origin_number=field_values.get("origin_number", ""),
             destination_number=field_values.get("destination_number", ""),
@@ -552,24 +601,26 @@ class TerminatingRecordParser(EricssonParser):
             translated_number="",  # Not present in TER records
             imei=field_values.get("imei", ""),
             time_register_to_charging=field_values.get("time_register_to_charging", ""),
-            interruption_time=""  # Not present in TER records
+            interruption_time="",  # Not present in TER records
         )
 
     def _format_location_info(self, location_data: str) -> str:
         """Format location information specific to TER records"""
         if not location_data:
             return ""
-            
+
         parts = [
             f"{int(location_data[1], 16)}{int(location_data[0], 16)}{int(location_data[3], 16)}",
             f"{int(location_data[5], 16)}{int(location_data[4], 16)}{int(location_data[2], 16)}",
             str(int(location_data[6:10], 16)),
-            str(int(location_data[10:14], 16))
+            str(int(location_data[10:14], 16)),
         ]
         return "-".join(parts)
+
+
 class SMSOriginRecordParser(EricssonParser):
     """Parser for SMS Origin (SMSo) records - record type a5"""
-    
+
     FIELD_TAGS = {
         "8e": "location_info",
         "84": "origin_number",
@@ -580,7 +631,7 @@ class SMSOriginRecordParser(EricssonParser):
         "88": "time",
         "8b": "billing_id",
         "83": "call_type",
-        "9f2a": "call_position"
+        "9f2a": "call_position",
     }
 
     def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
@@ -598,14 +649,18 @@ class SMSOriginRecordParser(EricssonParser):
         while record_data[field_position] != ".":
             tag = self._get_field_tag(record_data, field_position)
             field_position += len(tag) + 2
-            
-            field_length = self._get_field_length_from_data(record_data[field_position:])
-            field_data = record_data[field_position + 2:field_position + field_length * 2 + 2]
-            
+
+            field_length = self._get_field_length_from_data(
+                record_data[field_position:]
+            )
+            field_data = record_data[
+                field_position + 2 : field_position + field_length * 2 + 2
+            ]
+
             if tag in self.FIELD_TAGS:
                 field_name = self.FIELD_TAGS[tag]
                 field_values[field_name] = self._parse_field_value(tag, field_data)
-            
+
             field_position += 2 + field_length * 2
 
         return EricssonRecord(
@@ -615,7 +670,9 @@ class SMSOriginRecordParser(EricssonParser):
             date=self._format_date(field_values.get("date", "")),
             time=self._format_time(field_values.get("time", "")),
             imsi="",  # Not present in SMSo records
-            location_info=self._format_location_info(field_values.get("location_info", "")),
+            location_info=self._format_location_info(
+                field_values.get("location_info", "")
+            ),
             route="",  # Not present in SMSo records
             origin_number=field_values.get("origin_number", ""),
             destination_number="",  # Not present in SMSo records
@@ -633,21 +690,22 @@ class SMSOriginRecordParser(EricssonParser):
             translated_number="",  # Not present in SMSo records
             imei=field_values.get("imei", ""),
             time_register_to_charging="",  # Not present in SMSo records
-            interruption_time=""  # Not present in SMSo records
+            interruption_time="",  # Not present in SMSo records
         )
 
     def _format_location_info(self, location_data: str) -> str:
         """Format location information specific to SMSo records"""
         if not location_data:
             return ""
-            
+
         parts = [
             f"{int(location_data[1], 16)}{int(location_data[0], 16)}{int(location_data[3], 16)}",
             f"{int(location_data[5], 16)}{int(location_data[4], 16)}{int(location_data[2], 16)}",
             str(int(location_data[6:10], 16)),
-            str(int(location_data[10:14], 16))
+            str(int(location_data[10:14], 16)),
         ]
         return "-".join(parts)
+
 
 class SMSTerminatingRecordParser(EricssonParser):
     """Parser for SMS Terminating (SMSt) records - record type a7"""
@@ -728,3 +786,41 @@ class SMSTerminatingRecordParser(EricssonParser):
         elif tag == "8a":  # Billing ID
             return self._parse_ascii_field(field_data)
         return field_data
+
+
+class EricssonUnifiedParser:
+    """Unified parser system for all Ericsson CDR record types"""
+
+    def __init__(self):
+        self.parsers = {
+            EricssonRecordType.TRANSIT: TransitRecordParser(),
+            EricssonRecordType.ORIGINATING: OriginatingRecordParser(),
+            EricssonRecordType.FORWARDING: ForwardingRecordParser(),
+            EricssonRecordType.TERMINATING: TerminatingRecordParser(),
+            EricssonRecordType.SMS_ORIGIN: SMSOriginRecordParser(),
+            EricssonRecordType.SMS_TERM: SMSTerminatingRecordParser(),
+        }
+
+    def parse_file(self, file_path: str) -> Iterator[EricssonRecord]:
+        """Parse CDR file using appropriate parser based on record type"""
+        for parser in self.parsers.values():
+            yield from parser.parse_file(file_path)
+
+    def parse_records_to_csv(self, input_path: str, output_path: str):
+        """Parse CDR file and write records to CSV"""
+        with open(output_path, "w") as out_file:
+            out_file.write(self._get_csv_header())
+            for record in self.parse_file(input_path):
+                out_file.write(record.to_csv_row() + "\n")
+
+    @staticmethod
+    def _get_csv_header() -> str:
+        """Return CSV header matching the original format"""
+        return (
+            "Tipo_de_chamada;Bilhetador;Referencia;Data;Hora;IMSI;1stCelA;"
+            "Outgoing_route;Origem;Destino;Type_of_calling_subscriber;TTC;"
+            "Call_position;Fault_code;EOS_info;Internal_cause_and_location;"
+            "Disconnecting_party;BSSMAP_cause_code;Time_for_calling_party_traffic_channel_seizure;"
+            "Time_for_called_party_traffic_channel_seizure;Call_identification_number;"
+            "Translated_number;IMEI;TimefromRregistertoStartofCharging;InterruptionTime\n"
+        )
