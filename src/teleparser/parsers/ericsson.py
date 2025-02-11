@@ -224,6 +224,7 @@ class TransitRecordParser(EricssonParser):
         "87": "disconnecting_party",
         "8d": "time_register_to_charging"
     }
+        record_type = record_block[0:2]
 
     def _parse_tra_record(self, record_data: str) -> EricssonRecord:
         """Parse Transit record fields"""
