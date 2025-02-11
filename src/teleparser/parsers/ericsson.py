@@ -691,15 +691,16 @@ class SMSOriginRecordParser(EricssonParser):
         "9f2a": "call_position",
     }
 
-    def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
+    def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
         """Create SMS Origin record from record block"""
-        record_type = record_block[0:2]
+        record_type = record_data[0:2]
         if record_type != EricssonRecordType.SMS_ORIGIN:
             return None
-        return self._parse_smso_record(record_block)
 
-    def _parse_smso_record(self, record_data: str) -> EricssonRecord:
-        """Parse SMS Origin record fields"""
+        field_values = self._parse_fields(record_data)
+        return self._create_sms_origin_record(field_values)
+
+    def _parse_fields(self, record_data: str) -> Dict[str, str]:
         field_values = {}
         field_position = 0
 
@@ -716,52 +717,42 @@ class SMSOriginRecordParser(EricssonParser):
 
             if tag in self.FIELD_TAGS:
                 field_name = self.FIELD_TAGS[tag]
-                field_values[field_name] = self._parse_field_value(tag, field_data)
+                field_values[field_name] = self.parse_field(tag, field_data)
 
             field_position += 2 + field_length * 2
 
+        return field_values
+
+    def _create_sms_origin_record(self, field_values: Dict[str, str]) -> EricssonRecord:
         return EricssonRecord(
             record_type="SMSo",
             billing_id=field_values.get("billing_id", ""),
             reference_id=field_values.get("reference_id", ""),
-            date=self._format_date(field_values.get("date", "")),
-            time=self._format_time(field_values.get("time", "")),
-            imsi="",  # Not present in SMSo records
-            location_info=self._format_location_info(
+            date=field_values.get("date", ""),
+            time=field_values.get("time", ""),
+            imsi="",
+            location_info=self.field_parser._parse_location_info(
                 field_values.get("location_info", "")
             ),
-            route="",  # Not present in SMSo records
+            route="",
             origin_number=field_values.get("origin_number", ""),
-            destination_number="",  # Not present in SMSo records
+            destination_number="",
             call_type=field_values.get("call_type", ""),
-            duration="",  # Not present in SMSo records
+            duration="",
             call_position=field_values.get("call_position", ""),
-            fault_code="",  # Not present in SMSo records
-            eos_info="",  # Not present in SMSo records
-            internal_cause="",  # Not present in SMSo records
-            disconnecting_party="",  # Not present in SMSo records
-            bssmap_cause_code="",  # Not present in SMSo records
-            channel_seizure_time="",  # Not present in SMSo records
-            called_party_seizure_time="",  # Not present in SMSo records
+            fault_code="",
+            eos_info="",
+            internal_cause="",
+            disconnecting_party="",
+            bssmap_cause_code="",
+            channel_seizure_time="",
+            called_party_seizure_time="",
             carrier_code=field_values.get("carrier_code", ""),
-            translated_number="",  # Not present in SMSo records
+            translated_number="",
             imei=field_values.get("imei", ""),
-            time_register_to_charging="",  # Not present in SMSo records
-            interruption_time="",  # Not present in SMSo records
+            time_register_to_charging="",
+            interruption_time="",
         )
-
-    def _format_location_info(self, location_data: str) -> str:
-        """Format location information specific to SMSo records"""
-        if not location_data:
-            return ""
-
-        parts = [
-            f"{int(location_data[1], 16)}{int(location_data[0], 16)}{int(location_data[3], 16)}",
-            f"{int(location_data[5], 16)}{int(location_data[4], 16)}{int(location_data[2], 16)}",
-            str(int(location_data[6:10], 16)),
-            str(int(location_data[10:14], 16)),
-        ]
-        return "-".join(parts)
 
 
 class SMSTerminatingRecordParser(EricssonParser):
