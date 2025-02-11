@@ -94,7 +94,13 @@ class EricssonRecord:
         """Format time as HH:MM:SS"""
         time_parts = self.time.split(":")
         return f"{time_parts[0].zfill(2)}:{time_parts[1].zfill(2)}:{time_parts[2].zfill(2)}"
+
+FIELD_PARSERS = {
     "84": EricssonFieldParser.parse_number_field,
+    "89": EricssonFieldParser.parse_datetime,
+    # Add other field parsers...
+}
+
 class EricssonParser:
     """Base parser for Ericsson CDR binary format"""
     
@@ -289,3 +295,90 @@ class TransitRecordParser(EricssonParser):
     def _parse_ascii_field(self, field_data: str) -> str:
         ascii_bytes = str.encode(field_data)
         return str(binascii.a2b_hex(ascii_bytes))[2:].replace("'", "")
+
+class OriginatingRecordParser(EricssonParser):
+    """Parser for Originating (ORI) records - record type a1"""
+    
+    FIELD_TAGS = {
+        "84": "origin_number",
+        "97": "carrier_code",
+        "86": "imsi",
+        "9f44": "reference_id",
+        "87": "destination_number",
+        "89": "date",
+        "8a": "time",
+        "94": "billing_id",
+        "8c": "duration",
+        "9f3b": "fault_code",
+        "9f22": "eos_info",
+        "9f23": "internal_cause",
+        "83": "call_type",
+        "9f21": "call_position",
+        "96": "route",
+        "88": "disconnecting_party",
+        "9a": "channel_seizure_time",
+        "9f62": "bssmap_cause_code",
+        "9b": "location_info",
+        "8e": "time_register_to_charging",
+        "9f4a": "translated_number",
+        "85": "imei"
+    }
+
+    def _parse_ori_record(self, record_data: str) -> EricssonRecord:
+        """Parse Originating record fields"""
+        field_values = {}
+        field_position = 0
+
+        while record_data[field_position] != ".":
+            tag = self._get_field_tag(record_data, field_position)
+            field_position += len(tag) + 2
+            
+            field_length = self._get_field_length_from_data(record_data[field_position:])
+            field_data = record_data[field_position + 2:field_position + field_length * 2 + 2]
+            
+            if tag in self.FIELD_TAGS:
+                field_name = self.FIELD_TAGS[tag]
+                field_values[field_name] = self._parse_field_value(tag, field_data)
+            
+            field_position += 2 + field_length * 2
+
+        return EricssonRecord(
+            record_type="ORI",
+            billing_id=field_values.get("billing_id", ""),
+            reference_id=field_values.get("reference_id", ""),
+            date=self._format_date(field_values.get("date", "")),
+            time=self._format_time(field_values.get("time", "")),
+            imsi=field_values.get("imsi", ""),
+            location_info=self._format_location_info(field_values.get("location_info", "")),
+            route=field_values.get("route", ""),
+            origin_number=field_values.get("origin_number", ""),
+            destination_number=field_values.get("destination_number", ""),
+            call_type=field_values.get("call_type", ""),
+            duration=field_values.get("duration", ""),
+            call_position=field_values.get("call_position", ""),
+            fault_code=field_values.get("fault_code", ""),
+            eos_info=field_values.get("eos_info", ""),
+            internal_cause=field_values.get("internal_cause", ""),
+            disconnecting_party=field_values.get("disconnecting_party", ""),
+            bssmap_cause_code=field_values.get("bssmap_cause_code", ""),
+            channel_seizure_time=field_values.get("channel_seizure_time", ""),
+            called_party_seizure_time="",  # Not present in ORI records
+            carrier_code=field_values.get("carrier_code", ""),
+            translated_number=field_values.get("translated_number", ""),
+            imei=field_values.get("imei", ""),
+            time_register_to_charging=field_values.get("time_register_to_charging", ""),
+            interruption_time=""  # Not present in ORI records
+        )
+
+    def _format_location_info(self, location_data: str) -> str:
+        """Format location information specific to ORI records"""
+        if not location_data:
+            return ""
+            
+        parts = [
+            f"{int(location_data[1], 16)}{int(location_data[0], 16)}{int(location_data[3], 16)}",
+            f"{int(location_data[5], 16)}{int(location_data[4], 16)}{int(location_data[2], 16)}",
+            str(int(location_data[6:10], 16)),
+            str(int(location_data[10:14], 16))
+        ]
+        return "-".join(parts)
