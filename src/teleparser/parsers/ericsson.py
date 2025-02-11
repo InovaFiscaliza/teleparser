@@ -1,4 +1,5 @@
 import binascii
+from contextlib import contextmanager
 import gzip
 from dataclasses import dataclass
 from enum import Enum
@@ -108,6 +109,30 @@ FIELD_PARSERS = {
     # Add other field parsers...
 }
 
+class BufferManager:
+    """Manages CDR file reading and hex conversion"""
+
+    def __init__(self, buffer_size: int):
+        self.buffer_size = buffer_size
+        self.file_handle: Optional[BinaryIO] = None
+        self.current_buffer: str = ""
+
+    @contextmanager
+    def open(self, file_path: str):
+        with gzip.open(file_path, "rb") as self.file_handle:
+            yield self
+
+    def has_data(self) -> bool:
+        return bool(self.file_handle and not self.file_handle.closed)
+
+    def read_buffer(self) -> str:
+        raw_data = self.file_handle.read(self.buffer_size)
+        if not raw_data:
+            return ""
+        return str(binascii.b2a_hex(raw_data))
+    
+
+
 
 class EricssonParser:
     """Base parser for Ericsson CDR binary format"""
@@ -117,6 +142,7 @@ class EricssonParser:
     def __init__(self):
         self.current_position: int = 2
         self.hex_data: str = ""
+        self.file_content: BinaryIO = None
 
     def parse_file(self, file_path: str) -> Iterator[EricssonRecord]:
         """Main entry point for parsing a CDR file"""
