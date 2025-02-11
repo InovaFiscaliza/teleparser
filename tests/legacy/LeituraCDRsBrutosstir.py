@@ -6,6 +6,8 @@ import sys
 import time
 import zipfile
 from datetime import datetime
+from cdrVozEricsson import process_cdr_voz_ericsson
+from cdrEricssonVozOrdenaAglutina import process_cdr_voz_ericsson_sort_merge
 
 current_directory = os.getcwd()
 
@@ -299,7 +301,7 @@ if cdr_type_selection == "8":
     volte_cdr_type = cdr_type_selection
     cdr_type = "1"
 
-parallel_processes = 5
+parallel_processes = 1
 progress_percentage = 5
 print(output_format_option, operator_name)
 
@@ -484,10 +486,7 @@ for i15 in range(1, parallel_processes + 1):
         )
 
     if cdr_type == "1":
-        pp = subprocess.Popen(
-            [
-                "python",
-                current_directory + "\\cdrVozEricsson.py",
+        pp = process_cdr_voz_ericsson(
                 npc,
                 output_format_option,
                 operator_name,
@@ -497,7 +496,6 @@ for i15 in range(1, parallel_processes + 1):
                 str(parallel_processes),
                 selection_option,
                 volte_cdr_type,
-            ]
         )
     if cdr_type == "4":
         pp = subprocess.Popen(
@@ -532,8 +530,6 @@ for i15 in range(1, parallel_processes + 1):
         )
 
 opera = ""
-
-breakpoint()
 
 processed_count = 0
 file_count = 0
@@ -917,15 +913,11 @@ if vac1 == "a" and cdr_type in voice_cdr_types:
     print("Início de consolidação e ordenação...", consolidation_start_time)
     print()
     if cdr_type == "1":
-        p = subprocess.call(
-            [
-                "python",
-                "cdrEricssonVozOrdenaAglutina.py",
+        p = process_cdr_voz_ericsson_sort_merge(
                 output_directory,
                 execution_timestamp,
                 operator_name,
                 consolidated_output_path,
-            ]
         )
 
     if cdr_type == "2" or cdr_type == "3" or cdr_type == "5":
