@@ -452,3 +452,89 @@ class ForwardingRecordParser(EricssonParser):
             time_register_to_charging=field_values.get("time_register_to_charging", ""),
             interruption_time=""  # Not present in FOR records
         )
+
+class TerminatingRecordParser(EricssonParser):
+    """Parser for Terminating (TER) records - record type a4"""
+    
+    FIELD_TAGS = {
+        "84": "origin_number",
+        "97": "carrier_code",
+        "87": "imei",
+        "86": "imsi",
+        "9f43": "reference_id",
+        "85": "destination_number",
+        "8a": "date",
+        "8b": "time",
+        "94": "billing_id",
+        "8d": "duration",
+        "9f3b": "fault_code",
+        "9f22": "eos_info",
+        "9f23": "internal_cause",
+        "83": "call_type",
+        "9f21": "call_position",
+        "96": "route",
+        "89": "disconnecting_party",
+        "9a": "called_party_seizure_time",
+        "9f55": "bssmap_cause_code",
+        "9b": "location_info",
+        "8f": "time_register_to_charging"
+    }
+
+    def _parse_ter_record(self, record_data: str) -> EricssonRecord:
+        """Parse Terminating record fields"""
+        field_values = {}
+        field_position = 0
+
+        while record_data[field_position] != ".":
+            tag = self._get_field_tag(record_data, field_position)
+            field_position += len(tag) + 2
+            
+            field_length = self._get_field_length_from_data(record_data[field_position:])
+            field_data = record_data[field_position + 2:field_position + field_length * 2 + 2]
+            
+            if tag in self.FIELD_TAGS:
+                field_name = self.FIELD_TAGS[tag]
+                field_values[field_name] = self._parse_field_value(tag, field_data)
+            
+            field_position += 2 + field_length * 2
+
+        return EricssonRecord(
+            record_type="TER",
+            billing_id=field_values.get("billing_id", ""),
+            reference_id=field_values.get("reference_id", ""),
+            date=self._format_date(field_values.get("date", "")),
+            time=self._format_time(field_values.get("time", "")),
+            imsi=field_values.get("imsi", ""),
+            location_info=self._format_location_info(field_values.get("location_info", "")),
+            route=field_values.get("route", ""),
+            origin_number=field_values.get("origin_number", ""),
+            destination_number=field_values.get("destination_number", ""),
+            call_type=field_values.get("call_type", ""),
+            duration=field_values.get("duration", ""),
+            call_position=field_values.get("call_position", ""),
+            fault_code=field_values.get("fault_code", ""),
+            eos_info=field_values.get("eos_info", ""),
+            internal_cause=field_values.get("internal_cause", ""),
+            disconnecting_party=field_values.get("disconnecting_party", ""),
+            bssmap_cause_code=field_values.get("bssmap_cause_code", ""),
+            channel_seizure_time="",  # Not present in TER records
+            called_party_seizure_time=field_values.get("called_party_seizure_time", ""),
+            carrier_code=field_values.get("carrier_code", ""),
+            translated_number="",  # Not present in TER records
+            imei=field_values.get("imei", ""),
+            time_register_to_charging=field_values.get("time_register_to_charging", ""),
+            interruption_time=""  # Not present in TER records
+        )
+
+    def _format_location_info(self, location_data: str) -> str:
+        """Format location information specific to TER records"""
+        if not location_data:
+            return ""
+            
+        parts = [
+            f"{int(location_data[1], 16)}{int(location_data[0], 16)}{int(location_data[3], 16)}",
+            f"{int(location_data[5], 16)}{int(location_data[4], 16)}{int(location_data[2], 16)}",
+            str(int(location_data[6:10], 16)),
+            str(int(location_data[10:14], 16))
+        ]
+        return "-".join(parts)
