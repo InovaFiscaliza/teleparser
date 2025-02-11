@@ -520,15 +520,16 @@ class ForwardingRecordParser(EricssonParser):
         "86": "imei",
     }
 
-    def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
+    def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
         """Create Forwarding record from record block"""
-        record_type = record_block[0:2]
+        record_type = record_data[0:2]
         if record_type != EricssonRecordType.FORWARDING:
             return None
-        return self._parse_for_record(record_block)
 
-    def _parse_for_record(self, record_data: str) -> EricssonRecord:
-        """Parse Forwarding record fields"""
+        field_values = self._parse_fields(record_data)
+        return self._create_forwarding_record(field_values)
+
+    def _parse_fields(self, record_data: str) -> Dict[str, str]:
         field_values = {}
         field_position = 0
 
@@ -545,16 +546,19 @@ class ForwardingRecordParser(EricssonParser):
 
             if tag in self.FIELD_TAGS:
                 field_name = self.FIELD_TAGS[tag]
-                field_values[field_name] = self._parse_field_value(tag, field_data)
+                field_values[field_name] = self.parse_field(tag, field_data)
 
             field_position += 2 + field_length * 2
 
+        return field_values
+
+    def _create_forwarding_record(self, field_values: Dict[str, str]) -> EricssonRecord:
         return EricssonRecord(
             record_type="FOR",
             billing_id=field_values.get("billing_id", ""),
             reference_id=field_values.get("reference_id", ""),
-            date=self._format_date(field_values.get("date", "")),
-            time=self._format_time(field_values.get("time", "")),
+            date=field_values.get("date", ""),
+            time=field_values.get("time", ""),
             imsi=field_values.get("imsi", ""),
             location_info="",  # Not present in FOR records
             route=field_values.get("route", ""),
@@ -567,14 +571,14 @@ class ForwardingRecordParser(EricssonParser):
             eos_info=field_values.get("eos_info", ""),
             internal_cause=field_values.get("internal_cause", ""),
             disconnecting_party=field_values.get("disconnecting_party", ""),
-            bssmap_cause_code="",  # Not present in FOR records
-            channel_seizure_time="",  # Not present in FOR records
-            called_party_seizure_time="",  # Not present in FOR records
+            bssmap_cause_code="",
+            channel_seizure_time="",
+            called_party_seizure_time="",
             carrier_code=field_values.get("carrier_code", ""),
-            translated_number="",  # Not present in FOR records
+            translated_number="",
             imei=field_values.get("imei", ""),
             time_register_to_charging=field_values.get("time_register_to_charging", ""),
-            interruption_time="",  # Not present in FOR records
+            interruption_time="",
         )
 
 
