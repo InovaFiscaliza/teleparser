@@ -583,6 +583,13 @@ class SMSOriginRecordParser(EricssonParser):
         "9f2a": "call_position"
     }
 
+    def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
+        """Create SMS Origin record from record block"""
+        record_type = record_block[0:2]
+        if record_type != EricssonRecordType.SMS_ORIGIN:
+            return None
+        return self._parse_smso_record(record_block)
+
     def _parse_smso_record(self, record_data: str) -> EricssonRecord:
         """Parse SMS Origin record fields"""
         field_values = {}
