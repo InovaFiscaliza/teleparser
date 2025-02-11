@@ -131,7 +131,148 @@ class BufferManager:
             return ""
         return str(binascii.b2a_hex(raw_data))
     
+class RecordValidator:
+    """Validates CDR record structure and content"""
 
+    TIMESTAMP_THRESHOLD = 10000  # Threshold for timestamp validation
+
+    def is_valid_timestamp(self, hex_data: str, position: int) -> bool:
+        """Validate timestamp in current buffer position"""
+        if 2 * BufferManager.BUFFER_SIZE - position < self.TIMESTAMP_THRESHOLD:
+            return len(hex_data[position:].replace("'", "")) >= self.TIMESTAMP_THRESHOLD
+        return True
+
+    def is_valid_record_type(self, record_type: str) -> bool:
+        """Verify if record type is supported"""
+        return record_type in EricssonRecordType.__members__.values()
+
+    def validate_field_length(self, length: int) -> bool:
+        """Validate field length indicators"""
+        if length > 127:
+            length_indicator = length - 128
+            return length_indicator != 0
+        return True
+
+    def validate_record_structure(self, record_data: str) -> bool:
+        """Validate overall record structure"""
+        return (
+            record_data
+            and len(record_data) >= 4  # Minimum record size
+            and record_data[-1] == "."  # Record terminator
+        )
+
+
+class RecordReader:
+    """Handles reading and validation of individual CDR records"""
+
+    def __init__(self):
+        self.current_position: int = 2
+        self.validator = RecordValidator()
+
+    def read_records(self, buffer: BufferManager) -> Iterator[str]:
+        hex_data = buffer.read_buffer()
+        while self.current_position < len(hex_data):
+            if not self.validator.is_valid_timestamp(hex_data, self.current_position):
+                remaining_data = self._handle_buffer_boundary(hex_data)
+                if remaining_data:
+                    hex_data = remaining_data
+                    self.current_position = 0
+                    continue
+                break
+
+            record = self._read_single_record(hex_data)
+            if record:
+                yield record
+
+    def _read_single_record(self, hex_data: str) -> Optional[str]:
+        record_type = hex_data[self.current_position : self.current_position + 2]
+        if record_type == "00":
+            self.current_position += 2
+            return None
+
+        record_block = self._read_record_block(hex_data)
+        return record_block if record_block else None
+
+    def _read_record_block(self, hex_data: str) -> Optional[str]:
+        tag_length = self._calculate_tag_length(hex_data)
+        field_length = self._calculate_field_length(hex_data)
+
+        if field_length is None:
+            return None
+
+        record_data = hex_data[
+            self.current_position : self.current_position + field_length * 2
+        ]
+        self.current_position += field_length * 2
+
+        return record_data
+    
+class FieldParserFactory:
+    """Factory for creating and managing field parsers"""
+
+    def __init__(self):
+        self.parsers = {
+            "number": self._parse_phone_number,
+            "datetime": self._parse_time_field,
+            "ascii": self._parse_ascii_field,
+            "hex": self._parse_hex_integer,
+            "location": self._parse_location_info,
+        }
+
+        self.field_types = {
+            "84": "number",  # Phone numbers
+            "85": "number",
+            "88": "datetime",  # Date/time fields
+            "89": "datetime",
+            "8b": "datetime",
+            "8d": "datetime",
+            "96": "ascii",  # ASCII fields
+            "93": "ascii",
+            "95": "ascii",
+            "9f29": "hex",  # Hex integers
+            "9b": "hex",
+            "9c": "hex",
+            "83": "hex",
+            "9a": "hex",
+            "87": "hex",
+        }
+
+    def get_parser(self, field_tag: str):
+        """Get appropriate parser for field type"""
+        field_type = self.field_types.get(field_tag)
+        return self.parsers.get(field_type, lambda x: x)
+
+    @staticmethod
+    def _parse_phone_number(field_data: str) -> str:
+        number = ""
+        for i in range(2, len(field_data), 2):
+            number += field_data[i + 1] + field_data[i]
+        return number
+
+    @staticmethod
+    def _parse_time_field(field_data: str) -> str:
+        return f"{int(field_data[0:2], 16)}:{int(field_data[2:4], 16)}:{int(field_data[4:6], 16)}"
+
+    @staticmethod
+    def _parse_ascii_field(field_data: str) -> str:
+        ascii_bytes = str.encode(field_data)
+        return str(binascii.a2b_hex(ascii_bytes))[2:].replace("'", "")
+
+    @staticmethod
+    def _parse_hex_integer(field_data: str) -> str:
+        return str(int(field_data, 16))
+
+    @staticmethod
+    def _parse_location_info(field_data: str) -> str:
+        if not field_data:
+            return ""
+        parts = [
+            f"{int(field_data[1], 16)}{int(field_data[0], 16)}{int(field_data[3], 16)}",
+            f"{int(field_data[5], 16)}{int(field_data[4], 16)}{int(field_data[2], 16)}",
+            str(int(field_data[6:10], 16)),
+            str(int(field_data[10:14], 16)),
+        ]
+        return "-".join(parts)
 
 
 class EricssonParser:
@@ -140,153 +281,36 @@ class EricssonParser:
     BUFFER_SIZE = 1024 * 1024  # 1MB buffer
 
     def __init__(self):
-        self.current_position: int = 2
-        self.hex_data: str = ""
-        self.file_content: BinaryIO = None
+        self.buffer_manager = BufferManager(self.BUFFER_SIZE)
+        self.record_reader = RecordReader()
+        self.field_parser = FieldParserFactory()
+        self.validator = RecordValidator()
 
     def parse_file(self, file_path: str) -> Iterator[EricssonRecord]:
         """Main entry point for parsing a CDR file"""
-        with gzip.open(file_path, "rb") as file_content:
-            while True:
-                records = self._process_buffer(file_content)
-                if not records:
-                    break
-                yield from records
+        with self.buffer_manager.open(file_path) as buffer:
+            while buffer.has_data():
+                for record_data in self.record_reader.read_records(buffer):
+                    if not self.validator.validate_record_structure(record_data):
+                        continue
 
-    def _validate_timestamp(self, hex_data: str, position: int) -> bool:
-        """Validate timestamp in current buffer"""
-        if 2 * self.BUFFER_SIZE - position < 10000:
-            return len(hex_data[position:].replace("'", ""))
-        return True
-    
-    def _handle_remaining_data(self, hex_data: str, position: int) -> str:
-        """Process remaining hex data between buffers"""
-        remaining = hex_data[position:].replace("'", "")
-        next_block = self._read_next_block()
-        return remaining + next_block
-    
-    def _read_next_block(self) -> str:
-        """Read next block of binary data and convert to hex string"""
-        raw_binary_data = self.file_content.read(self.BUFFER_SIZE)
-        if not raw_binary_data:
-            return ""
-        return str(binascii.b2a_hex(raw_binary_data))[2:]
+                    if record := self._create_record(record_data):
+                        yield record
 
-
-
-    def _process_buffer(self) -> List[EricssonRecord]:
-        """Process a buffer of binary data"""
-        raw_binary_data = self.file_content.read(self.BUFFER_SIZE)
-        if not raw_binary_data:
-            return []
-
-        self.hex_data = str(binascii.b2a_hex(raw_binary_data))
-
-        records = []
-        while self.current_position < len(self.hex_data):
-            if not self._validate_timestamp(self.hex_data, self.current_position):
-                self.hex_data = self._handle_remaining_data(self.hex_data, self.current_position)
-                self.current_position = 0
-                break
-                
-            if record := self._parse_single_record():
-                records.append(record)
-                
-        return records
-
-    def _parse_records(self) -> List[EricssonRecord]:
-        """Parse individual records from hex data"""
-        records = []
-
-        while (
-            self.current_position < len(self.hex_data)
-            and self.hex_data[self.current_position] != "'"
-        ):
-            record = self._parse_single_record()
-            if record:
-                records.append(record)
-
-        return records
-
-    def _parse_single_record(self) -> Optional[EricssonRecord]:
-        """Parse a single CDR record"""
-        current_tag = self.hex_data[self.current_position : self.current_position + 2]
-
-        if current_tag == "00":
-            self.current_position += 2
+    def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
+        """Create record instance - to be implemented by specific parsers"""
+        record_type = record_data[0:2]
+        if not self.validator.is_valid_record_type(record_type):
             return None
 
-        record_block = self._read_record_block()
-        if not record_block:
-            return None
-
-        return self._create_record(record_block)
-
-    def _read_record_block(self) -> Optional[str]:
-        """Read a record block and handle length indicators"""
-        tag_length = self._get_tag_length()
-        field_length = self._get_field_length()
-
-        if field_length is None:
-            return None
-
-        record_data = self.hex_data[
-            self.current_position : self.current_position + field_length * 2
-        ]
-        self.current_position += field_length * 2
-
-        return record_data
-
-    def _get_tag_length(self) -> int:
-        """Calculate tag length based on format indicators"""
-        tag_length = 1
-        if (
-            int(self.hex_data[self.current_position + 1], 16) == 15
-            and int(self.hex_data[self.current_position], 16) % 2 != 0
-        ):
-            self.current_position += 2
-            while (
-                int(
-                    self.hex_data[self.current_position : self.current_position + 2], 16
-                )
-                > 127
-            ):
-                self.current_position += 2
-                tag_length += 1
-        return tag_length
-
-    def _get_field_length(self) -> Optional[int]:
-        """Get field length accounting for extended length format"""
-        self.current_position += 2
-        length = int(
-            self.hex_data[self.current_position : self.current_position + 2], 16
-        )
-
-        if length > 127:
-            length_indicator = length - 128
-            if length_indicator == 0:
-                return 0
-
-            self.current_position += 2
-            actual_length = self.hex_data[
-                self.current_position : self.current_position + length_indicator * 2
-            ]
-            return int(actual_length, 16)
-
-        return length
-    
-    def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
-        """Create EricssonRecord instance based on record type"""
-        record_type = record_block[0:2]
-        if record_type not in EricssonRecordType.__members__.values():
-            return None
-
-        # Record type specific parsing will be implemented in derived classes
         raise NotImplementedError(
             "Record parsing must be implemented by specific parser classes"
         )
 
-
+    def parse_field(self, field_tag: str, field_data: str) -> str:
+        """Parse field using appropriate parser"""
+        parser = self.field_parser.get_parser(field_tag)
+        return parser(field_data)
 
 class TransitRecordParser(EricssonParser):
     """Parser for Transit (TRA) records - record type a0"""
