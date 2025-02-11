@@ -613,3 +613,75 @@ class SMSOriginRecordParser(EricssonParser):
         ]
         return "-".join(parts)
 
+class SMSTerminatingRecordParser(EricssonParser):
+    """Parser for SMS Terminating (SMSt) records - record type a7"""
+
+    FIELD_TAGS = {
+        "81": "carrier_code",
+        "83": "destination_number",
+        "86": "date",
+        "87": "time",
+        "8a": "billing_id",
+    }
+
+    def _parse_smst_record(self, record_data: str) -> EricssonRecord:
+        """Parse SMS Terminating record fields"""
+        field_values = {}
+        field_position = 0
+
+        while record_data[field_position] != ".":
+            tag = self._get_field_tag(record_data, field_position)
+            field_position += len(tag) + 2
+
+            field_length = self._get_field_length_from_data(
+                record_data[field_position:]
+            )
+            field_data = record_data[
+                field_position + 2 : field_position + field_length * 2 + 2
+            ]
+
+            if tag in self.FIELD_TAGS:
+                field_name = self.FIELD_TAGS[tag]
+                field_values[field_name] = self._parse_field_value(tag, field_data)
+
+            field_position += 2 + field_length * 2
+
+        return EricssonRecord(
+            record_type="SMSt",
+            billing_id=field_values.get("billing_id", ""),
+            reference_id="",  # Not present in SMSt records
+            date=self._format_date(field_values.get("date", "")),
+            time=self._format_time(field_values.get("time", "")),
+            imsi="",  # Not present in SMSt records
+            location_info="",  # Not present in SMSt records
+            route="",  # Not present in SMSt records
+            origin_number="",  # Not present in SMSt records
+            destination_number=field_values.get("destination_number", ""),
+            call_type="",  # Not present in SMSt records
+            duration="",  # Not present in SMSt records
+            call_position="",  # Not present in SMSt records
+            fault_code="",  # Not present in SMSt records
+            eos_info="",  # Not present in SMSt records
+            internal_cause="",  # Not present in SMSt records
+            disconnecting_party="",  # Not present in SMSt records
+            bssmap_cause_code="",  # Not present in SMSt records
+            channel_seizure_time="",  # Not present in SMSt records
+            called_party_seizure_time="",  # Not present in SMSt records
+            carrier_code=field_values.get("carrier_code", ""),
+            translated_number="",  # Not present in SMSt records
+            imei="",  # Not present in SMSt records
+            time_register_to_charging="",  # Not present in SMSt records
+            interruption_time="",  # Not present in SMSt records
+        )
+
+    def _parse_field_value(self, tag: str, field_data: str) -> str:
+        """Parse field value based on tag type"""
+        if tag == "83":  # Destination number
+            return self._parse_phone_number(field_data)
+        elif tag in ("86", "87"):  # Date and time fields
+            return self._parse_time_field(field_data)
+        elif tag == "81":  # Carrier code
+            return str(int(field_data, 16))
+        elif tag == "8a":  # Billing ID
+            return self._parse_ascii_field(field_data)
+        return field_data
