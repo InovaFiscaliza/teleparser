@@ -109,6 +109,7 @@ FIELD_PARSERS = {
     # Add other field parsers...
 }
 
+
 class BufferManager:
     """Manages CDR file reading and hex conversion"""
 
@@ -130,7 +131,8 @@ class BufferManager:
         if not raw_data:
             return ""
         return str(binascii.b2a_hex(raw_data))
-    
+
+
 class RecordValidator:
     """Validates CDR record structure and content"""
 
@@ -206,7 +208,8 @@ class RecordReader:
         self.current_position += field_length * 2
 
         return record_data
-    
+
+
 class FieldParserFactory:
     """Factory for creating and managing field parsers"""
 
@@ -311,6 +314,8 @@ class EricssonParser:
         """Parse field using appropriate parser"""
         parser = self.field_parser.get_parser(field_tag)
         return parser(field_data)
+
+
 
 class TransitRecordParser(EricssonParser):
     """Parser for Transit (TRA) records - record type a0"""
@@ -425,15 +430,16 @@ class OriginatingRecordParser(EricssonParser):
         "85": "imei",
     }
 
-    def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
+    def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
         """Create Originating record from record block"""
-        record_type = record_block[0:2]
+        record_type = record_data[0:2]
         if record_type != EricssonRecordType.ORIGINATING:
             return None
-        return self._parse_ori_record(record_block)
 
-    def _parse_ori_record(self, record_data: str) -> EricssonRecord:
-        """Parse Originating record fields"""
+        field_values = self._parse_fields(record_data)
+        return self._create_originating_record(field_values)
+
+    def _parse_fields(self, record_data: str) -> Dict[str, str]:
         field_values = {}
         field_position = 0
 
@@ -450,18 +456,23 @@ class OriginatingRecordParser(EricssonParser):
 
             if tag in self.FIELD_TAGS:
                 field_name = self.FIELD_TAGS[tag]
-                field_values[field_name] = self._parse_field_value(tag, field_data)
+                field_values[field_name] = self.parse_field(tag, field_data)
 
             field_position += 2 + field_length * 2
 
+        return field_values
+
+    def _create_originating_record(
+        self, field_values: Dict[str, str]
+    ) -> EricssonRecord:
         return EricssonRecord(
             record_type="ORI",
             billing_id=field_values.get("billing_id", ""),
             reference_id=field_values.get("reference_id", ""),
-            date=self._format_date(field_values.get("date", "")),
-            time=self._format_time(field_values.get("time", "")),
+            date=field_values.get("date", ""),
+            time=field_values.get("time", ""),
             imsi=field_values.get("imsi", ""),
-            location_info=self._format_location_info(
+            location_info=self.field_parser._parse_location_info(
                 field_values.get("location_info", "")
             ),
             route=field_values.get("route", ""),
@@ -476,26 +487,13 @@ class OriginatingRecordParser(EricssonParser):
             disconnecting_party=field_values.get("disconnecting_party", ""),
             bssmap_cause_code=field_values.get("bssmap_cause_code", ""),
             channel_seizure_time=field_values.get("channel_seizure_time", ""),
-            called_party_seizure_time="",  # Not present in ORI records
+            called_party_seizure_time="",
             carrier_code=field_values.get("carrier_code", ""),
             translated_number=field_values.get("translated_number", ""),
             imei=field_values.get("imei", ""),
             time_register_to_charging=field_values.get("time_register_to_charging", ""),
-            interruption_time="",  # Not present in ORI records
+            interruption_time="",
         )
-
-    def _format_location_info(self, location_data: str) -> str:
-        """Format location information specific to ORI records"""
-        if not location_data:
-            return ""
-
-        parts = [
-            f"{int(location_data[1], 16)}{int(location_data[0], 16)}{int(location_data[3], 16)}",
-            f"{int(location_data[5], 16)}{int(location_data[4], 16)}{int(location_data[2], 16)}",
-            str(int(location_data[6:10], 16)),
-            str(int(location_data[10:14], 16)),
-        ]
-        return "-".join(parts)
 
 
 class ForwardingRecordParser(EricssonParser):
