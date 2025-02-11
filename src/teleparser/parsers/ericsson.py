@@ -5,6 +5,34 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import BinaryIO, Dict, Iterator, Optional
 
+CSV_HEADER = (
+    "Tipo_de_chamada",
+    "Bilhetador",
+    "Referencia",
+    "Data",
+    "Hora",
+    "IMSI",
+    "1stCelA",
+    "Outgoing_route",
+    "Origem",
+    "Destino",
+    "Type_of_calling_subscriber",
+    "TTC",
+    "Call_position",
+    "Fault_code",
+    "EOS_info",
+    "Internal_cause_and_location",
+    "Disconnecting_party",
+    "BSSMAP_cause_code",
+    "Time_for_calling_party_traffic_channel_seizure",
+    "Time_for_called_party_traffic_channel_seizure",
+    "Call_identification_number",
+    "Translated_number",
+    "IMEI",
+    "TimefromRregistertoStartofCharging",
+    "InterruptionTime",
+)
+
 
 class EricssonRecordType(str, Enum):
     TRANSIT = "a0"  # TRA
@@ -842,11 +870,16 @@ class EricssonUnifiedParser:
             EricssonRecordType.SMS_ORIGIN: SMSOriginRecordParser(),
             EricssonRecordType.SMS_TERM: SMSTerminatingRecordParser(),
         }
+        self.buffer_manager = BufferManager(EricssonParser.BUFFER_SIZE)
+        self.validator = RecordValidator()
 
     def parse_file(self, file_path: str) -> Iterator[EricssonRecord]:
         """Parse CDR file using appropriate parser based on record type"""
-        for parser in self.parsers.values():
-            yield from parser.parse_file(file_path)
+        with self.buffer_manager.open(file_path) as buffer:
+            for parser in self.parsers.values():
+                parser.buffer_manager = self.buffer_manager
+                parser.validator = self.validator
+                yield from parser.parse_file(file_path)
 
     def parse_records_to_csv(self, input_path: str, output_path: str):
         """Parse CDR file and write records to CSV"""
@@ -858,11 +891,4 @@ class EricssonUnifiedParser:
     @staticmethod
     def _get_csv_header() -> str:
         """Return CSV header matching the original format"""
-        return (
-            "Tipo_de_chamada;Bilhetador;Referencia;Data;Hora;IMSI;1stCelA;"
-            "Outgoing_route;Origem;Destino;Type_of_calling_subscriber;TTC;"
-            "Call_position;Fault_code;EOS_info;Internal_cause_and_location;"
-            "Disconnecting_party;BSSMAP_cause_code;Time_for_calling_party_traffic_channel_seizure;"
-            "Time_for_called_party_traffic_channel_seizure;Call_identification_number;"
-            "Translated_number;IMEI;TimefromRregistertoStartofCharging;InterruptionTime\n"
-        )
+        return ";".join(CSV_HEADER) + "\n"
