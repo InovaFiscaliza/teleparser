@@ -382,3 +382,73 @@ class OriginatingRecordParser(EricssonParser):
             str(int(location_data[10:14], 16))
         ]
         return "-".join(parts)
+
+class ForwardingRecordParser(EricssonParser):
+    """Parser for Forwarding (FOR) records - record type a3"""
+    
+    FIELD_TAGS = {
+        "84": "origin_number",
+        "9a": "carrier_code",
+        "8a": "imsi",
+        "9f39": "reference_id",
+        "85": "destination_number",
+        "8d": "date",
+        "8e": "time",
+        "97": "billing_id",
+        "90": "duration",
+        "9f33": "fault_code",
+        "9e": "eos_info",
+        "9f1f": "internal_cause",
+        "83": "call_type",
+        "9d": "call_position",
+        "99": "route",
+        "8c": "disconnecting_party",
+        "92": "time_register_to_charging",
+        "86": "imei"
+    }
+
+    def _parse_for_record(self, record_data: str) -> EricssonRecord:
+        """Parse Forwarding record fields"""
+        field_values = {}
+        field_position = 0
+
+        while record_data[field_position] != ".":
+            tag = self._get_field_tag(record_data, field_position)
+            field_position += len(tag) + 2
+            
+            field_length = self._get_field_length_from_data(record_data[field_position:])
+            field_data = record_data[field_position + 2:field_position + field_length * 2 + 2]
+            
+            if tag in self.FIELD_TAGS:
+                field_name = self.FIELD_TAGS[tag]
+                field_values[field_name] = self._parse_field_value(tag, field_data)
+            
+            field_position += 2 + field_length * 2
+
+        return EricssonRecord(
+            record_type="FOR",
+            billing_id=field_values.get("billing_id", ""),
+            reference_id=field_values.get("reference_id", ""),
+            date=self._format_date(field_values.get("date", "")),
+            time=self._format_time(field_values.get("time", "")),
+            imsi=field_values.get("imsi", ""),
+            location_info="",  # Not present in FOR records
+            route=field_values.get("route", ""),
+            origin_number=field_values.get("origin_number", ""),
+            destination_number=field_values.get("destination_number", ""),
+            call_type=field_values.get("call_type", ""),
+            duration=field_values.get("duration", ""),
+            call_position=field_values.get("call_position", ""),
+            fault_code=field_values.get("fault_code", ""),
+            eos_info=field_values.get("eos_info", ""),
+            internal_cause=field_values.get("internal_cause", ""),
+            disconnecting_party=field_values.get("disconnecting_party", ""),
+            bssmap_cause_code="",  # Not present in FOR records
+            channel_seizure_time="",  # Not present in FOR records
+            called_party_seizure_time="",  # Not present in FOR records
+            carrier_code=field_values.get("carrier_code", ""),
+            translated_number="",  # Not present in FOR records
+            imei=field_values.get("imei", ""),
+            time_register_to_charging=field_values.get("time_register_to_charging", ""),
+            interruption_time=""  # Not present in FOR records
+        )
