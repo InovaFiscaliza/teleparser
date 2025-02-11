@@ -422,6 +422,13 @@ class ForwardingRecordParser(EricssonParser):
         "86": "imei"
     }
 
+    def _create_record(self, record_block: str) -> Optional[EricssonRecord]:
+        """Create Forwarding record from record block"""
+        record_type = record_block[0:2]
+        if record_type != EricssonRecordType.FORWARDING:
+            return None
+        return self._parse_for_record(record_block)
+
     def _parse_for_record(self, record_data: str) -> EricssonRecord:
         """Parse Forwarding record fields"""
         field_values = {}
