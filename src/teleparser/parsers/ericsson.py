@@ -94,6 +94,7 @@ class EricssonRecord:
         """Format time as HH:MM:SS"""
         time_parts = self.time.split(":")
         return f"{time_parts[0].zfill(2)}:{time_parts[1].zfill(2)}:{time_parts[2].zfill(2)}"
+    "84": EricssonFieldParser.parse_number_field,
 class EricssonParser:
     """Base parser for Ericsson CDR binary format"""
     
