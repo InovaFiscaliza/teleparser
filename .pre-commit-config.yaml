@@ -3,11 +3,11 @@ repos:
     rev: v0.9.4
     hooks:
       - id: ruff
-        exclude: ^tests/legacy/.*$
+        exclude: (^tests/legacy/.*$|^ericsson\.py$)
         args:
           - --fix
       - id: ruff-format
-        exclude: ^tests/legacy/.*$
+        exclude: (^tests/legacy/.*$|^ericsson\.py$)
 
 
 
