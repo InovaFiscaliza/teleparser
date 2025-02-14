@@ -43,21 +43,6 @@ class EricssonRecordType(str, Enum):
     SMS_TERM = "a7"  # SMSt
 
 
-class EricssonFieldParser:
-    @staticmethod
-    def parse_number_field(field_data: str) -> str:
-        """Parse number fields like origin/destination"""
-        number = ""
-        for i in range(2, len(field_data), 2):
-            number += field_data[i + 1] + field_data[i]
-        return number
-
-    @staticmethod
-    def parse_datetime(field_data: str) -> str:
-        """Parse date/time fields"""
-        return f"{int(field_data[0:2], 16):02d}:{int(field_data[2:4], 16):02d}:{int(field_data[4:6], 16):02d}"
-
-
 @dataclass
 class EricssonRecord:
     """Represents a parsed Ericsson CDR record"""
@@ -131,12 +116,6 @@ class EricssonRecord:
         return f"{time_parts[0].zfill(2)}:{time_parts[1].zfill(2)}:{time_parts[2].zfill(2)}"
 
 
-FIELD_PARSERS = {
-    "84": EricssonFieldParser.parse_number_field,
-    "89": EricssonFieldParser.parse_datetime,
-    # Add other field parsers...
-}
-
 
 class BufferManager:
     """Manages CDR file reading and hex conversion"""
@@ -178,10 +157,7 @@ class RecordValidator:
 
     def validate_field_length(self, length: int) -> bool:
         """Validate field length indicators"""
-        if length > 127:
-            length_indicator = length - 128
-            return length_indicator != 0
-        return True
+        return length != 128
 
     def validate_record_structure(self, record_data: str) -> bool:
         """Validate overall record structure"""
