@@ -24,9 +24,10 @@ class OutputFormat(str, Enum):
 
 class CDRFileManager:
     def __init__(self, file_setup: CDRFileSetup):
-        self.setup = file_setup
+        self.setup: CDRFileSetup = file_setup
         self.processed_files: Set[Path] = set()
         self.failed_files: Set[Path] = set()
+        self.temp_dir: Path | None = None
 
     def setup_directories(self) -> Path:
         """Create necessary output directories and return working path"""
@@ -42,22 +43,23 @@ class CDRFileManager:
         files = list(self.setup.input_path.rglob("*[.gz|.zip]"))
         zip_files = [f for f in files if f.suffix == ".zip"]
         gz_files = [f for f in files if f.suffix == ".gz"]
-        gz_files.extend(self.decompress_zips(zip_files))
+        if zip_files:
+            gz_files.extend(self.decompress_zips(zip_files))
         return gz_files
 
     def decompress_zips(self, zip_files: List[Path]) -> List[Path]:
         """Extract ZIP files and return paths to extracted files"""
-        extract_dir = self.setup.output_path / "temp_extracted"
-        extract_dir.mkdir(parents=True, exist_ok=True)
+        self.temp_dir = self.setup.output_path / "temp_extracted"
+        self.temp_dir.mkdir(parents=True, exist_ok=True)
 
         gz_files: List[Path] = []
         for zip_file in zip_files:
             try:
                 with zipfile.ZipFile(zip_file) as zf:
-                    zf.extractall(extract_dir)
+                    zf.extractall(self.temp_dir)
                     for file in zf.namelist():
                         if file.endswith(".gz"):
-                            gz_files.append(extract_dir / file)
+                            gz_files.append(self.temp_dir / file)
             except zipfile.BadZipFile:
                 self.failed_files.add(Path(zip_file))
 
@@ -65,9 +67,8 @@ class CDRFileManager:
 
     def cleanup(self):
         """Clean up temporary files and directories"""
-        temp_dir = self.setup.output_path / "temp_extracted"
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
+        if self.temp_dir is not None and self.temp_dir.exists():
+            shutil.rmtree(self.temp_dir)
 
 
 if __name__ == "__main__":
