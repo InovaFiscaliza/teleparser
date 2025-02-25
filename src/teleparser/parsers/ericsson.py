@@ -135,9 +135,7 @@ class BufferManager:
 
     def read_buffer(self) -> str:
         raw_data = self.file_handle.read(self.buffer_size)
-        if not raw_data:
-            return ""
-        return str(binascii.b2a_hex(raw_data))
+        return str(binascii.b2a_hex(raw_data)) if raw_data else ""
 
 
 class RecordValidator:
@@ -179,15 +177,13 @@ class RecordReader:
         hex_data = buffer.read_buffer()
         while self.current_position < len(hex_data):
             if not self.validator.is_valid_timestamp(hex_data, self.current_position):
-                remaining_data = self._handle_buffer_boundary(hex_data)
-                if remaining_data:
+                if remaining_data := self._handle_buffer_boundary(hex_data):
                     hex_data = remaining_data
                     self.current_position = 0
                     continue
                 break
 
-            record = self._read_single_record(hex_data)
-            if record:
+            if record := self._read_single_record(hex_data):
                 yield record
 
     def _read_single_record(self, hex_data: str) -> Optional[str]:
@@ -197,10 +193,9 @@ class RecordReader:
             return None
 
         record_block = self._read_record_block(hex_data)
-        return record_block if record_block else None
+        return record_block or None
 
     def _read_record_block(self, hex_data: str) -> Optional[str]:
-        tag_length = self._calculate_tag_length(hex_data)
         field_length = self._calculate_field_length(hex_data)
 
         if field_length is None:
@@ -282,10 +277,12 @@ class FieldParserFactory:
 
 
 class EricssonParser:
+
     BUFFER_SIZE = 1024 * 1024  # 1MB buffer
 
+
     def __init__(self, buffer_manager: Optional[BufferManager] = None):
-        self.buffer_manager = buffer_manager or BufferManager(self.BUFFER_SIZE)
+        self.buffer_manager = buffer_manager or BufferManager(EricssonParser.BUFFER_SIZE)
         self.record_reader = RecordReader()
         self.field_parser = FieldParserFactory()
         self.validator = RecordValidator()
@@ -325,8 +322,6 @@ class EricssonParser:
         """Get field length from record data"""
         length = int(data[:2], 16)
         return int(data[2:2 + 2 * (length - 128)], 16) if length > 127 else length
-
-
 
 
 class TransitRecordParser(EricssonParser):
@@ -534,7 +529,7 @@ class ForwardingRecordParser(EricssonParser):
 
     def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
         """Create Forwarding record from record block"""
-        record_type = record_data[0:2]
+        record_type = record_data[:2]
         if record_type != EricssonRecordType.FORWARDING:
             return None
 
@@ -623,7 +618,7 @@ class TerminatingRecordParser(EricssonParser):
 
     def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
         """Create Terminating record from record block"""
-        record_type = record_data[0:2]
+        record_type = record_data[:2]
         if record_type != EricssonRecordType.TERMINATING:
             return None
 
@@ -705,8 +700,7 @@ class SMSOriginRecordParser(EricssonParser):
 
     def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
         """Create SMS Origin record from record block"""
-        record_type = record_data[0:2]
-        if record_type != EricssonRecordType.SMS_ORIGIN:
+        if record_data[:2] != EricssonRecordType.SMS_ORIGIN:
             return None
 
         field_values = self._parse_fields(record_data)
@@ -780,8 +774,7 @@ class SMSTerminatingRecordParser(EricssonParser):
 
     def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
         """Create SMS Terminating record from record block"""
-        record_type = record_data[0:2]
-        if record_type != EricssonRecordType.SMS_TERM:
+        if record_data[:2] != EricssonRecordType.SMS_TERM:
             return None
 
         field_values = self._parse_fields(record_data)
@@ -871,3 +864,11 @@ class EricssonUnifiedParser:
     def _get_csv_header() -> str:
         """Return CSV header matching the original format"""
         return ";".join(CSV_HEADER) + "\n"
+
+if __name__ == "__main__":
+    from pathlib import Path
+    folder = Path(r"D:\code\cdr\data\input")
+    file = folder / "ZCTA09.202412141102135234.gz"
+    parser = EricssonUnifiedParser()
+    breakpoint()
+    parser.parse_records_to_csv(file, file.with_suffix(".csv"))
