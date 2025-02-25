@@ -251,14 +251,13 @@ class FieldParserFactory:
 
     @staticmethod
     def _parse_phone_number(field_data: str) -> str:
-        number = ""
-        for i in range(2, len(field_data), 2):
-            number += field_data[i + 1] + field_data[i]
-        return number
+        return "".join(
+            field_data[i + 1] + field_data[i] for i in range(2, len(field_data), 2)
+        )
 
     @staticmethod
     def _parse_time_field(field_data: str) -> str:
-        return f"{int(field_data[0:2], 16)}:{int(field_data[2:4], 16)}:{int(field_data[4:6], 16)}"
+        return f"{int(field_data[:2], 16)}:{int(field_data[2:4], 16)}:{int(field_data[4:6], 16)}"
 
     @staticmethod
     def _parse_ascii_field(field_data: str) -> str:
@@ -283,12 +282,10 @@ class FieldParserFactory:
 
 
 class EricssonParser:
-    """Base parser for Ericsson CDR binary format"""
-
     BUFFER_SIZE = 1024 * 1024  # 1MB buffer
 
-    def __init__(self):
-        self.buffer_manager = BufferManager(self.BUFFER_SIZE)
+    def __init__(self, buffer_manager: Optional[BufferManager] = None):
+        self.buffer_manager = buffer_manager or BufferManager(self.BUFFER_SIZE)
         self.record_reader = RecordReader()
         self.field_parser = FieldParserFactory()
         self.validator = RecordValidator()
@@ -300,13 +297,12 @@ class EricssonParser:
                 for record_data in self.record_reader.read_records(buffer):
                     if not self.validator.validate_record_structure(record_data):
                         continue
-
                     if record := self._create_record(record_data):
                         yield record
 
     def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
         """Create record instance - to be implemented by specific parsers"""
-        record_type = record_data[0:2]
+        record_type = record_data[:2]
         if not self.validator.is_valid_record_type(record_type):
             return None
 
@@ -346,12 +342,24 @@ class TransitRecordParser(EricssonParser):
 
     def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
         """Create Transit record from record block"""
-        record_type = record_data[0:2]
-        if record_type != EricssonRecordType.TRANSIT:
+        
+        if record_data[:2] != EricssonRecordType.TRANSIT:
             return None
 
         field_values = self._parse_fields(record_data)
         return self._create_transit_record(field_values)
+    
+    def _get_field_tag(self, record_data: str, position: int) -> str:
+        """Extract field tag from record data"""
+        if record_data[position:position + 2] == "9f":
+            return record_data[position:position + 4]
+        return record_data[position:position + 2]
+
+    def _get_field_length_from_data(self, data: str) -> int:
+        """Get field length from record data"""
+        length = int(data[:2], 16)
+        return int(data[2:2 + 2 * (length - 128)], 16) if length > 127 else length
+
 
     def _parse_fields(self, record_data: str) -> Dict[str, str]:
         field_values = {}
@@ -838,17 +846,16 @@ class EricssonUnifiedParser:
     """Unified parser system for all Ericsson CDR record types"""
 
     def __init__(self):
+        buffer_manager = BufferManager(EricssonParser.BUFFER_SIZE)
         self.parsers = {
-            EricssonRecordType.TRANSIT: TransitRecordParser(),
-            EricssonRecordType.ORIGINATING: OriginatingRecordParser(),
-            EricssonRecordType.FORWARDING: ForwardingRecordParser(),
-            EricssonRecordType.TERMINATING: TerminatingRecordParser(),
-            EricssonRecordType.SMS_ORIGIN: SMSOriginRecordParser(),
-            EricssonRecordType.SMS_TERM: SMSTerminatingRecordParser(),
+            EricssonRecordType.TRANSIT: TransitRecordParser(buffer_manager),
+            EricssonRecordType.ORIGINATING: OriginatingRecordParser(buffer_manager),
+            EricssonRecordType.FORWARDING: ForwardingRecordParser(buffer_manager),
+            EricssonRecordType.TERMINATING: TerminatingRecordParser(buffer_manager),
+            EricssonRecordType.SMS_ORIGIN: SMSOriginRecordParser(buffer_manager),
+            EricssonRecordType.SMS_TERM: SMSTerminatingRecordParser(buffer_manager),
         }
-        self.buffer_manager = BufferManager(EricssonParser.BUFFER_SIZE)
         self.validator = RecordValidator()
-
     def parse_file(self, file_path: str) -> Iterator[EricssonRecord]:
         """Parse CDR file using appropriate parser based on record type"""
         for parser in self.parsers.values():
