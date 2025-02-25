@@ -314,6 +314,18 @@ class EricssonParser:
         """Parse field using appropriate parser"""
         parser = self.field_parser.get_parser(field_tag)
         return parser(field_data)
+    
+    def _get_field_tag(self, record_data: str, position: int) -> str:
+        """Extract field tag from record data"""
+        if record_data[position:position + 2] == "9f":
+            return record_data[position:position + 4]
+        return record_data[position:position + 2]
+
+    def _get_field_length_from_data(self, data: str) -> int:
+        """Get field length from record data"""
+        length = int(data[:2], 16)
+        return int(data[2:2 + 2 * (length - 128)], 16) if length > 127 else length
+
 
 
 
@@ -349,17 +361,6 @@ class TransitRecordParser(EricssonParser):
         field_values = self._parse_fields(record_data)
         return self._create_transit_record(field_values)
     
-    def _get_field_tag(self, record_data: str, position: int) -> str:
-        """Extract field tag from record data"""
-        if record_data[position:position + 2] == "9f":
-            return record_data[position:position + 4]
-        return record_data[position:position + 2]
-
-    def _get_field_length_from_data(self, data: str) -> int:
-        """Get field length from record data"""
-        length = int(data[:2], 16)
-        return int(data[2:2 + 2 * (length - 128)], 16) if length > 127 else length
-
 
     def _parse_fields(self, record_data: str) -> Dict[str, str]:
         field_values = {}
@@ -444,8 +445,7 @@ class OriginatingRecordParser(EricssonParser):
 
     def _create_record(self, record_data: str) -> Optional[EricssonRecord]:
         """Create Originating record from record block"""
-        record_type = record_data[0:2]
-        if record_type != EricssonRecordType.ORIGINATING:
+        if record_data[:2] != EricssonRecordType.ORIGINATING:
             return None
 
         field_values = self._parse_fields(record_data)
