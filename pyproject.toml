@@ -6,9 +6,9 @@ readme = "README.md"
 authors = [
     { name = "Ronaldo S.A. Batista", email = "ronaldokun@gmail.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
-    "typer>=0.15.1",
+    "pyarrow>=19.0.1",
 ]
 
 [project.scripts]
@@ -22,4 +22,7 @@ build-backend = "hatchling.build"
 dev = [
     "pre-commit>=4.1.0",
     "pytest>=8.3.4",
+    "setuptools>=75.8.1",
+    "ydata-profiling>=4.12.2",
+
 ]

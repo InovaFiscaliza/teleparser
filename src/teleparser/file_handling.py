@@ -62,7 +62,6 @@ class CDRFileManager:
                             gz_files.append(self.temp_dir / file)
             except zipfile.BadZipFile:
                 self.failed_files.add(Path(zip_file))
-
         return gz_files
 
     def cleanup(self):

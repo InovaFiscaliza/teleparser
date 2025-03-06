@@ -145,7 +145,7 @@ class RecordValidator:
 
     def is_valid_timestamp(self, hex_data: str, position: int) -> bool:
         """Validate timestamp in current buffer position"""
-        if 2 * BufferManager.BUFFER_SIZE - position < self.TIMESTAMP_THRESHOLD:
+        if 2 * EricssonParser.BUFFER_SIZE - position < self.TIMESTAMP_THRESHOLD:
             return len(hex_data[position:].replace("'", "")) >= self.TIMESTAMP_THRESHOLD
         return True
 
@@ -173,6 +173,41 @@ class RecordReader:
         self.current_position: int = 2
         self.validator = RecordValidator()
 
+    def _calculate_tag_length(self, hex_data:str) -> Optional[int]:
+        pass
+
+    def _calculate_field_length(self, hex_data: str) -> Optional[int]:
+        """Calculate field length from hex data.
+
+        Args:
+            hex_data: Hex string containing length information
+
+        Returns:
+            Calculated field length or None if invalid
+        """
+        try:
+            # Get initial length value
+            length = int(hex_data[self.current_position : self.current_position + 2][:2], 16)
+
+            # Handle standard length
+            if length <= 127:
+                return length
+
+            # Handle extended length format
+            length_indicator = length - 128
+            if length_indicator == 0:
+                return 0
+
+            # Get actual length from following bytes
+            self.current_position += 2
+            actual_length = hex_data[
+                self.current_position : self.current_position + length_indicator * 2
+            ]
+            return int(actual_length, 16)
+
+        except (ValueError, IndexError):
+            return None
+
     def read_records(self, buffer: BufferManager) -> Iterator[str]:
         hex_data = buffer.read_buffer()
         while self.current_position < len(hex_data):
@@ -196,9 +231,7 @@ class RecordReader:
         return record_block or None
 
     def _read_record_block(self, hex_data: str) -> Optional[str]:
-        field_length = self._calculate_field_length(hex_data)
-
-        if field_length is None:
+        if (field_length := self._calculate_field_length(hex_data)) is None:
             return None
 
         record_data = hex_data[
