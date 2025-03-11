@@ -169,6 +169,7 @@ def process_cdr_voz_ericsson(
 
                 parsed_records = []
                 try:
+                    breakpoint()
                     while hex_data[current_position] != "'":
                         current_tag = hex_data[current_position : current_position + 2]
 
@@ -626,7 +627,7 @@ def process_cdr_voz_ericsson(
                                                     + field_length * 2
                                                 )
 
-                                        if record_block[0:2] == "a1":
+                                        elif record_block[0:2] == "a1":
                                             record_type = "ORI"
                                             field_position = 0
                                             try:
@@ -1164,7 +1165,7 @@ def process_cdr_voz_ericsson(
                                                 print(current_position)
                                                 print(i)
                                                 pass
-                                        if record_block[0:2] == "a2":
+                                        elif record_block[0:2] == "a2":
                                             record_type = "ROA"
                                             field_position = 0
                                             try:
@@ -1252,7 +1253,7 @@ def process_cdr_voz_ericsson(
                                                                 + field_data[i]
                                                             )
 
-                                                    if field_tag == "96":
+                                                    elif field_tag == "96":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1271,7 +1272,7 @@ def process_cdr_voz_ericsson(
                                                             2:
                                                         ].replace("'", "")
 
-                                                    if field_tag == "86":
+                                                    elif field_tag == "86":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1290,7 +1291,7 @@ def process_cdr_voz_ericsson(
                                                                 + field_data[i + 1]
                                                                 + field_data[i]
                                                             )
-                                                    if field_tag == "9f31":
+                                                    elif field_tag == "9f31":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1298,7 +1299,7 @@ def process_cdr_voz_ericsson(
                                                             + 2
                                                         ]
                                                         reference_id = field_data
-                                                    if field_tag == "85":
+                                                    elif field_tag == "85":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1316,7 +1317,7 @@ def process_cdr_voz_ericsson(
                                                                 + field_data[i + 1]
                                                                 + field_data[i]
                                                             )
-                                                    if field_tag == "89":
+                                                    elif field_tag == "89":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1345,7 +1346,7 @@ def process_cdr_voz_ericsson(
                                                                 )
                                                             )
                                                         )
-                                                    if field_tag == "8a":
+                                                    elif field_tag == "8a":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1374,7 +1375,7 @@ def process_cdr_voz_ericsson(
                                                                 )
                                                             )
                                                         )
-                                                    if field_tag == "93":
+                                                    elif field_tag == "93":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1389,7 +1390,7 @@ def process_cdr_voz_ericsson(
                                                                 billing_bytes
                                                             )
                                                         )
-                                                    if field_tag == "8c":
+                                                    elif field_tag == "8c":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1418,7 +1419,7 @@ def process_cdr_voz_ericsson(
                                                                 )
                                                             )
                                                         )
-                                                    if field_tag == "9f2d":
+                                                    elif field_tag == "9f2d":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1428,7 +1429,7 @@ def process_cdr_voz_ericsson(
                                                         fault_code = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if field_tag == "9a":
+                                                    elif field_tag == "9a":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1438,7 +1439,7 @@ def process_cdr_voz_ericsson(
                                                         eos_info = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if field_tag == "9b":
+                                                    elif field_tag == "9b":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1448,7 +1449,7 @@ def process_cdr_voz_ericsson(
                                                         internal_cause = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if field_tag == "83":
+                                                    elif field_tag == "83":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1458,7 +1459,7 @@ def process_cdr_voz_ericsson(
                                                         call_type = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if field_tag == "99":
+                                                    elif field_tag == "99":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1468,7 +1469,7 @@ def process_cdr_voz_ericsson(
                                                         call_position = str(
                                                             int(field_data, 16)
                                                         )
-                                                    if field_tag == "95":
+                                                    elif field_tag == "95":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1483,7 +1484,7 @@ def process_cdr_voz_ericsson(
                                                                 route_bytes
                                                             )
                                                         )
-                                                    if field_tag == "88":
+                                                    elif field_tag == "88":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1496,7 +1497,7 @@ def process_cdr_voz_ericsson(
                                                                 16,
                                                             )
                                                         )
-                                                    if field_tag == "8e":
+                                                    elif field_tag == "8e":
                                                         field_data = record_data[
                                                             field_position
                                                             + 2 : field_position
@@ -1534,7 +1535,7 @@ def process_cdr_voz_ericsson(
                                                 print(current_position)
                                                 print(i)
                                                 pass
-                                        if record_block[0:2] == "a5":
+                                        elif record_block[0:2] == "a5":
                                             record_type = "SMSo"
                                             field_position = 0
 
@@ -1795,7 +1796,7 @@ def process_cdr_voz_ericsson(
                                                     + 2
                                                     + field_length * 2
                                                 )
-                                        if record_block[0:2] == "a7":
+                                        elif record_block[0:2] == "a7":
                                             record_type = "SMSt"
                                             field_position = 0
 
@@ -1961,7 +1962,7 @@ def process_cdr_voz_ericsson(
                                                     + 2
                                                     + field_length * 2
                                                 )
-                                        if record_block[0:2] == "a3":
+                                        elif record_block[0:2] == "a3":
                                             record_type = "FOR"
                                             field_position = 0
                                             try:
@@ -2331,8 +2332,7 @@ def process_cdr_voz_ericsson(
                                                 print(current_position)
                                                 print(i)
                                                 pass
-
-                                        if record_block[0:2] == "a4":
+                                        elif record_block[0:2] == "a4":
                                             record_type = "TER"
                                             field_position = 0
                                             try:

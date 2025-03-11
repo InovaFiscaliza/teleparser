@@ -1,0 +1,65 @@
+CallDataRecord DEFINITIONS IMPLICIT TAGS ::= BEGIN
+
+  UILayer1Protocol ::= ENUMERATED
+  {
+   V110_X30                     (1),
+   G711mulaw                    (2),
+   G711Alaw                     (3),
+   G721_32000bps_I460           (4),
+   H221_H242                    (5),
+   H223_H245                    (6),
+   nonITU_T                     (7),
+   V120                         (8),
+   X31                          (9),
+   vSELP_Speech                (10)
+  }
+
+
+  UnsuccessfulPositioningDataReason ::= ENUMERATED 
+
+  {
+   systemError                           (0),
+   userDeniedDueToPrivacyVerification    (1)
+  }
+  
+  UserClass ::= OCTET STRING (SIZE(1))
+
+  UserRate ::= ENUMERATED
+
+    {
+    uRIndNeg          (0),
+    uR600bps          (1),
+    uR1200bps         (2),
+    uR2400bps         (3),
+    uR3600bps         (4),
+    uR4800bps         (5),
+    uR7200bps         (6),
+    uR8000bps         (7),
+    uR9600bps         (8),
+    uR14400bps        (9),
+    uR16000bps       (10),
+    uR19200bps       (11),
+    uR32000bps       (12),
+    uR38400bps       (13),
+    uR48000bps       (14),
+    uR56000bps       (15),
+    uR64000bps       (16),
+    uR38400bps1      (17),
+    uR57600bps       (18),
+    uR28800bps       (19),
+    uR134-5bps       (21),
+    uR100bps         (22),
+    uR75bps1200bps  (23),
+    uR1200bps75bps  (24),
+    uR50bps          (25),
+    uR75bps          (26),
+    uR110bps         (27),
+    uR150bps         (28),
+    uR200bps         (29),
+    uR300bps         (30),
+    uR12000bps       (31)
+    }
+  UserTerminalPosition ::= OCTET STRING (SIZE(7))
+  UserToUserService1Information ::= OCTET STRING (SIZE(1))
+
+END
