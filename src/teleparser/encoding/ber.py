@@ -30,23 +30,14 @@ class BerClass(Enum):
 EOC = {(BerClass.UNIVERSAL, False, 0, 0), (BerClass.CONTEXT, True, 1, 0)}
 
 
+@dataclass
 class BerTag:
-    def __init__(self, tag_bytes: bytes):
-        first_byte = tag_bytes[0]
-        self.string = hexlify(
-            tag_bytes[:1]
-        ).decode(
-            "utf-8"
-        )  # This doesn't belong to the original ber encoding, it's specific to this implementation
-        self.tag_class = BerClass((first_byte >> CLASS_SHIFT) & TWO_BIT_MASK)
-        self.constructed = bool((first_byte >> ENCODE_SHIFT) & MODULO_2)
-        self.number = first_byte & CLASSNUM_MASK
+    """BER Encoded Class"""
 
-        if self.number == CLASSNUM_MASK:
-            # Handle multi-byte tag
-            self.number = 0
-            for b in tag_bytes[1:]:
-                self.number = (self.number << SHIFT_7) | (b & MASK_BIT7)
+    string: str
+    tag_class: BerClass
+    constructed: bool
+    number: int
 
 
 @dataclass
@@ -65,6 +56,26 @@ class BerDecoder:
     """Basic Encoding Rules decoder"""
 
     @staticmethod
+    def decode_tag(tag_bytes: bytes):
+        first_byte = tag_bytes[0]
+        string = hexlify(
+            tag_bytes[:1]
+        ).decode(
+            "utf-8"
+        )  # This doesn't belong to the original ber encoding, it's specific to this implementation
+        tag_class = BerClass((first_byte >> CLASS_SHIFT) & TWO_BIT_MASK)
+        constructed = bool((first_byte >> ENCODE_SHIFT) & MODULO_2)
+        number = first_byte & CLASSNUM_MASK
+
+        if number == CLASSNUM_MASK:
+            # Handle multi-byte tag
+            number = 0
+            for b in tag_bytes[1:]:
+                number = (number << SHIFT_7) | (b & MASK_BIT7)
+
+        return BerTag(string, tag_class, constructed, number)
+
+    @staticmethod
     def _reached_eoc(tag: BerTag, length: int):
         return (tag.tag_class, tag.constructed, tag.number, length) in EOC
 
@@ -75,7 +86,7 @@ class BerDecoder:
         if (tag_bytes := self._read_tag(stream)) is None:
             return None
 
-        tag = BerTag(tag_bytes)
+        tag = self.decode_tag(tag_bytes)
         length, length_size = self._read_length(stream)
         offset += len(tag_bytes) + length_size
 
