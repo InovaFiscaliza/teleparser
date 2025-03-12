@@ -8,8 +8,6 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "asn1tools>=0.167.0",
-    "pyasn1>=0.6.1",
 ]
 
 [project.scripts]
@@ -21,6 +19,8 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "asn1tools>=0.167.0",
+    "ipykernel>=6.29.5",
     "pre-commit>=4.1.0",
     "pytest>=8.3.4",
 ]
