@@ -33,15 +33,15 @@ class BerTag:
         ).decode(
             "utf-8"
         )  # This doesn't belong to the original ber encoding, it's specific to this implementation
-        self.tag_class = BerClass(first_byte >> CLASS_SHIFT)
-        self.constructed = bool((first_byte >> ENCODE_SHIFT) & 0x01)
-        self.tag_number = first_byte & HIGH_CLASS_NUM
+        self.tag_class = BerClass((first_byte >> 6) & 0x03)
+        self.constructed = bool((first_byte >> 5) & 0x01)
+        self.tag_number = first_byte & 0x1F
 
-        if self.tag_number == HIGH_CLASS_NUM:
+        if self.tag_number == 0x1F:
             # Handle multi-byte tag
             self.tag_number = 0
             for b in tag_bytes[1:]:
-                self.tag_number = (self.tag_number << BIT8_SHIFT) | (b & BITS7_MASK)
+                self.tag_number = (self.tag_number << 7) | (b & 0x7F)
 
 
 @dataclass
@@ -68,21 +68,21 @@ class BerDecoder:
             raise ValueError("Maximum decoding depth exceeded")
 
         start_offset = offset
-        tag_bytes = self._read_tag(stream)
-        if not tag_bytes:
+        if not (tag_bytes := self._read_tag(stream)):
             return None
 
-        tag = BerTag(tag_bytes)
         length, length_size = self._read_length(stream)
-
-        # Update offset after tag and length
-        offset += len(tag_bytes) + length_size
+        if length == 0:
+            return None
 
         # Read value
         value = stream.read(length)
         if len(value) != length:
             raise ValueError("Unexpected end of data")
 
+        # Update offset after tag and length
+        offset += len(tag_bytes) + length_size
+        tag = BerTag(tag_bytes)
         tlv = TlvObject(tag, length, value, start_offset)
 
         # Parse constructed types recursively
