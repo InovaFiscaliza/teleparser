@@ -88,7 +88,7 @@ class BerDecoder:
         # Parse constructed types recursively
         if tag.constructed:
             tlv.children = []
-            value_stream = BufferedReader(BytesIO(value))
+            value_stream = BytesIO(value)
             while value_stream.tell() < length:
                 if child := self.decode_tlv(value_stream, offset, depth + 1):
                     tlv.children.append(child)
@@ -116,7 +116,7 @@ class BerDecoder:
 
     def _read_length(self, stream: BufferedReader) -> Tuple[int, int]:
         first_byte = stream.read(1)[0]
-        if not (first_byte & 0x80):
+        if first_byte & 0x80 == 0:  # first_byte = 128
             return first_byte, 1
 
         length_size = first_byte & 0x7F
@@ -125,6 +125,7 @@ class BerDecoder:
             raise ValueError("Unexpected end of length")
 
         length = 0
+        # When iterating on bytes it's already converted to int
         for b in length_bytes:
             length = (length << 8) | b
 
