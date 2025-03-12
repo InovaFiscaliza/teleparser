@@ -1,39 +1,25 @@
-from enum import Enum
-from dataclasses import dataclass
+from contextlib import contextmanager
+import gzip
 from functools import cached_property
 from pathlib import Path
 import zipfile
 import shutil
-from typing import List, Set
-
-
-@dataclass
-class CDRFileSetup:
-    input_path: Path
-    output_path: Path
-    cdr_type: str
-    timestamp: str
-
-
-class OutputFormat(str, Enum):
-    SINGLE = "single"  # Single output file
-    INDIVIDUAL = "individual"  # One file per input
-    NUMBER_RANGE = "number_range"  # Split by number ranges
-    DATETIME = "datetime"  # Split by date/time
+from typing import List, Set, Optional, BinaryIO
 
 
 class CDRFileManager:
-    def __init__(self, file_setup: CDRFileSetup):
-        self.setup: CDRFileSetup = file_setup
+    def __init__(self, input_path: Path, output_path: Path, cdr_type: str):
+        self.input_path = input_path
+        self.output_path = output_path
+        self.cdr_type = cdr_type
         self.processed_files: Set[Path] = set()
         self.failed_files: Set[Path] = set()
         self.temp_dir: Path | None = None
 
     def setup_directories(self) -> Path:
         """Create necessary output directories and return working path"""
-        output_dir = (
-            self.setup.output_path / f"{self.setup.cdr_type}_{self.setup.timestamp}"
-        )
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        output_dir = self.output_path / f"{self.cdr_type}_{timestamp}"
         output_dir.mkdir(parents=True, exist_ok=True)
         return output_dir
 
@@ -57,9 +43,11 @@ class CDRFileManager:
             try:
                 with zipfile.ZipFile(zip_file) as zf:
                     zf.extractall(self.temp_dir)
-                    for file in zf.namelist():
-                        if file.endswith(".gz"):
-                            gz_files.append(self.temp_dir / file)
+                    gz_files.extend(
+                        self.temp_dir / file
+                        for file in zf.namelist()
+                        if file.endswith(".gz")
+                    )
             except zipfile.BadZipFile:
                 self.failed_files.add(Path(zip_file))
         return gz_files
@@ -70,16 +58,42 @@ class CDRFileManager:
             shutil.rmtree(self.temp_dir)
 
 
+class BufferManager:
+    """Manages CDR file reading and hex conversion"""
+
+    def __init__(self, file_path: Path):
+        self.file_path = file_path
+        self.file_handle: Optional[BinaryIO] = None
+
+    @contextmanager
+    def open(self):
+        with gzip.open(self.file_path, "rb") as self.file_handle:
+            yield self
+
+    def open_file(self):
+        """Opens the gzip file directly"""
+        self.file_handle = gzip.open(self.file_path, "rb")
+        return self
+
+    def close(self):
+        """Closes the file handle if open"""
+        if self.has_data():
+            self.file_handle.close()
+
+    def has_data(self) -> bool:
+        return bool(self.file_handle and not self.file_handle.closed)
+
+    def read(self, size) -> str:
+        return self.file_handle.read(size)
+
+
 if __name__ == "__main__":
     from datetime import datetime, timezone
 
-    file_setup = CDRFileSetup(
-        input_path=Path(__file__).parent / "data/input",
-        output_path=Path(__file__).parent / "data/output",
-        cdr_type="cdr_type",
-        timestamp=datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S"),
-    )
-    manager = CDRFileManager(file_setup)
+    input_path = (Path(__file__).parent / "data/input",)
+    output_path = (Path(__file__).parent / "data/output",)
+    cdr_type = "timvoz"
+    manager = CDRFileManager(input_path, output_path, cdr_type)
     manager.setup_directories()
     print(f".gz files in folders and subfolders: {len(manager.input_gz_files)}")
     manager.cleanup()
