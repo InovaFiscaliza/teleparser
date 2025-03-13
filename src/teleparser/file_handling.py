@@ -88,8 +88,10 @@ class BufferManager:
 
 
 if __name__ == "__main__":
-    from teleparser.encoding.ber import BerDecoder
+    from teleparser.decoders.ber import BerDecoder
+    from collections import Counter
 
+    counter = Counter()
     folder = Path(__file__).parent.parent.parent / "data"
     folder = Path(r"D:\code\cdr\data\input\ClaroVozEricssonMenu1")
     for file in folder.iterdir():
@@ -97,8 +99,7 @@ if __name__ == "__main__":
             buffer_manager = BufferManager(file)
             ber = BerDecoder()
             with buffer_manager.open() as file_buffer:
-                counter = 0
                 while (tlv := ber.decode_tlv(file_buffer)) is not None:
-                    counter += 1
+                    counter[tlv.children[0].tag.number] += 1
 
-            print(f"Numbers of CDR blocks in {file.name}: {counter}")
+            print(f"Types of CDR blocks: {counter}")
