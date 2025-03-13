@@ -17,8 +17,3 @@ class TestOctet:
     def test_octet_no_size(self):
         octet = primitives.OctetString(octets=b"\x0a", size=None)
         octet.string == "0A"
-
-    
-  
-
-
