@@ -92,7 +92,6 @@ class BerDecoder:
 
         if self._reached_eoc(tag, length):
             return self.decode_tlv(stream, offset, depth)
-
         # Read value
         value = stream.read(length)
         if len(value) != length:
@@ -132,16 +131,22 @@ class BerDecoder:
 
     def _read_length(self, stream: BufferedReader) -> Tuple[int, int]:
         first_byte = stream.read(1)[0]
-        if first_byte & MASK_BIT8 == 0:  # first_byte = 128
+        # definite short form
+        if first_byte >> SHIFT_7 == 0:
             return first_byte, 1
 
+        length = 0
         length_size = first_byte & MASK_BIT7
+        # indefinite form
+        if length_size == 0:
+            return length, length_size + 1
+
         length_bytes = stream.read(length_size)
         if len(length_bytes) != length_size:
             raise ValueError("Unexpected end of length")
 
-        length = 0
-        # When iterating on bytes it's already converted to int
+        #  definite long form
+        #  When iterating on bytes it's already converted to int
         for b in length_bytes:
             length = (length << SHIFT_8) | b
 
