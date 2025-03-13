@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from .primitives import OctetString
+from primitives import OctetString, UnsignedInt
 
 
 class TAC(OctetString):
@@ -68,8 +68,7 @@ class TAC(OctetString):
         return result
 
 
-@dataclass
-class CallIDNumber:
+class CallIDNumber(UnsignedInt):
     """Call Identification Number  (M)
 
     This parameter is a unique number within the own exchange
@@ -82,19 +81,251 @@ class CallIDNumber:
     is used.
     """
 
-    octets: bytes
+    def __init__(self, octets: bytes):
+        super().__init__(octets, 3)
 
-    @property
-    def value(self) -> int:
-        """Call ID Number - 3 byte unsigned integer"""
 
-        # Convert 3 bytes to integer (big endian)
-        return int.from_bytes(self.octets, byteorder="big")
-        # # Format as hex with 0x prefix
-        # return f"0x{value:06X}"
+class AddressString:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class RecordSequenceNumber(UnsignedInt):
+    """Record Sequence Number  (M)
+
+    This parameter contains a consecutive number for each
+    Call Data Record generated and output.
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, 3)
+
+
+class TypeOfCallingSubscriber(UnsignedInt):
+    """Type of Calling Subscriber
+
+    This parameter indicates that the type of subscriber is
+    registered, for example, normal subscriber, subscriber
+    with priority, or coin box.
+
+    In case of a network-initiated USSD service request,
+    this parameter contains the type of served subscriber in
+    the Subscriber Service Procedure Call Module.
+
+    When a call is routed from the SSF/gsmSSF, the parameter
+    may be modified by SCF/gsmSCF.
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, 1)
+
+
+class IMSI:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class DisconnectingParty:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class Date:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class Time:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class ChargedParty:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class ChargingOrigin:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class TariffClass:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class TariffSwitchInd:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class NumberOfMeterPulses:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class ExchangeIdentity:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class Route:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class MiscellaneousInformation:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class INMarkingOfMS:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class CallPosition:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class EosInfo:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class InternalCauseAndLoc:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class RedirectionCounter:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class OutputForSubscriber:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class PartialOutputRecNum:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class FaultCode:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class SubscriptionType:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class SwitchIdentity:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class NetworkCallReference:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class CAMELTDPData:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class GSMCallReferenceNumber:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class C7ChargingMessage:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class C7CHTMessage:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class ChargingIndicator:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class TransitCarrierInfo:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class ChargeInformation:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class ChargeAreaCode:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class MobileUserClass1:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class MobileUserClass2:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class CarrierInfo:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class Counter:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class UserClass:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class OriginatingLineInformation:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class MultimediaInformation:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class OutputType:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class OriginatedCode:
+    def __call__(self, octets) -> str:
+        pass
+
+
+class ReroutingIndicator:
+    def __call__(self, octets) -> str:
+        pass
 
 
 if __name__ == "__main__":
-    print(f"{TAC(b"\x00\x02\x01").value=}")
+    print(f"{TAC(b'\x00\x02\x01').value=}")
 
-    print(f"{CallIDNumber(b"|;\xe2").value=}")
+    print(f"{CallIDNumber(b'|;\xac').value=}")
