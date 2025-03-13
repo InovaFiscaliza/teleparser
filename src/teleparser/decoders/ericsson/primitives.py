@@ -1,9 +1,20 @@
-class OctetString:
-    def __init__(self, octets, size: int = None):
-        if size and size > len(octets):
-            raise ValueError("size parameter is bigger than octets length")
-        self.string = octets.hex().upper()
+class OctetStringError(Exception):
+    pass
 
+
+class UnsignedIntError(Exception):
+    pass
+
+
+class OctetString:
+    def __init__(self, octets, size: int=None):
+        try:
+            self.string = octets.hex().upper()
+        except AttributeError as e:
+            raise OctetStringError(f"Error parsing octeto")
+        if size and size > len(octets):
+            raise OctetStringError("Size parameter is bigger than octets length")
+        
 
 class UnsignedInt:
     """OCTET STRING is coded as an unsigned integer."""
