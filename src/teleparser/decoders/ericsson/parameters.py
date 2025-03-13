@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from .primitives import OctetString
+from primitives import OctetString, UnsignedInt
 
 
 class TAC(OctetString):
@@ -68,8 +68,7 @@ class TAC(OctetString):
         return result
 
 
-@dataclass
-class CallIDNumber:
+class CallIDNumber(UnsignedInt):
     """Call Identification Number  (M)
 
     This parameter is a unique number within the own exchange
@@ -82,19 +81,11 @@ class CallIDNumber:
     is used.
     """
 
-    octets: bytes
-
-    @property
-    def value(self) -> int:
-        """Call ID Number - 3 byte unsigned integer"""
-
-        # Convert 3 bytes to integer (big endian)
-        return int.from_bytes(self.octets, byteorder="big")
-        # # Format as hex with 0x prefix
-        # return f"0x{value:06X}"
+    def __init__(self, octets: bytes):
+        super().__init__(octets, 3)
 
 
 if __name__ == "__main__":
-    print(f"{TAC(b"\x00\x02\x01").value=}")
+    print(f"{TAC(b'\x00\x02\x01').value=}")
 
-    print(f"{CallIDNumber(b"|;\xe2").value=}")
+    print(f"{CallIDNumber(b'|;\xac').value=}")
