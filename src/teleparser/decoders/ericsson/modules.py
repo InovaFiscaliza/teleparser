@@ -1,4 +1,4 @@
-from parameters import TAC, CallIDNumber
+from parameters import *
 
 Transit = {
     0: {"name": "tAC", "type": TAC},
