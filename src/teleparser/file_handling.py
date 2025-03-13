@@ -88,12 +88,17 @@ class BufferManager:
 
 
 if __name__ == "__main__":
-    from datetime import datetime, timezone
+    from teleparser.encoding.ber import BerDecoder
 
-    input_path = (Path(__file__).parent / "data/input",)
-    output_path = (Path(__file__).parent / "data/output",)
-    cdr_type = "timvoz"
-    manager = CDRFileManager(input_path, output_path, cdr_type)
-    manager.setup_directories()
-    print(f".gz files in folders and subfolders: {len(manager.input_gz_files)}")
-    manager.cleanup()
+    folder = Path(__file__).parent.parent.parent / "data"
+    folder = Path(r"D:\code\cdr\data\input\ClaroVozEricssonMenu1")
+    for file in folder.iterdir():
+        if file.suffix == ".gz":
+            buffer_manager = BufferManager(file)
+            ber = BerDecoder()
+            with buffer_manager.open() as file_buffer:
+                counter = 0
+                while (tlv := ber.decode_tlv(file_buffer)) is not None:
+                    counter += 1
+
+            print(f"Numbers of CDR blocks in {file.name}: {counter}")
