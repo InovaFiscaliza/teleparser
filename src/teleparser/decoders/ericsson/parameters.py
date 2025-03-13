@@ -101,9 +101,23 @@ class RecordSequenceNumber(UnsignedInt):
         super().__init__(octets, 3)
 
 
-class TypeOfCallingSubscriber:
-    def __call__(self, octets) -> str:
-        pass
+class TypeOfCallingSubscriber(UnsignedInt):
+    """Type of Calling Subscriber
+
+    This parameter indicates that the type of subscriber is
+    registered, for example, normal subscriber, subscriber
+    with priority, or coin box.
+
+    In case of a network-initiated USSD service request,
+    this parameter contains the type of served subscriber in
+    the Subscriber Service Procedure Call Module.
+
+    When a call is routed from the SSF/gsmSSF, the parameter
+    may be modified by SCF/gsmSCF.
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, 1)
 
 
 class IMSI:
