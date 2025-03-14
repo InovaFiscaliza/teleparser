@@ -119,6 +119,16 @@ class ChargeNumber(primitives.AddressString):
     """
 
 
+class GsmSCFAddress(primitives.AddressString):
+    """gsmSCF Address
+
+    The gsmSCF Address is CAMEL specific parameter. It is
+    used to address the CAMEL Service Environment instance
+    to which successful Supplementary Service Invocation
+    notification(s) are sent during the call.
+    """
+
+
 class MobileStationRoamingNumber(primitives.AddressString):
     """Mobile Station Roaming Number
 
