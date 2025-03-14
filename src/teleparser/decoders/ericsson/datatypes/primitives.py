@@ -26,72 +26,6 @@ class OctetString:
         self.size = size
 
 
-class UnsignedInt:
-    """OCTET STRING is coded as an unsigned integer."""
-
-    def __init__(self, octets: bytes, size: int):
-        if not isinstance(octets, bytes):
-            raise TypeError(f"Octet parameter is not a byte object: {type(octets)}")
-        if not isinstance(size, int):
-            raise TypeError(f"size parameter is not an int: {type(octets)}")
-        assert len(octets) == size, f"Parameter should have size {size}, {len(octets)=}"
-        self.octets = octets
-
-    @property
-    def value(self) -> int:
-        """Call ID Number - 3 byte unsigned integer
-        it convert 3 bytes to integer (big endian)"
-        """
-        return int.from_bytes(self.octets, byteorder="big")
-
-
-class TBCDString(OctetString):
-    """TBCDString ::= OCTET STRING (SIZE(1..n))
-
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------\
-    |     2nd digit     |     1st digit     | octet 1
-    +-------------------+-------------------+
-    |     4th digit     |     3rd digit     | octet 2
-    +-------------------+-------------------+
-    |     6th digit     |     5th digit     | octet 3
-    \---------------------------------------/
-                        .
-                        .
-                        .
-    /---------------------------------------\
-    |   (2n)th digit    | (2n - 1)th digit  | octet n
-    \---------------------------------------/
-
-    - Digits 0 to 9, two digits per octet,
-    each digit encoded 0000 to 1001,
-    - Overdecadic digits H'A to H'E, two digits
-    per octet, each digit encoded as 1010 to 1110
-    - Number 1111 used as filler when an odd
-    number of digits occurs
-
-    Bits 4 to 1 of octet n, encoding digit 2n-1.
-
-    Bits 8 to 5 of octet n, encoding digit 2n. 
-
-    """
-
-    @property
-    def value(self):
-        "Returns the 2n digits as a string"
-        digits = []
-        for octet in self.octets:
-            # Extract two digits from each octet
-            digit1 = octet & 0x0F
-            digit2 = (octet >> 4) & 0x0F
-            digits.extend([digit1, digit2])
-        if self.size % 2 != 0:
-            digits.append(15)  # Filler
-        return "".join(digits)
-
-
 class AddressString(OctetString):
     """ASN.1 AddressString implementation for OCTET STRING (SIZE(1..20))
 
@@ -147,3 +81,69 @@ class CallPosition(Enum):
     callHasReachedCongestionOrBusyState = 1
     callHasOnlyReachedThroughConnection = 2
     AnswerHasBeenReceived = 3
+
+
+class TBCDString(OctetString):
+    """TBCDString ::= OCTET STRING (SIZE(1..n))
+
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------\
+    |     2nd digit     |     1st digit     | octet 1
+    +-------------------+-------------------+
+    |     4th digit     |     3rd digit     | octet 2
+    +-------------------+-------------------+
+    |     6th digit     |     5th digit     | octet 3
+    \---------------------------------------/
+                        .
+                        .
+                        .
+    /---------------------------------------\
+    |   (2n)th digit    | (2n - 1)th digit  | octet n
+    \---------------------------------------/
+
+    - Digits 0 to 9, two digits per octet,
+    each digit encoded 0000 to 1001,
+    - Overdecadic digits H'A to H'E, two digits
+    per octet, each digit encoded as 1010 to 1110
+    - Number 1111 used as filler when an odd
+    number of digits occurs
+
+    Bits 4 to 1 of octet n, encoding digit 2n-1.
+
+    Bits 8 to 5 of octet n, encoding digit 2n. 
+
+    """
+
+    @property
+    def value(self):
+        "Returns the 2n digits as a string"
+        digits = []
+        for octet in self.octets:
+            # Extract two digits from each octet
+            digit1 = octet & 0x0F
+            digit2 = (octet >> 4) & 0x0F
+            digits.extend([digit1, digit2])
+        if self.size % 2 != 0:
+            digits.append(15)  # Filler
+        return "".join(digits)
+
+
+class UnsignedInt:
+    """OCTET STRING is coded as an unsigned integer."""
+
+    def __init__(self, octets: bytes, size: int):
+        if not isinstance(octets, bytes):
+            raise TypeError(f"Octet parameter is not a byte object: {type(octets)}")
+        if not isinstance(size, int):
+            raise TypeError(f"size parameter is not an int: {type(octets)}")
+        assert len(octets) == size, f"Parameter should have size {size}, {len(octets)=}"
+        self.octets = octets
+
+    @property
+    def value(self) -> int:
+        """Call ID Number - 3 byte unsigned integer
+        it convert 3 bytes to integer (big endian)"
+        """
+        return int.from_bytes(self.octets, byteorder="big")
