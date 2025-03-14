@@ -151,6 +151,24 @@ class ChargeNumber(primitives.AddressString):
     """
 
 
+class ChargedCallingPartyNumber(primitives.AddressString):
+    """Charged Calling Party Number
+
+    The subscriber number that is charged for the call. The
+    Charged Calling Party number is either the Default Calling
+    Number (DCN) for the access or a validated calling party
+    number received from the user.  The subscriber property of
+    the calling party number determines if the DCN or the
+    validated calling party number is charged. When a calling
+    party number is not received from the user or the received
+    calling party number is not successfully validated, the
+    DCN is charged.  When a call is forwarded, the subscriber
+    number forwarding the call is assumed to be a validated
+    calling party number received from the user.
+
+    The parameter is not applicable for WCDMA Japan."""
+
+
 class ContractorNumber(primitives.AddressString):
     """Contractor Number
 
@@ -169,6 +187,14 @@ class GsmSCFAddress(primitives.AddressString):
     used to address the CAMEL Service Environment instance
     to which successful Supplementary Service Invocation
     notification(s) are sent during the call.
+    """
+
+
+class LCSClientIdentity(primitives.AddressString):
+    """LCS Client Identity
+    This parameter contains the identity of external client
+    interacting with an LCS Server for the purpose of obtaining
+    location information for one or more mobile stations.
     """
 
 
@@ -274,6 +300,26 @@ class OriginalCalledNumber(primitives.AddressString):
     may be modified by the SCF/gsmSCF."""
 
 
+class OriginatingLocationNumber(primitives.AddressString):
+    """Originating Location Number
+
+    This parameter contains information, that is,
+    Type of Number(TON) and Numbering Plan Indicator(NPI)
+    and the number to identify the location of the calling
+    subscriber.
+
+    In the case of an originating-Call Component, the
+    parameter contains the location number assigned to
+    the calling subscriber's cell, location area or
+    MSC/VLR service area.
+
+    In the case of a call-forwarding component, the
+    parameter contains the location number assigned to
+    the cell, location area or the MSC/VLR service area
+    of the forwarding subscriber or the location number
+    assigned for the GMSC service area."""
+
+
 @fixed_size_unsigned_int(3)
 class RecordSequenceNumber(UnsignedInt):
     """Record Sequence Number  (M)
@@ -317,6 +363,13 @@ class RedirectingNumber(primitives.AddressString):
     incoming network."""
 
 
+class RedirectingSPN(primitives.AddressString):
+    """Redirecting Single Personal Number
+
+    This parameter contains the called-party number which
+    """
+
+
 class ServiceCentreAddress(primitives.AddressString):
     """Service Centre Address  (M)
 
@@ -324,10 +377,11 @@ class ServiceCentreAddress(primitives.AddressString):
     is, the TON, the NPI, and the number.
     """
 
+
 class ServedSubscriberNumber(primitives.AddressString):
     """Served Subscriber Number  (M)
 
-    This parameter contains the Type of Number (TON), Numbering 
+    This parameter contains the Type of Number (TON), Numbering
     Plan Indicator (NPI), and the number of served subscriber.
 
     The parameter is not applicable for WCDMA Japan."""
@@ -398,6 +452,13 @@ class TAC(primitives.OctetString):
         return result
 
 
+class TargetMSISDN(primitives.AddressString):
+    """Target MSISDN
+
+    This LCS parameter contains the MSISDN number for which
+    positioning is performed."""
+
+
 class TerminatingLocationNumber(primitives.AddressString):
     """Terminating Location Number
 
@@ -443,9 +504,9 @@ class TypeOfCallingSubscriber(UnsignedInt):
 
 class UserProvidedCallingPartyNumber(primitives.AddressString):
     """User Provided Calling Party Number
-    
-    This parameter contains the calling party number provided by 
-    the user that can be used in GSM/ISDN service interworking 
+
+    This parameter contains the calling party number provided by
+    the user that can be used in GSM/ISDN service interworking
     cases.
     """
 
@@ -454,4 +515,3 @@ if __name__ == "__main__":
     print(f"{TAC(b'\x00\x02\x01').value=}")
 
     print(f"{CallIDNumber(b'|;\xac').value=}")
-``` 
