@@ -76,6 +76,18 @@ class CalledPartyNumber(primitives.AddressString):
     indicated in the Teleservice Code field."""
 
 
+class CalledPartyMNPInfo(primitives.AddressString):
+    """Called Party MNP Info
+
+    This parameter contains information about the ported
+    called party number, that is, TON, NPI, and the
+    number.
+
+    This parameter may contain routing information from
+    Mobile Number Portability database.
+    """
+
+
 class CallingPartyNumber(primitives.AddressString):
     """Calling Party Number
 
@@ -101,6 +113,26 @@ class CallingPartyNumber(primitives.AddressString):
     may be modified by the SCF/gsmSCF."""
 
 
+class CAMELCallingPartyNumber(primitives.AddressString):
+    """CAMEL Calling Party Number
+
+    This parameter contains the calling party number which is
+    used when a call is routed from CAMEL Service Environment
+    back to PLMN.
+    """
+
+
+class CAMELSMSAddress(primitives.AddressString):
+    """CAMEL SMS Address
+
+    The CAMEL SMS Address is CAMEL specific parameter. It is
+    used to address the CAMEL Service Environment instance to
+    which successful Short Message Service invocation
+    notification(s) are sent during the handling of short
+    message.
+    """
+
+
 class ChargeNumber(primitives.AddressString):
     """Charge Number  (M)
 
@@ -116,6 +148,17 @@ class ChargeNumber(primitives.AddressString):
 
     Number is used instead.
 
+    """
+
+
+class ContractorNumber(primitives.AddressString):
+    """Contractor Number
+
+    This parameter indicates the contractor number, that is,
+    the TON, the NPI, and the number, for identifying the
+    contractor who provides the service.
+
+    The parameter is only applicable for WCDMA Japan.
     """
 
 
@@ -191,6 +234,19 @@ class MSCIdentification(primitives.AddressString):
     in case the called party is a mobile subscriber with
     terminating IN service or terminating IN category key
     service or terminating CAMEL service."""
+
+
+class MSCNumber(primitives.AddressString):
+    """MSC Number
+
+    This parameter indicates the MSC address, that is, the TON,
+    the NPI, and the number. The MSC Number parameter is used
+    to identify a mobile switching center. For mobile
+    originated SMS, the MSC Number represents the actual
+    MSC/VLR address. For mobile terminated SMS, it represents
+    the SMS Gateway MSC (SMS-GMSC) address and is used by the
+    HLR to route the short message towards the SMS-GMSC.
+    """
 
 
 class OriginalCalledNumber(primitives.AddressString):
@@ -375,15 +431,6 @@ class DestinationAddress(primitives.AddressString):
     the transfer protocol message refers when a UE sends a
     short message to the service centre or when a UE invokes
     an operation at the service centre.
-    """
-
-
-class CAMELCallingPartyNumber(primitives.AddressString):
-    """CAMEL Calling Party Number
-
-    This parameter contains the calling party number which is
-    used when a call is routed from CAMEL Service Environment
-    back to PLMN.
     """
 
 
