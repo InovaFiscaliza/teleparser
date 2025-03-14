@@ -101,6 +101,57 @@ class CallingPartyNumber(primitives.AddressString):
     may be modified by the SCF/gsmSCF."""
 
 
+class ChargeNumber(primitives.AddressString):
+    """Charge Number  (M)
+
+    This parameter contains the TON, the NPI, and one of
+
+    following numbers: calling party number, called party
+
+    number, or switch identity, depending on chargeable
+
+    traffic activity. The Charge Number parameter is not
+
+    included in the CDR for Japan. The parameter Contractor
+
+    Number is used instead.
+
+    """
+
+
+class MSCAddress(primitives.AddressString):
+    """MSC Address
+
+    This parameter identifies the address of a mobile
+    switching center when it functions as an MSC/VLR
+    or as an SMS gateway MSC (SMS-GMSC), or when it
+    acts as a visited MSC/VLR.
+
+    For a mobile-originated call forwarding case, this
+    parameter identifies the MSC/VLR address of the
+    calling subscriber.
+
+    For a mobile-terminated call forwarding case, this
+    parameter identifies the MSC/VLR address of a called
+    subscriber.
+
+    For a roaming call forwarding case, this parameter
+    identifies the MSC/VLR address of a called subscriber.
+
+    For a mobile-originated Short Message Service, this
+    parameter identifies the MSC/VLR address of a calling
+    subscriber.
+
+    For a mobile-terminated Short Message Service in the
+    SMS-GMSC, this parameter identifies the MSC/VLR address
+    of a called subscriber.
+
+    For a mobile-terminated Short Message Service in the
+    MSC/VLR, this parameter identifies the address of the
+    SMS-GMSC.
+    """
+
+
 class MSCIdentification(primitives.AddressString):
     """MSC Identification
 
