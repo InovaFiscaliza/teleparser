@@ -249,6 +249,15 @@ class MSCNumber(primitives.AddressString):
     """
 
 
+class NetworkProvidedCallingPartyNumber(primitives.AddressString):
+    """Network Provided Calling Party Number
+
+    This parameter contains the calling party number provided
+    by the network that can be used in GSM/ISDN service
+    interworking cases.
+    """
+
+
 class OriginalCalledNumber(primitives.AddressString):
     """Original Called Number
 
@@ -314,6 +323,14 @@ class ServiceCentreAddress(primitives.AddressString):
     This parameter indicates the Service Centre address, that
     is, the TON, the NPI, and the number.
     """
+
+class ServedSubscriberNumber(primitives.AddressString):
+    """Served Subscriber Number  (M)
+
+    This parameter contains the Type of Number (TON), Numbering 
+    Plan Indicator (NPI), and the number of served subscriber.
+
+    The parameter is not applicable for WCDMA Japan."""
 
 
 class TAC(primitives.OctetString):
@@ -424,13 +441,12 @@ class TypeOfCallingSubscriber(UnsignedInt):
     """
 
 
-class DestinationAddress(primitives.AddressString):
-    """Destination Address
-
-    This parameter indicates the destination address to which
-    the transfer protocol message refers when a UE sends a
-    short message to the service centre or when a UE invokes
-    an operation at the service centre.
+class UserProvidedCallingPartyNumber(primitives.AddressString):
+    """User Provided Calling Party Number
+    
+    This parameter contains the calling party number provided by 
+    the user that can be used in GSM/ISDN service interworking 
+    cases.
     """
 
 
@@ -438,3 +454,4 @@ if __name__ == "__main__":
     print(f"{TAC(b'\x00\x02\x01').value=}")
 
     print(f"{CallIDNumber(b'|;\xac').value=}")
+``` 
