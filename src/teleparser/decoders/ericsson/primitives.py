@@ -7,14 +7,21 @@ class UnsignedIntError(Exception):
 
 
 class OctetString:
-    def __init__(self, octets, size: int = None):
+    """Implement ASN.1 Octet String type with optional size and boundaries constraints"""
+    def __init__(self, octets, size: int = None, lower: int = None, upper: int = None):
+        if size is None:
+            size = len(octets)
+        elif size and size > len(octets):
+            raise OctetStringError("Size parameter is bigger than octets length")
+        if lower and lower > size:
+            raise OctetStringError(f"{size:=} is small er than {lower:=} limit")
+        if upper and size > upper:
+            raise OctetStringError(f"{size:=} is bigger than {upper:=} limit")    
         try:
             self.string = octets.hex().upper()
         except AttributeError as e:
             raise OctetStringError("Error parsing octet") from e
-        if size and size > len(octets):
-            raise OctetStringError("Size parameter is bigger than octets length")
-
+        
 
 class UnsignedInt:
     """OCTET STRING is coded as an unsigned integer."""
