@@ -378,6 +378,15 @@ class DestinationAddress(primitives.AddressString):
     """
 
 
+class CAMELCallingPartyNumber(primitives.AddressString):
+    """CAMEL Calling Party Number
+
+    This parameter contains the calling party number which is
+    used when a call is routed from CAMEL Service Environment
+    back to PLMN.
+    """
+
+
 if __name__ == "__main__":
     print(f"{TAC(b'\x00\x02\x01').value=}")
 
