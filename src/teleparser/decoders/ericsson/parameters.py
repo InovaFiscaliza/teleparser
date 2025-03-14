@@ -307,6 +307,19 @@ class TAC(primitives.OctetString):
         return result
 
 
+class TerminatingLocationNumber(primitives.AddressString):
+    """Terminating Location Number
+
+    This parameter contains information, that is, the TON,
+    the NPI, and the number, to identify the location of
+    the called subscriber.
+
+    This parameter contains the location number assigned
+    to the called-subscriber's cell, location area or MSC/VLR
+    cell.
+    """
+
+
 class TranslatedNumber(primitives.AddressString):
     """Translated Number
 
