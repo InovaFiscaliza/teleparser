@@ -1,12 +1,7 @@
 """This module implements primitive datatypes as described in the ASN.1 Especification"""
 
-
-class OctetStringError(Exception):
-    pass
-
-
-class UnsignedIntError(Exception):
-    pass
+from enum import Enum
+from . import exceptions
 
 
 class OctetString:
@@ -16,13 +11,17 @@ class OctetString:
         if size is None:
             size = len(octets)
         elif size and size != len(octets):
-            raise OctetStringError(
+            raise exceptions.OctetStringError(
                 f"{size:=} parameter is different from octets' length: {len(octets)}"
             )
         if lower and lower > size:
-            raise OctetStringError(f"{size:=} is smaller than {lower:=} limit")
+            raise exceptions.OctetStringError(
+                f"{size:=} is smaller than {lower:=} limit"
+            )
         if upper and size > upper:
-            raise OctetStringError(f"{size:=} is bigger than {upper:=} limit")
+            raise exceptions.OctetStringError(
+                f"{size:=} is bigger than {upper:=} limit"
+            )
         self.octets = octets
         self.size = size
 
@@ -141,3 +140,10 @@ class AddressString(OctetString):
     def __str__(self) -> str:
         """String representation including TON/NPI and number"""
         return f"TON={self.ton}, NPI={self.npi}, Number={self.digits}"
+
+
+class CallPosition(Enum):
+    valueUsedForAllCallsToDetermineIfOutputToTakePlace = 0
+    callHasReachedCongestionOrBusyState = 1
+    callHasOnlyReachedThroughConnection = 2
+    AnswerHasBeenReceived = 3
