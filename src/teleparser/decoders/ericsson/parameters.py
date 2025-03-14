@@ -142,6 +142,17 @@ class RecordSequenceNumber(UnsignedInt):
     """
 
 
+class RedirectingDropBackNumber(primitives.AddressString):
+    """Redirecting Drop Back Number
+
+    This parameter contains the called-party number which
+    caused the initiation of Call Drop Back.
+
+    This parameter is available if Call Drop Back is used.
+
+    The parameter is not applicable for WCDMA Japan."""
+
+
 class RedirectingNumber(primitives.AddressString):
     """Redirecting Number
 
