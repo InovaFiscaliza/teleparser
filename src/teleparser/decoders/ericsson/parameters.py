@@ -1,8 +1,135 @@
-from dataclasses import dataclass
-from primitives import OctetString, UnsignedInt
+from .decorators import fixed_size_unsigned_int, UnsignedInt
+from . import primitives
 
 
-class TAC(OctetString):
+@fixed_size_unsigned_int(3)
+class CallIDNumber(UnsignedInt):
+    """Call Identification Number  (M)
+
+    This parameter is a unique number within the own exchange
+    that identifies the Call Component.
+
+    All Call Modules produced in the same Call Component
+    have the same call identification number; that is,
+    if partial output records are produced for the same
+    Call Component, the same call identification number
+    is used
+    """
+
+    pass  # No need to override __init__ anymore
+
+
+class CalledPartyNumber(primitives.AddressString):
+    """Called Party Number
+
+    This parameter contains Type of Number (TON), Numbering
+    Plan Indicator (NPI), and the number, to identify
+    the called party.
+
+    In case of mobile originating Call Component, this
+    parameter contains the number received from the UE,
+    excluding prefixes. Overdecadic digits received from
+    a user equipment can be mapped to other values using
+    Exchange Parameters.
+
+    In case of mobile terminating Call Component, mobile
+    terminated short message service in MSC/VLR, and
+    mobile terminated short message service in SMS-GMSC, the
+    called party number is the called MSISDN number.
+
+    In case of call forwarding component, the parameter
+    contains the number of the party to whom the call is
+    forwarded.
+
+    In case of transit Call Component and roaming call
+    forwarding component, this parameter contains the
+    number received from the incoming network. See also
+    the clarification for transit component in case of
+    IN calls in the next paragraph.
+
+    In all IN-traffic cases, the parameter has the possible
+    IN-prefix. When a call is routed to an SSF/gsmSSF because
+    of terminating IN service or terminating IN category key
+    service, the parameter is the possible IN-prefix and
+    MSISDN in case of transit component. In case of CAMEL
+    service, the prefix mechanism is not used. When a call
+    is routed from the SSF/gsmSSF, the parameter may be
+    modified by SCF/gsmSCF.
+
+    If an additional MSISDN is used as the called-subscriber
+    number, either the 'main' MSISDN or the additional MSISDN
+    is registered in the terminating Call Component, according
+    to an Exchange Parameter.
+
+    If the subscriber uses the 'international prefix button'
+    ('+'-button), then Type of Number (TON) for the
+    called-party number in the mobile-originating record
+    contains TON=1(international format). No prefix is
+    stored in the digit information.
+
+    If the subscriber selects the international prefix by
+    himself, then TON=2 (unknown), and the prefix is included
+    in the beginning of digit information.
+
+    No Called Party Number is available when a call is
+    originated using emergency call set-up. Emergency calls are
+    indicated in the Teleservice Code field.
+    """
+
+
+class CallingPartyNumber(primitives.AddressString):
+    """Calling Party Number
+
+    This parameter contains the Type of Number (TON),
+    Numbering Plan Indicator (NPI), and the calling
+    party number.
+
+    The calling party number is the calling MSISDN number
+    in case of originating Call Component, mobile originated
+    Short Message Service in MSC/VLR, mobile originated
+    Short Message Service in SMS-IWMSC, or call independent
+    supplementary service procedure.
+
+    In case of Roaming Call Forwarding, Call Forwarding, and
+    UE Terminating component, the calling party number is
+    received from the incoming network.
+
+    In the case of network-initiated USSD service request,
+    this parameter contains the number for the served
+    subscriber in the Subscriber Service Procedure service.
+
+    When a call is routed from the SSF/gsmSSF, the parameter
+    may be modified by the SCF/gsmSCF.
+    """
+
+
+class MSCIdentification(primitives.AddressString):
+    """MSC Identification
+
+    This parameter indicates the identification of the (G)MSC
+    where the output is initiated.
+
+    MSC Identification is used as the own calling address when
+    a MAP message is sent from the GMSC or MSC/VLR to other
+    WCDMA network entities, for instance, HLR.
+
+    The parameter is output in the transit component only
+    in case the called party is a mobile subscriber with
+    terminating IN service or terminating IN category key
+    service or terminating CAMEL service.
+    """
+
+
+@fixed_size_unsigned_int(3)
+class RecordSequenceNumber(UnsignedInt):
+    """Record Sequence Number  (M)
+
+    This parameter contains a consecutive number for each
+    Call Data Record generated and output.
+    """
+
+
+class TAC(primitives.OctetString):
     """Traffic Activity Code (TAC)  (M)
 
       This parameter contains information about traffic
@@ -43,22 +170,21 @@ class TAC(OctetString):
     """
 
     def __init__(self, octets):
-        super().__init__(octets)
-        size = len(octets)
-        assert size in {3, 4}, f"Size should be 3 or 4 for TAC, {size:=}"
+        super().__init__(octets, lower=3, upper=4)
+        try:
+            self.string = octets.hex().upper()
+        except AttributeError as e:
+            raise primitives.OctetStringError("Error parsing octet") from e
 
     @property
     def value(self) -> str:
-        # Convert bytes to hex string
-        hex_str = self.string
-
         # Extract individual octets
-        tsc = hex_str[:2]  # Telecom Service Code
-        tos = hex_str[2:4]  # Type of Seizure
-        toi = hex_str[4:6]  # Type of Indicator
+        tsc = self.string[:2]  # Telecom Service Code
+        tos = self.string[2:4]  # Type of Seizure
+        toi = self.string[4:6]  # Type of Indicator
 
         # Handle optional TOP octet
-        top = hex_str[6:8] if len(hex_str) == 8 else ""
+        top = self.string[6:8] if len(self.string) == 8 else ""
 
         # Build result string
         result = f"TSC={tsc} TOS={tos} TOI={toi}"
@@ -68,39 +194,7 @@ class TAC(OctetString):
         return result
 
 
-class CallIDNumber(UnsignedInt):
-    """Call Identification Number  (M)
-
-    This parameter is a unique number within the own exchange
-    that identifies the Call Component.
-
-    All Call Modules produced in the same Call Component
-    have the same call identification number; that is,
-    if partial output records are produced for the same
-    Call Component, the same call identification number
-    is used.
-    """
-
-    def __init__(self, octets: bytes):
-        super().__init__(octets, 3)
-
-
-class AddressString:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class RecordSequenceNumber(UnsignedInt):
-    """Record Sequence Number  (M)
-
-    This parameter contains a consecutive number for each
-    Call Data Record generated and output.
-    """
-
-    def __init__(self, octets: bytes):
-        super().__init__(octets, 3)
-
-
+@fixed_size_unsigned_int(1)
 class TypeOfCallingSubscriber(UnsignedInt):
     """Type of Calling Subscriber
 
@@ -115,214 +209,6 @@ class TypeOfCallingSubscriber(UnsignedInt):
     When a call is routed from the SSF/gsmSSF, the parameter
     may be modified by SCF/gsmSCF.
     """
-
-    def __init__(self, octets: bytes):
-        super().__init__(octets, 1)
-
-
-class IMSI:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class DisconnectingParty:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class Date:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class Time:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class ChargedParty:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class ChargingOrigin:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class TariffClass:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class TariffSwitchInd:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class NumberOfMeterPulses:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class ExchangeIdentity:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class Route:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class MiscellaneousInformation:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class INMarkingOfMS:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class CallPosition:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class EosInfo:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class InternalCauseAndLoc:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class RedirectionCounter:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class OutputForSubscriber:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class PartialOutputRecNum:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class FaultCode:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class SubscriptionType:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class SwitchIdentity:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class NetworkCallReference:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class CAMELTDPData:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class GSMCallReferenceNumber:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class C7ChargingMessage:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class C7CHTMessage:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class ChargingIndicator:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class TransitCarrierInfo:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class ChargeInformation:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class ChargeAreaCode:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class MobileUserClass1:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class MobileUserClass2:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class CarrierInfo:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class Counter:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class UserClass:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class OriginatingLineInformation:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class MultimediaInformation:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class OutputType:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class OriginatedCode:
-    def __call__(self, octets) -> str:
-        pass
-
-
-class ReroutingIndicator:
-    def __call__(self, octets) -> str:
-        pass
 
 
 if __name__ == "__main__":

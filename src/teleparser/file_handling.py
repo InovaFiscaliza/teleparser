@@ -91,15 +91,21 @@ if __name__ == "__main__":
     from teleparser.decoders.ber import BerDecoder
     from collections import Counter
 
-    counter = Counter()
+    blocks = Counter()
+    types = Counter()
     folder = Path(__file__).parent.parent.parent / "data"
-    folder = Path(r"D:\code\cdr\data\input\ClaroVozEricssonMenu1")
+    # folder = Path(r"D:\code\cdr\data\input\ClaroVozEricssonMenu1")
     for file in folder.iterdir():
         if file.suffix == ".gz":
             buffer_manager = BufferManager(file)
             ber = BerDecoder()
             with buffer_manager.open() as file_buffer:
                 while (tlv := ber.decode_tlv(file_buffer)) is not None:
-                    counter[tlv.children[0].tag.number] += 1
+                    if tlv.children is not None:
+                        for child in tlv.children:
+                            blocks[child.tag.number] += 1
+                            for c in child.children:
+                                types[(child.tag.number, c.tag.number)] += 1
 
-            print(f"Types of CDR blocks: {counter}")
+    print(f"Count of CDR blocks: {blocks}")
+    print(f"Count of Parameter Types: {types}")

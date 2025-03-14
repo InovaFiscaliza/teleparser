@@ -1,10 +1,13 @@
-CallDataRecord DEFINITIONS IMPLICIT TAGS ::= BEGIN
+EricssonASN1 DEFINITIONS IMPLICIT TAGS ::= BEGIN
 
   CallDataRecord ::= CHOICE
   {
-        singleCallDataRecord UMTSGSMPLMNCallDataRecord,
+        singleCallDataRecord [0] UMTSGSMPLMNCallDataRecord,
         compositeCallDataRecord [1] CompositeCallDataRecord
   }
+END
+
+CompositeCallDataRecord DEFINITIONS IMPLICIT TAGS ::= BEGIN
 
   CompositeCallDataRecord  ::=  SEQUENCE OF UMTSGSMPLMNCallDataRecord
 END
@@ -25,7 +28,7 @@ END
 
 CallModules DEFINITIONS IMPLICIT TAGS ::= BEGIN
 
-  Transit ::= SET{
+  Transit ::= [0] SET{
     tAC                          [0] TAC OPTIONAL,
     callIdentificationNumber     [1] CallIDNumber OPTIONAL,
     recordSequenceNumber         [2] RecordSequenceNumber OPTIONAL,
@@ -129,7 +132,7 @@ CallModules DEFINITIONS IMPLICIT TAGS ::= BEGIN
    --F-- reroutingIndicator          [121] NULL OPTIONAL
   }
 
-  MSOriginating ::= SET{
+  MSOriginating ::= [1]SET{
     tAC                          [0] TAC OPTIONAL,
     callIdentificationNumber     [1] CallIDNumber OPTIONAL,
     recordSequenceNumber         [2] RecordSequenceNumber OPTIONAL,
