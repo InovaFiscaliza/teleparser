@@ -241,6 +241,19 @@ class TAC(primitives.OctetString):
         return result
 
 
+class TranslatedNumber(primitives.AddressString):
+    """Translated Number
+
+    The Translated Number is obtained from the B-number
+    analysis which may modify the received called party number.
+    The purpose of this number is to determine the
+    routing before being sent towards the outgoing side.
+
+    In case called party number is not modified in B-number
+    analysis the translated number contains the same number
+    as the called party number."""
+
+
 @fixed_size_unsigned_int(1)
 class TypeOfCallingSubscriber(UnsignedInt):
     """Type of Calling Subscriber
