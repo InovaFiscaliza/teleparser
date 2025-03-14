@@ -73,8 +73,7 @@ class CalledPartyNumber(primitives.AddressString):
 
     No Called Party Number is available when a call is
     originated using emergency call set-up. Emergency calls are
-    indicated in the Teleservice Code field.
-    """
+    indicated in the Teleservice Code field."""
 
 
 class CallingPartyNumber(primitives.AddressString):
@@ -99,8 +98,7 @@ class CallingPartyNumber(primitives.AddressString):
     subscriber in the Subscriber Service Procedure service.
 
     When a call is routed from the SSF/gsmSSF, the parameter
-    may be modified by the SCF/gsmSCF.
-    """
+    may be modified by the SCF/gsmSCF."""
 
 
 class MSCIdentification(primitives.AddressString):
@@ -116,8 +114,23 @@ class MSCIdentification(primitives.AddressString):
     The parameter is output in the transit component only
     in case the called party is a mobile subscriber with
     terminating IN service or terminating IN category key
-    service or terminating CAMEL service.
-    """
+    service or terminating CAMEL service."""
+
+
+class OriginalCalledNumber(primitives.AddressString):
+    """Original Called Number
+
+    This parameter identifies the original called party,
+    including Type of Number (TON) and Numbering Plan
+    Indicator (NPI), when the call is redirected.
+
+    In the call forwarding component, the parameter contains
+    the MSISDN number of the subscriber who forwarded the
+    call, when the call is redirected once. In other cases,
+    the parameter is received from the incoming network.
+
+    When a call is routed from the SSF/gsmSSF, the parameter
+    may be modified by the SCF/gsmSCF."""
 
 
 @fixed_size_unsigned_int(3)
@@ -127,7 +140,7 @@ class RecordSequenceNumber(UnsignedInt):
     This parameter contains a consecutive number for each
     Call Data Record generated and output.
     """
-
+class 
 
 class TAC(primitives.OctetString):
     """Traffic Activity Code (TAC)  (M)
