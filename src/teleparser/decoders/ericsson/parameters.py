@@ -119,6 +119,21 @@ class ChargeNumber(primitives.AddressString):
     """
 
 
+class MobileStationRoamingNumber(primitives.AddressString):
+    """Mobile Station Roaming Number
+
+    This parameter contains the MSRN, that is, the TON,
+    the NPI, and the number.
+
+    In the case of CallForwarding component in GMSC, this
+    parameter is not output.
+
+    In the case of an UE Terminating SMS in an SMS-GMSC
+    component, this parameter can be received from HLR
+    instead of the MSC Number.
+    """
+
+
 class MSCAddress(primitives.AddressString):
     """MSC Address
 
