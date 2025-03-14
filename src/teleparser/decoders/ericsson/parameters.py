@@ -140,7 +140,30 @@ class RecordSequenceNumber(UnsignedInt):
     This parameter contains a consecutive number for each
     Call Data Record generated and output.
     """
-class 
+
+
+class RedirectingNumber(primitives.AddressString):
+    """Redirecting Number
+
+    This parameter contains Type of Number (TON), Numbering
+    Plan Indicator (NPI), and the number, when the call is
+    redirected, indicating the number from which the call
+    was last redirected.
+
+    The call forwarding component contains the MSISDN
+    number of the mobile subscriber who forwarded the call
+    when the call is redirected.
+
+    The ISDN call forwarding component contains the subscriber
+    number which has a call forwarding service active and
+    therefore forwards the incoming call.
+
+    When a call is routed from the SSF/gsmSSF, the parameter
+    may be modified by SCF/gsmSCF.
+
+    In other cases, the parameter is received from the
+    incoming network."""
+
 
 class TAC(primitives.OctetString):
     """Traffic Activity Code (TAC)  (M)
