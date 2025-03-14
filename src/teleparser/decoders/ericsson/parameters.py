@@ -252,6 +252,14 @@ class RedirectingNumber(primitives.AddressString):
     incoming network."""
 
 
+class ServiceCentreAddress(primitives.AddressString):
+    """Service Centre Address  (M)
+
+    This parameter indicates the Service Centre address, that
+    is, the TON, the NPI, and the number.
+    """
+
+
 class TAC(primitives.OctetString):
     """Traffic Activity Code (TAC)  (M)
 
