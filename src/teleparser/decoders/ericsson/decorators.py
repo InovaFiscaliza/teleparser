@@ -1,5 +1,5 @@
 from functools import wraps
-from .primitives import UnsignedInt
+from .datatypes.primitives import UnsignedInt
 
 
 def fixed_size_unsigned_int(size):

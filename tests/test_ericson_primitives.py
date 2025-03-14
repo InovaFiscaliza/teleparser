@@ -1,4 +1,4 @@
-from teleparser.decoders.ericsson import primitives
+from teleparser.decoders.ericsson.datatypes import primitives
 import pytest
 
 

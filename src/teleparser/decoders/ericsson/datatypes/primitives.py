@@ -1,3 +1,6 @@
+"""This module implements primitive datatypes as described in the ASN.1 Especification"""
+
+
 class OctetStringError(Exception):
     pass
 
