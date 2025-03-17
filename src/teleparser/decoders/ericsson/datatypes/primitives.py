@@ -1,6 +1,6 @@
 """This module implements primitive datatypes as described in the ASN.1 Especification"""
 
-from enum import Enum
+from dataclasses import dataclass
 from . import exceptions
 
 
@@ -76,11 +76,19 @@ class AddressString(OctetString):
         return f"TON={self.ton}, NPI={self.npi}, Number={self.digits}"
 
 
-class CallPosition(Enum):
-    valueUsedForAllCallsToDetermineIfOutputToTakePlace = 0
-    callHasReachedCongestionOrBusyState = 1
-    callHasOnlyReachedThroughConnection = 2
-    answerHasBeenReceived = 3
+@dataclass
+class CallPosition:
+    octets: bytes
+    VALUES = {
+        0: "valueUsedForAllCallsToDetermineIfOutputToTakePlace",
+        1: "callHasReachedCongestionOrBusyState",
+        2: "callHasOnlyReachedThroughConnection",
+        3: "answerHasBeenReceived",
+    }
+
+    @property
+    def value(self):
+        return self.VALUES[int.from_bytes(self.octets, "big")]
 
 
 class TBCDString(OctetString):
@@ -89,7 +97,7 @@ class TBCDString(OctetString):
     |    |    |    |    |    |    |    |    |
     |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
     |    |    |    |    |    |    |    |    |
-    /---------------------------------------\
+    /---------------------------------------|
     |     2nd digit     |     1st digit     | octet 1
     +-------------------+-------------------+
     |     4th digit     |     3rd digit     | octet 2
@@ -99,7 +107,7 @@ class TBCDString(OctetString):
                         .
                         .
                         .
-    /---------------------------------------\
+    /---------------------------------------|
     |   (2n)th digit    | (2n - 1)th digit  | octet n
     \---------------------------------------/
 
@@ -112,7 +120,7 @@ class TBCDString(OctetString):
 
     Bits 4 to 1 of octet n, encoding digit 2n-1.
 
-    Bits 8 to 5 of octet n, encoding digit 2n. 
+    Bits 8 to 5 of octet n, encoding digit 2n.
 
     """
 
