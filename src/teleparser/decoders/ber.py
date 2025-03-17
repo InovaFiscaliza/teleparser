@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Optional, Tuple
 from io import BufferedReader, BytesIO
 from binascii import hexlify
+from rust_bindings import rust_bindings
 
 # Basic ASN.1 Reference
 # https://luca.ntop.org/Teaching/Appunti/asn1.html
@@ -57,7 +58,9 @@ class BerDecoder:
 
     @staticmethod
     def decode_tag(tag_bytes: bytes):
+        return rust_bindings.decode_tag(tag_bytes)
         first_byte = tag_bytes[0]
+        print(tag_bytes)
         string = hexlify(
             tag_bytes[:1]
         ).decode(

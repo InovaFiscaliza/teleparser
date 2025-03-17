@@ -1,0 +1,12 @@
+[package]
+name = "rust_bindings"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "rust_bindings"
+crate-type = ["cdylib"]
+
+[dependencies]
+hex = "0.4.3"
+pyo3 = { version = "0.24.0", features = ["extension-module"] }

@@ -175,3 +175,7 @@ data/
 
 *.md
 *.htm
+
+# Added by cargo
+
+/target

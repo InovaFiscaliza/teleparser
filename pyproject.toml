@@ -14,8 +14,8 @@ dependencies = [
 teleparser = "teleparser:main"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1,<2"]
+build-backend = "maturin"
 
 [dependency-groups]
 dev = [
@@ -23,4 +23,11 @@ dev = [
     "ipykernel>=6.29.5",
     "pre-commit>=4.1.0",
     "pytest>=8.3.4",
+]
+
+classifiers = [
+    "Programming Language :: Rust",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
 ]
