@@ -100,3 +100,28 @@ Transit = {
 }
 
 MSOriginating = {}
+
+UMTSGSMPLMNCallDataRecord = {
+    0: {"name": "transit", "tag": "CallModule", "type": Transit}
+}
+
+CompositeDataRecord = {
+    0: {
+        "name": "singleDataRecord",
+        "tag": "CallDataRecord",
+        "type": UMTSGSMPLMNCallDataRecord,
+    },
+}
+
+CallDataRecord = {
+    0: {
+        "name": "singleDataRecord",
+        "tag": "CallDataRecord",
+        "type": UMTSGSMPLMNCallDataRecord,
+    },
+    1: {
+        "name": "compositeCallDataRecord",
+        "tag": "CallDataRecord",
+        "type": CompositeDataRecord,
+    },
+}
