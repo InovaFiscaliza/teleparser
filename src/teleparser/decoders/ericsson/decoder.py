@@ -23,3 +23,4 @@ class TlvVozEricsson:
             self.name = tag_mapping["name"]
             self.value = getattr(tag_mapping["type"](value), "value")
             self.schema = {}
+        self.length = len(value)

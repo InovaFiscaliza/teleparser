@@ -80,7 +80,7 @@ class CallPosition(Enum):
     valueUsedForAllCallsToDetermineIfOutputToTakePlace = 0
     callHasReachedCongestionOrBusyState = 1
     callHasOnlyReachedThroughConnection = 2
-    AnswerHasBeenReceived = 3
+    answerHasBeenReceived = 3
 
 
 class TBCDString(OctetString):
