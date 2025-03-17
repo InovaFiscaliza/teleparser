@@ -8,5 +8,6 @@ name = "rust_bindings"
 crate-type = ["cdylib"]
 
 [dependencies]
+byteorder = "1.5.0"
 hex = "0.4.3"
 pyo3 = { version = "0.24.0", features = ["extension-module"] }
