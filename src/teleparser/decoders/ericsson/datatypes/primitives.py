@@ -5,6 +5,15 @@ from dataclasses import dataclass
 from . import exceptions
 
 
+class ByteEnum:
+    def __init__(self, byte):
+        self.byte = byte
+
+    @property
+    def value(self):
+        return self.VALUES[int.from_bytes(self.byte, "big")]
+
+
 class OctetString:
     """Implement ASN.1 Octet String type with optional size and boundaries constraints"""
 
@@ -142,9 +151,11 @@ class TBCDString(OctetString):
 
     """
 
-    @property
-    def value(self):
-        "Returns the 2n digits as a string"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._parse_digits()
+
+    def _parse_digits(self):
         digits = []
         for octet in self.octets:
             # Extract two digits from each octet
@@ -153,7 +164,12 @@ class TBCDString(OctetString):
             digits.extend([digit1, digit2])
         if self.size % 2 != 0:
             digits.append(15)  # Filler
-        return "".join(digits)
+        self.digits = digits
+
+    @property
+    def value(self):
+        "Returns the 2n digits as a string"
+        return "".join(self.digits)
 
 
 class UnsignedInt:

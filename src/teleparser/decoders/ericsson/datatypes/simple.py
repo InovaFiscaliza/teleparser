@@ -2,8 +2,44 @@
 It's organized here because it's just the boilerplate of the type name and its description
 """
 
+from collections import namedtuple
 from functools import cached_property
 from . import primitives
+
+
+Carrier = namedtuple("Carrier", ["name", "mcc", "mnc"])
+
+CARRIERS = (
+    Carrier("ALGAR_TELECOM", 724, 33),
+    Carrier("ALGAR_TELECOM", 724, 34),
+    Carrier("ALGAR_TELECOM", 724, 32),
+    Carrier("AMERICANET", 724, 26),
+    Carrier("ARQIA", 724, 299),
+    Carrier("BBS_OPTIONS", 724, 299),
+    Carrier("CINCO", 724, 299),
+    Carrier("CLARO", 724, 38),
+    Carrier("CLARO", 724, 5),
+    Carrier("FAILED_CALLS", 724, 299),
+    Carrier("FIX_LINE", 724, 999),
+    Carrier("LIGUE", 724, 21),
+    Carrier("CLARO_NXT_NEXTEL", 724, 0),
+    Carrier("CLARO_NXT_NEXTEL", 724, 39),
+    Carrier("NLT", 724, 299),
+    Carrier("OI_MOVEL", 724, 31),
+    Carrier("OI_MOVEL", 724, 16),
+    Carrier("SERCOMTEL", 724, 15),
+    Carrier("SURF", 724, 17),
+    Carrier("TELECALL", 724, 299),
+    Carrier("TIM", 724, 4),
+    Carrier("TIM", 724, 3),
+    Carrier("TIM", 724, 54),
+    Carrier("TIM", 724, 2),
+    Carrier("VECTO_MOBILE", 724, 299),
+    Carrier("VIVO", 724, 23),
+    Carrier("VIVO", 724, 6),
+    Carrier("VIVO", 724, 10),
+    Carrier("VIVO", 724, 11),
+)
 
 
 class CalledPartyNumber(primitives.AddressString):
@@ -364,6 +400,61 @@ class GsmSCFAddress(primitives.AddressString):
 
     def __init__(self, octets):
         super().__init__(octets, lower=1, upper=9)
+
+
+class IMSI(primitives.TBCDString):
+    """ASN.1 Formal Description
+    IMSI ::= TBCDString (SIZE(3..8))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |  MCC digit 2      |  MCC digit 1      | octet 1
+    +-------------------+-------------------+
+    |  MNC digit 1      |  MCC digit 3      | octet 2
+    +-------------------+-------------------+
+    |  MSIN digit 1     |  MNC digit 2      | octet 3
+    +-------------------+-------------------+
+    |  MSIN digit 3     |  MSIN digit 2     | octet 4
+    /---------------------------------------/
+    .
+    .
+    .
+    /---------------------------------------/
+    |  MSIN digit 2n-7  |  MSIN digit 2n-8  | octet n-1
+    +-------------------+-------------------+
+    |  See note         |  MSIN digit 2n-6  | octet n
+    /---------------------------------------/
+    Note: bits 5-8 of octet n contain
+    - last MSIN digit, or
+    - 1111 used as a filler when there is an odd
+    total number of digits.
+    MCC Mobile Country Code (octet 1 and bits 1-4 of octet 2)
+    MNC Mobile Network Code (bits 5-8 of octet 2 and bits 1-4
+    of octet 3).
+    MSIN Mobile Subscriber Identification Number
+    The total number of digits should not exceed 15.
+    Digits 0 to 9, two digits per octet,
+    each digit encoded 0000 to 1001
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._parse_mcc_mnc_msin()
+
+    def _parse_mcc_mnc_msin(self):
+        mcc = self.digits[0]
+        mnc = self.digits[1]
+        msin = self.digits[2:]
+        self.carrier = CARRIERS[(mcc, mnc)]
+        self.msin = msin
+
+    @property
+    def value(self):
+        return self.carrier.name, self.carrier.mcc, self.carrier.mnc, self.msin
+
+    def __str__(self) -> str:
+        return f"{self.carrier.name} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"
 
 
 class LCSClientIdentity(primitives.AddressString):
