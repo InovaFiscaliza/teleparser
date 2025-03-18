@@ -1,32 +1,61 @@
-class AcceptableChannelCodings:
-	"""Acceptable Channel Codings
-	This parameter contains the acceptable traffic
-	channel codings received from the user equipment at
-	call set-up. Channel Codings which are received from
-	the user equipment but which are not supported by the
-	MSC/VLR are not included in the Acceptable Channel Codings.
-	The parameter is only applicable for GSM.
-	"""
-
-class AcceptanceOfCallWaiting:
-	"""Acceptance Of Call Waiting
-	This parameter indicates that a subscriber
-	accepted a waiting call.
-	"""
-
 class AccountCode:
 	"""ASN.1 Formal Description
 	AccountCode ::= TBCDString (SIZE(1..5))
 	Note: Only decimal digits are used.
 	"""
 
-class ACMChargingIndicator:
-	"""ACM Charging Indicator (M)
-	This parameter contains the Charging Indicator as sent in
-	the Address Complete Message (ACM). It is output even if
-	the signalling protocol does not support the ACM with
-	charging indicator.
-	The parameter is only applicable for WCDMA Japan.
+class AddressStringExtended:
+	"""ASN.1 Formal Description
+	AddressStringExtended ::= OCTET STRING (SIZE(1..20))
+	TBCD representation
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|        TON        |        NPI        |
+	+-------------------+-------------------+
+	|     2nd digit     |     1st digit     | octet 1 of TBCD
+	+-------------------+-------------------+
+	|     4th digit     |     3rd digit     | octet 2 of TBCD
+	+-------------------+-------------------+
+	|     6th digit     |     5th digit     | octet 3 of TBCD
+	/---------------------------------------/
+	.
+	.
+	.
+	/---------------------------------------/
+	|    (2n)th digit   | (2n - 1)th digit  | octet n of TBCD
+	/---------------------------------------/
+	Character representation
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|       TON         |        NPI        |
+	+---------------------------------------+
+	|               1st character           | octet 1 of char
+	+---------------------------------------+
+	|               2nd character           | octet 2 of char
+	+---------------------------------------+
+	|               3rd character           | octet 3 of char
+	/---------------------------------------/
+	.
+	.
+	.
+	/---------------------------------------/
+	|               Nth character           | octet N of char
+	/---------------------------------------/
+	Note: The OCTET STRING is coded as an unsigned INTEGER.
+	The first octet uses 4 bits for Type Of Number (TON)
+	and 4 bits for Numbering Plan Indicator (NPI):
+	- Bit 8-5: Type of number
+	- Bit 4-1: Numbering plan indicator
+	Note: The values and their meanings for TON and NPI are
+	described in the Application Information "Type Of
+	Number and Numbering Plan Indicator".
+	Subsequent octets representing address digits or characters
+	are encoded as TBCD string or as GSM 7-bit default alphabet
+	character depending on the NPI value.
 	"""
 
 class AgeOfLocationEstimate:
@@ -50,23 +79,22 @@ class AgeOfLocationEstimate:
 	32767 minutes (~22 days) old
 	"""
 
-class AIURRequested:
-	"""Air Interface User Rate Requested
-	This parameter contains the Radio Access Network Interface
-	user rate requested by the user equipment at call setup
-	time, or changed later during the call.
-	This parameter is available for non-transparent services,
-	in case of multi-slot configurations or 14.4 kbit/s
-	channel coding when the call is a GSM call.
-	"""
-
-class ANMChargingIndicator:
-	"""ANM Charging Indicator
-	This parameter contains the Charging Indicator as sent
-	in  the Answer Message (ANM). It is output even if the
-	signalling protocol does not support the ANM with charging
-	indicator.
-	The parameter is only applicable for WCDMA Japan.
+class AirInterfaceUserRate:
+	"""ASN.1 Formal Description
+	AirInterfaceUserRate ::= ENUMERATED
+	(aIUR9600bps                  (1),
+	aIUR14400bps                 (2),
+	aIUR19200bps                 (3),
+	aIUR28800bps                 (5),
+	aIUR38400bps                 (6),
+	aIUR43200bps                 (7),
+	aIUR57600bps                 (8),
+	aIUR38400bps1                (9),
+	aIUR38400bps2                (10),
+	aIUR38400bps3                (11),
+	aIUR38400bps4                (12))
+	Note: Values 9 - 12 mean that the network has interpreted
+	AirInterfaceUserRate as 38400 bits/s.
 	"""
 
 class AoCCurrencyAmountSent:
@@ -95,22 +123,28 @@ class AoCCurrencyAmountSent:
 	Value range of Currency Amount: H'0 - H'FFFFFF
 	"""
 
-class BCSMTDPData110:
-	"""Basic Call State Model (BCSM) Trigger Detection Point (TDP)
-	Data
-	These elements identify the service key and the gsmSCF
-	address to be used when invoking either terminating or
-	originating CAMEL services. The element is taken
-	from Originating or Terminating CAMEL Subscription
-	Information (O/T-CSI).
-	This parameter is also used when invoking CAMEL services
-	related to SMS. The element is then taken from SMS-CSI.
-	The fields bCSMTDPData1..10 are output in MS Originating
-	and Call Forwarding CDRs in case of CAMEL Ph1 and
-	CAMEL Ph2 calls. They are NOT output in case of a
-	CAMEL Ph3 call (but output in SSFAM IN Incoming Call CDR).
-	In case of MO-SMS CAMEL Ph3 call case, the field
-	bCSMTDPData1 will be output in MS Originating SMS CDR.
+class ApplicationIdentifier:
+	"""ASN.1 Formal Description
+	ApplicationIdentifier ::= OCTET STRING (SIZE(2))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                                   |  octet 1
+	+---------------------------------------+
+	|                                    LSB|  octet 2
+	/---------------------------------------/
+	Note: OCTET STRING is coded as an unsigned integer.
+	Value range: H'0 - H'1FF
+	The meaning of each value is specified in Application
+	Information document "Mobile Telephony Data".
+	"""
+
+class AsyncSyncIndicator:
+	"""ASN.1 Formal Description
+	AsyncSyncIndicator ::= ENUMERATED
+	(syncData        (0),
+	asyncData       (1))
 	"""
 
 class BearerServiceCode:
@@ -149,6 +183,30 @@ class BearerServiceCode:
 	case of an WCDMA call
 	"""
 
+class BitRate:
+	"""ASN.1 Formal Description
+	BitRate ::= OCTET STRING (SIZE(1))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                                LSB|  octet 1
+	/---------------------------------------/
+	BitRate                      Bits 8 7 6 5 4 3 2 1
+	4.75 kbps                        0 0 0 0 0 0 0 1
+	5.15 kbps                        0 0 0 0 0 0 1 0
+	5.9  kbps                        0 0 0 0 0 0 1 1
+	6.7  kbps                        0 0 0 0 0 1 0 0
+	7.4  kbps                        0 0 0 0 0 1 0 1
+	7.95 kbps                        0 0 0 0 0 1 1 0
+	10.2  kbps                        0 0 0 0 0 1 1 1
+	12.2  kbps                        0 0 0 0 1 0 0 0
+	14.4  kbps                        0 0 0 0 1 0 0 1
+	64.0  kbps                        0 0 0 0 1 0 1 0
+	28.8  kbps                        0 0 0 0 1 0 1 1
+	57.6  kbps                        0 0 0 0 1 1 0 0
+	"""
+
 class BSSMAPCauseCode:
 	"""ASN.1 Formal Description
 	BSSMAPCauseCode ::= OCTET STRING (SIZE(1..2))
@@ -169,12 +227,6 @@ class BSSMAPCauseCode:
 	"Information Elements".
 	"""
 
-class CallAttemptIndicator:
-	"""Call Attempt Indicator
-	This parameter indicates that the call attempt has been
-	charged.
-	"""
-
 class CallAttemptState:
 	"""ASN.1 Formal Description
 	CallAttemptState ::= ENUMERATED
@@ -188,89 +240,43 @@ class CallAttemptState:
 	callActiveState        (7))
 	"""
 
-class CalledSubscriberIMEI:
-	"""Called Subscriber IMEI
-	This parameter contains the called-subscriber
-	International Mobile Station Equipment Identity (IMEI).
-	The parameter is output, if the exchange data is set
-	so that IMEI is fetched from user equipment at call setup.
-	"""
-
-class CalledSubscriberIMSI:
-	"""Called Subscriber IMSI
-	This parameter contains the called-subscriber
-	International Mobile Subscriber Identity (IMSI).
-	The parameter is applicable in a transit record when
-	the called party has an active terminating IN service,
-	terminating IN category key service or terminating CAMEL
-	service.
-	"""
-
-class CallIdentificationNumber:
-	"""Call Identification Number  (M)
-	This parameter is a unique number within the own exchange
-	that identifies the Call Component.
-	All Call Modules produced in the same Call Component
-	have the same call identification number; that is,
-	if partial output records are produced for the same
-	Call Component, the same call identification number
-	is used.
-	"""
-
-class CallingPartyNumberSpecialArrangementInd:
-	"""Calling Party Number Special Arrangement Indicator
-	This parameter indicates that a special arrangement has
-	applied to the calling number.
-	"""
-
-class CallingSubscriberIMEI:
-	"""Calling Subscriber IMEI
-	This parameter contains the calling-subscriber
-	International Mobile Station Equipment Identity (IMEI).
-	The parameter is output, if the exchange data is
-	set so that IMEI is fetched from user equipment at call
-	setup.
-	In case of a network-initiated USSD service, this
-	parameter contains the IMEI for the served subscriber
-	in Subscriber Service Procedure Call Module.
-	In case of ineffective call the parameter is not
-	available for mobile originating Call Component.
-	"""
-
-class CallingSubscriberIMSI:
-	"""Calling Subscriber IMSI
-	This parameter contains the calling subscriber
-	International Mobile Subscriber Identity (IMSI).
-	Unavailable in mobile originating Call Component for
-	emergency calls without IMSI (without SIM card).
-	In case of network initiated USSD service request, this
-	parameter contains the IMSI for the served subscriber
-	in SSProcedure Call Module.
-	In case of ineffective call the parameter is not
-	available for mobile originating Call Component.
-	"""
-
-class CAMELDestinationAddress:
-	"""CAMEL Destination Address
-	Contains the address to identify destination of
-	the MO SMS modified by gsmSCF.
-	"""
-
-class CAMELInitiatedCallForwarding:
-	"""CAMEL Initiated Call Forwarding
-	This parameter indicates that call forwarding is initiated
-	by a terminating CAMEL service.
-	"""
-
-class CAMELSMSCAddress:
-	"""CAMEL SMSC Address
-	This parameter indicates the Short Message Service Centre
-	address modified by gsmSCF.
+class CAMELTDPData:
+	"""ASN.1 Formal Description
+	CAMELTDPData ::= SEQUENCE(
+	serviceKey     (0) IMPLICIT  ServiceKey,
+	gsmSCFAddress  (1) IMPLICIT  AddressString (SIZE (1..9)))
 	"""
 
 class CarrierIdentificationCode:
 	"""ASN.1 Formal Description
 	CarrierIdentificationCode ::= TBCDString (SIZE(1..3))
+	"""
+
+class CarrierInfo:
+	"""ASN.1 Formal Description
+	CarrierInfo ::= OCTET STRING (SIZE(2..3))
+	The digits for ID Code are encoded as a TBCD-STRING.
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| 2nd ID Code digit | 1st ID Code digit | octet 1 of TBCD
+	+-------------------+-------------------+
+	| 4th ID Code digit | 3rd ID Code digit | octet 2 of TBCD
+	+-------------------+-------------------+
+	|Entry POI-Hierarchy| Exit POI-Hierarchy| octet 3 (Note 2)
+	/---------------------------------------/
+	Acceptable digits are between 0 and 9.
+	Note 1: OLEC and TLEC information contains always Carrier
+	identification code.
+	Note 2: POI-Hierarchy information is optional.
+	Exit/Entry POI Hierarchy
+	0000  No Indication
+	0001  Hierarchy level 1
+	0010  Hierarchy level 2
+	0011
+	to    Spare
+	1111
 	"""
 
 class CarrierInformation:
@@ -292,42 +298,6 @@ class CarrierInformation:
 	0000  unknown
 	0001  3-digit carrier
 	0010  4-digit carrier
-	"""
-
-class CarrierInformationBackward:
-	"""Carrier Information Backward
-	This is received in the Carrier Information (CARI)
-	parameter in eACM/ACM or CPG message from the B-side.
-	This information can be used for accounting purposes.
-	It contains the received Transit Carrier Information
-	in the order they are received from the superior
-	exchange (IEC, CIEC or SCPC).
-	IEC and CIEC contain the Carrier Identification Code
-	and possibly the POICA or POI-hierarchy, or both
-	information. SCPC contains only the Carrier
-	Identification Code and can be set by a service provider.
-	At maximum 6 carriers (CIEC, IEC or SCPC) will be output
-	per call. The rest will be discarded.
-	Note: The last received Carrier Information Backward
-	will be stored in the CDR.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class CarrierInformationForward:
-	"""Carrier Information Forward
-	This parameter is received in the Carrier Information
-	(CARI) parameter in IAM message sent in the forward
-	direction. This information can be used for accounting
-	purposes.
-	CarrierInformationForward contains the Transit Carrier
-	Information (IEC, CIEC or SCPC) of all transit carriers
-	involved in the call. IEC and CIEC contain the Carrier
-	Identification Code and possibly POICA or POI-hierarchy,
-	or information from both. SCPC contains only the Carrier
-	Identification Code and can be set by a service provider.
-	At maximum six carriers (CIEC, IEC or SCPC) will be
-	output per call. The rest will be discarded.
-	The parameter is only applicable for WCDMA Japan.
 	"""
 
 class CarrierSelectionSubstitutionInformation:
@@ -413,38 +383,43 @@ class ChannelAllocationPriorityLevel:
 	- Bits 2-1:  Spare
 	"""
 
-class ChannelCodingUsed:
-	"""Channel Coding Used
-	This parameter indicates the assigned channel coding.
-	The contents of the field is based on the information
-	received from the mobile station at call setup phase.
-	At first assignment, the selection of the channel coding
-	to be used by the BSC is based on the preference of
-	the mobile subscriber, the preference for each basic
-	service or the operator and the capability of the BSC.
-	If the channel coding changes during the call, Channel
-	Coding Used is output in Charge Rate Change Call Module
-	and it indicates the new channel coding.
-	In case of handover Channel Coding Used in target MSC
-	is output in Handover event module.
-	The parameter is not applicable for WCDMA Japan.
+class ChannelCodings:
+	"""ASN.1 Formal Description
+	ChannelCodings ::= OCTET STRING (SIZE(1))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|                                       |
+	/---------------------------------------/
+	Bit assignment:
+	Bit 1:         4.8 kbps channel coding
+	Bit 2:         9.6 kbps channel coding
+	Bit 4:         14.4 kbps channel coding
+	Bits 3, 5 - 8: Spare
+	Bit values:
+	0: Channel Coding not Acceptable/Used
+	1: Channel Coding Acceptable/Used
 	"""
 
-class ChargeableDuration:
-	"""Chargeable Duration (P)
-	This parameter registers chargeable duration of a call.
-	Chargeable duration is registered as the time
-	from 'start of charging' to 'stop of charging',
-	minus the interruption time. It is always truncated
-	to seconds for WCDMA ETSI and GSM and always truncated
-	to deciseconds for WCDMA Japan.
-	Whether the B-subscriber on-hook time is registered as
-	interruption time or as chargeable duration can be
-	defined by AXE parameter.
-	If originating or terminating Call Components, or both,
-	are not charged, but there exists chargeable
-	Supplementary Service invocations, the parameter contains
-	the value zero.
+class ChargeAreaCode:
+	"""ASN.1 Formal Description
+	ChargeAreaCode ::= OCTET STRING (SIZE(3))
+	The digits for ID Code are encoded as a TBCD-STRING.
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| 2nd CA Code digit | 1st CA Code digit | octet 1 of TBCD
+	+-------------------+-------------------+
+	| 4th CA Code digit | 3rd CA Code digit | octet 2 of TBCD
+	+-------------------+-------------------+
+	| Filler            | 5th CA Code digit | octet 3 of TBCD
+	/---------------------------------------/
+	Acceptable digits are between 0 and 9.
+	Note1: CA Code consists currently of max 5 digits and
+	the 6th digit is filler (H'F).
+	Note2: In case of POICA the 6th digit is filler (H'0).
 	"""
 
 class ChargedParty:
@@ -597,25 +572,6 @@ class ChargeInformation:
 	view).
 	"""
 
-class ChargePartyDistributed:
-	"""Charge Party Distributed
-	This parameter indicates the percentage of the total
-	charge to be given to each party. It originates from
-	INAP operation FurnishChargingInformation.
-	The distribution among all parties is given as follows:
-	- Percentage for A-party
-	- Percentage for B-party
-	- Percentage for C-party
-	- Percentage for Other Party
-	"""
-
-class ChargePartySingle:
-	"""Charge Party Single
-	This parameter indicates which party is to be charged
-	for the IN-part of the call. It originates from
-	INAP operation FurnishChargingInformation.
-	"""
-
 class ChargingCase:
 	"""ASN.1 Formal Description
 	ChargingCase ::= OCTET STRING (SIZE(2))
@@ -632,6 +588,37 @@ class ChargingCase:
 	Value range: H'0 - H'0FFF or value H'FFFF
 	"""
 
+class ChargingIndicator:
+	"""ASN.1 Formal Description
+	ChargingIndicator ::= OCTET STRING (SIZE(1))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                               LSB |
+	/---------------------------------------/
+	- Bit 8-3: Unused, set always to 00000
+	- Bit 2-1: Charging indicator
+	00   No Indication
+	01   No Charge
+	10   Charge
+	11   Spare
+	"""
+
+class ChargingOrigin:
+	"""ASN.1 Formal Description
+	ChargingOrigin ::= OCTET STRING (SIZE(1))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                               LSB |
+	/---------------------------------------/
+	Note: The OCTET STRING is coded as an unsigned integer.
+	Values vary according to operator's definition.
+	Value range: H'1 - H'7F
+	"""
+
 class ChargingUnitsAddition:
 	"""ASN.1 Formal Description
 	ChargingUnitsAddition ::= OCTET STRING (SIZE(2))
@@ -644,6 +631,30 @@ class ChargingUnitsAddition:
 	|                                    LSB|  octet 2
 	/---------------------------------------/
 	Value range: H'0 - H'7FFF
+	"""
+
+class Counter:
+	"""ASN.1 Formal Description
+	Counter ::= OCTET STRING (SIZE(1..4))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                                   | octet 1
+	+---------------------------------------+
+	|                                       | octet 2
+	+---------------------------------------+
+	|                                       | octet 3
+	+---------------------------------------+
+	|                                    LSB| octet 4
+	/---------------------------------------/
+	Value range 0 - H'FFFFFFFF (4 Octets)
+	1 - H'F        (1 Octet )
+	Note : The OCTET STRING is internally coded as
+	an unsigned INTEGER.
+	For WCDMA ETSI and GSM the number of octets is
+	always 4 and for WCDMA Japan the number of octets
+	is always 1.
 	"""
 
 class CRIIndicator:
@@ -696,14 +707,6 @@ class CRIToMS:
 	in TBCDString.
 	"""
 
-class CUGIncomingAccessUsed:
-	"""Closed User Group Incoming Access Used
-	This parameter indicates the subscriber has a subscription
-	to Closed User Group (CUG) supplementary service and has
-	received a call from outside the subscriber's group.
-	.
-	"""
-
 class CUGIndex:
 	"""ASN.1 Formal Description
 	CUGIndex ::= OCTET STRING (SIZE(2))
@@ -737,28 +740,6 @@ class CUGInterlockCode:
 	The first digit of Network Indicator (NI) is 0 or 9,
 	which means that the telephony Country Code follows in
 	the 2nd to 4th NI digits.
-	"""
-
-class CUGOutgoingAccessIndicator:
-	"""Closed User Group Outgoing Access Indicator
-	This parameter indicates that the calling subscriber has
-	made a Closed User Group (CUG) call with Outgoing Access.
-	That information will be carried in an Initial Address
-	Message (IAM) toward the destination.
-	"""
-
-class CUGOutgoingAccessUsed:
-	"""Closed User Group Outgoing Access Used
-	This parameter indicates that Closed User Group (CUG)
-	Outgoing Access has been used. The subscriber has
-	a subscription to CUG supplementary service and has
-	made a call that is able to terminate outside the
-	subscriber's CUG, that is, a call without CUG properties
-	or a CUG call with Outgoing Access.
-	In the case of a call-forwarding component, the forwarding
-	subscriber has CUG Outgoing Access, and the call is
-	forwarded as a received being CUG call with Outgoing
-	Access.
 	"""
 
 class C7ChargingMessage:
@@ -859,27 +840,61 @@ class C7ChargingMessage:
 	Number from 1 to 255.
 	"""
 
-class C7FirstCHTMessage:
-	"""CCITT No.7 First Charging Change Message  (P)
-	This parameter contains the time of the reception of the
-	message and the data of the first CHT message. The first
-	CHT message is received only if more than one tariff change
-	is to be applied to the call.
-	This parameter is available if received and the national
-	signalling system supports the function.
-	The parameter is not applicable for WCDMA Japan.
-	"""
-
-class C7SecondCHTMessage:
-	"""CCITT No.7 Second Charging Change Message  (P)
-	This parameter contains the time of the reception of
-	the message and the data of the second CHT message. The
-	second CHT message is received only if more tariff changes
-	than specified in the first CHT message are to be applied
-	to the call.
-	This parameter is available if received and the national
-	signalling system supports the function.
-	The parameter is not applicable for WCDMA Japan.
+class C7CHTMessage:
+	"""ASN.1 Formal Description
+	C7CHTMessage ::= OCTET STRING (SIZE (5))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|                  Hours                | octet 1
+	+---------------------------------------+
+	|                 Minutes               | octet 2
+	+---------------------------------------+
+	|  Message Ind.     |  Tariff Ind.      | octet 3
+	+---------------------------------------+
+	|            Traffic Factor             | octet 4
+	+---------------------------------------+
+	|            Time Indicator             | octet 5
+	/---------------------------------------/
+	TIME OF RECEPTION OF THE MESSAGE (octets 1 and 2)
+	Octet 1 contains hours, value range 00-23
+	Octet 2 contains minutes, value range 00-59
+	MESSAGE INDICATOR (octet 3 bits 8-5)
+	Indicator of the next tariff
+	B8-B6 are reserved.
+	B5:  0=  Tariff indicator is not present.
+	1=  Tariff indicator is present.
+	TARIFF INDICATOR (octet 3 bits 4-1)
+	Value                Meaning
+	_____                _______
+	0                 Tariff scale 0
+	(no time-dependent Tariff)
+	1                 Tariff scale I (reserved)
+	2                 Tariff scale II (0.1 second)
+	3                 Tariff scale III (0.2 second)
+	4                 Tariff scale IV (0.5 second)
+	5                 Tariff scale V (1 second)
+	6                 Tariff scale VI (2 second)
+	7                 Tariff scale VII(4 second)
+	8-15              Tariff scale VIII to XV (reserved)
+	TARIFF FACTOR (octet 4)
+	Number from H'1 to H'FF (coded in hexadecimal).
+	TIME INDICATOR (octet 5)
+	Bit 1 is coded as zero (reserved).
+	Bits 8 7 6 5 4 3 2 1      Meaning:
+	-------------
+	0 0 0 0 0 0 0 0      Immediate Change
+	0 0 0 0 0 0 1 0      00 Hours 15 Minutes
+	0 0 0 0 0 1 0 0      00 Hours 30 Minutes
+	0 0 0 0 0 1 1 0      00 Hours 45 Minutes
+	.
+	.
+	1 1 0 0 0 0 0 0      24 Hours 00 Minutes
+	1 1 0 0 0 0 1 0      Reserved
+	.
+	.
+	1 1 1 1 1 1 1 0
 	"""
 
 class Date:
@@ -920,13 +935,6 @@ class Date:
 	Year  (octet 2): Value range 0 - 99 (H'0 - H'63)
 	Month (octet 3): Value range 1 - 12 (H'1 - H'C)
 	Day   (octet 4): Value range 1 - 31 (H'1 - H'1F)
-	"""
-
-class DateForStartOfCharge:
-	"""Date for Start of Charging (M)(P)
-	Date For Start Of Charge registers the date when charging
-	was started. For details when charging is considered
-	started, refer to timeForStartofCharge.
 	"""
 
 class DecipheringKeys:
@@ -986,21 +994,12 @@ class DefaultSMSHandling:
 	releaseTransaction              (1))
 	"""
 
-class DeliveryOfErroneousSDU13:
-	"""Delivery Of Erroneous SDU
-	These parameters are reliability attributes, which
-	indicates whether Service Data Unit (SDU) with detected
-	errors must be delivered or not. In case of unequal
-	error protection, these attributes are set per subflow.
-	These parameters are only applicable for WCDMA.
-	"""
-
-class DestinationAddress:
-	"""Destination Address
-	This parameter indicates the destination address to which
-	the transfer protocol message refers when a UE sends a
-	short message to the service centre or when a UE invokes
-	an operation at the service centre.
+class DeliveryOfErroneousSDU:
+	"""ASN.1 Formal Description
+	DeliveryOfErroneousSDU ::= ENUMERATED
+	(yes                              (0),
+	no                               (1),
+	noErrorDetectionConsideration    (2))
 	"""
 
 class DisconnectingParty:
@@ -1011,51 +1010,25 @@ class DisconnectingParty:
 	networkRelease               (2))
 	"""
 
-class DisconnectionDate:
-	"""Disconnection Date
-	Indicates the date, according to the system clock, when
-	the call was disconnected. Disconnection Date is output
-	only if a small system restart occurred during the call.
-	Disconnection Date and Disconnection Time together contain
-	the exact release time for a call according to the system
-	clock in case a small restart has occurred during the call.
-	The exact release time may  be used for calculating the
-	restart time.
-	In case of partial output during the call the Disconnection
-	Date is included only in the last partial output record
-	only if the small system restart has occurred during
-	the last partial output period.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class DisconnectionDueToSystemRecovery:
-	"""Disconnection due to System Recovery
-	This parameter indicates that the call has been
-	disconnected because of a small or large restart.
-	"""
-
-class DisconnectionTime:
-	"""Disconnection Time
-	Indicates the time, according to the system clock, when
-	the call was disconnected. Disconnection Time is output
-	only if a small system restart has occurred during
-	the call.
-	Disconnection Time and Disconnection Date together contain
-	the exact release time for a call according to the system
-	clock in case a small restart has occurred during the call.
-	The exact release time may be used for calculating the
-	restart time.
-	In case of partial output during the call the
-	Disconnection Time is included only in the last partial
-	output record only if the small system restart has
-	occurred during the last partial output period.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class DTMFUsed:
-	"""DTMF Sender Used
-	This parameter indicates that a Dual Tone Multi-Frequency
-	(DTMF) sender has been used during the call.
+class Distributed:
+	"""ASN.1 Formal Description
+	Distributed ::=  OCTET STRING (SIZE(4))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/----------------------------------------/
+	|     Percentage for A-party             |  octet 1
+	+----------------------------------------+
+	|     Percentage for B-party             |  octet 2
+	+----------------------------------------+
+	|     Percentage for C-party             |  octet 3
+	+----------------------------------------+
+	|     Percentage for Other Party         |  octet 4
+	/----------------------------------------/
+	Octet 1: Value range 0 - 99  (H'0 - H'63)
+	Octet 2: Value range 0 - 99  (H'0 - H'63)
+	Octet 3: Value range 0 - 99  (H'0 - H'63)
+	Octet 4: Value range 0 - 99  (H'0 - H'63)
 	"""
 
 class EMLPPPriorityLevel:
@@ -1121,21 +1094,6 @@ class EndToEndAccessDataMap:
 	Bit 8:
 	Reserved
 	Note that "SETUP" and "CONNECT" are functional messages.
-	"""
-
-class EntryPOICA:
-	"""Entry POICA
-	Entry POICA information is sent in forward direction
-	in the intra-network ISUP Initial Address Message (IAM)
-	if external POI-CA has been defined in the entry
-	POI-GMSC.
-	POICA information can be used to calculate the
-	distance between the Entry POICA and Exit POICA. Transit
-	operators may set the network fee depending on this
-	distance.
-	Entry POICA is output only in the Call Data Record
-	generated by the node that has POICA defined.
-	The parameter is only applicable for WCDMA Japan.
 	"""
 
 class EosInfo:
@@ -1206,6 +1164,21 @@ class EosInfo:
 	3F         No acknowledgement from mobile subscriber.
 	"""
 
+class ErrorRatio:
+	"""ASN.1 Formal Description
+	ErrorRatio ::= OCTET STRING (SIZE(2))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|               Mantissa                |  octet 1
+	+---------------------------------------+
+	|               Exponent                |  octet 2
+	/---------------------------------------/
+	Note: The OCTET STRING is coded as an unsigned INTEGER.
+	Value range:  0 - 9 for both octets.
+	"""
+
 class EventCRIToMS:
 	"""ASN.1 Formal Description
 	EventCRIToMS ::= TBCDString (SIZE(4))
@@ -1247,29 +1220,6 @@ class ExchangeIdentity:
 	/---------------------------------------/
 	"""
 
-class ExitPOICA:
-	"""Exit POICA
-	Exit POICA information is always sent in the
-	backward direction in the intra-network ISUP eACM/ACM
-	message if external POICA has been defined in exit
-	POI-GMSC. It is also sent in the CPG message if CARI
-	(Carrier Information) parameter is received in CPG
-	message and if external POICA has been defined in
-	exit POI-GMSC.
-	POICA information can be used to calculate
-	the distance between the entry-POI and exit-POI.
-	Transit operators may set the network fee depending
-	on this distance.
-	Exit POICA is output only in the Call Data Record
-	generated by the node that has POICA defined. In transit
-	call case Exit POICA is added to the IEC information.
-	Exit POICA is output only in the Call Data Record
-	generated by the node that has POICA defined.
-	Note: The last received Exit POICA is stored in
-	the CDR.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
 class FaultCode:
 	"""ASN.1 Formal Description
 	FaultCode ::= OCTET STRING (SIZE(2))
@@ -1287,45 +1237,6 @@ class FaultCode:
 	Of End-Of-Selection Codes".
 	"""
 
-class FirstAssignedSpeechCoderVersion:
-	"""First Assigned Speech Coder Version
-	This parameter indicates the speech coder version that was
-	originally assigned for the call.
-	The parameter is only applicable for GSM.
-	"""
-
-class FirstCalledLocationInformation:
-	"""First Called Location Information
-	This parameter contains information about the initial
-	service area when the location information is
-	provided by RANAP in case of an WCDMA call. It is coded
-	in similar way as CGI (CellGlobalIdentity) in GSM.
-	In case this information is received from GSM, it contains
-	the identity of the first cell where traffic channel or
-	dedicated control channel was allocated.
-	In the case of call related supplementary services
-	(invocations) the parameter contains the current cell.
-	"""
-
-class FirstCallingLocationInformation:
-	"""First Calling Location Information
-	This parameter contains information about the initial service
-	area when the location information is provided by RANAP in case
-	of an WCDMA call. It is coded in similar way as CGI
-	(CellGlobalIdentity) in GSM.
-	In case this information is received from GSM, it contains
-	the identity of the first cell where traffic channel or
-	dedicated control channel was allocated.
-	In case of parallel transaction, the parameter contains
-	the current cell or service area.
-	In case of a network-initiated USSD service request, this
-	parameter contains the identity for the served subscriber
-	in the Subscriber Service Procedure Call Module.
-	In case of call related supplementary services
-	(invocations) the parameter contains the current cell or service
-	area.
-	"""
-
 class FirstRadioChannelUsed:
 	"""ASN.1 Formal Description
 	FirstRadioChannelUsed ::= ENUMERATED
@@ -1333,48 +1244,19 @@ class FirstRadioChannelUsed:
 	halfRateChannel               (1))
 	"""
 
-class FirstTargetLocationInformation:
-	"""First Target Location Information
-	This LCS parameter contains information about the
-	identity of the first cell/service area where traffic channel
-	or dedicated control channel was allocated when a positioning
-	was performed for a mobile station.
-	"""
-
-class FlexibleCounter18:
-	"""Flexible Counter 1..8
-	The flexible counters are used to store both end-to-end
-	charging information elements and the information sent in
-	User Information elements within the call control message.
-	One out of eight flexible counters is used for call
-	attempt.
-	The parameter is not applicable for WCDMA Japan.
-	"""
-
-class FNURRequested:
-	"""Fixed Network User Rate Requested
-	This parameter contains the fixed network user rate for
-	transparent and non-transparent bearer services in case
-	of an WCDMA call.
-	For GSM calls the parameter contains the fixed network
-	user rate for a High Speed Circuit Switched Data (HSCSD)
-	connection and is available for transparent and
-	non-transparent services, in case of multi-slot
-	configurations or 14.4 kbit/s channel coding.
-	"""
-
-class ForloppDuringOutputIndicator:
-	"""Forlopp During Output Indicator
-	This parameter indicates that forlopp release during
-	output has occurred, resulting in an incomplete
-	Call Module or Event Module and possibly missing event
-	modules.
-	"""
-
-class ForloppReleaseDuringCall:
-	"""Forlopp Release During Call
-	This parameter indicates a forlopp release has occurred
-	during the call.
+class FixedNetworkUserRate:
+	"""ASN.1 Formal Description
+	FixedNetworkUserRate ::= ENUMERATED
+	(fNUR9600bps                  (1),
+	fNUR14400bps                 (2),
+	fNUR19200bps                 (3),
+	fNUR28800bps                 (4),
+	fNUR38400bps                 (5),
+	fNUR48000bps                 (6),
+	fNUR56000bps                 (7),
+	fNUR64000bps                 (8),
+	fNURautobauding              (9))
+	Note: Value (6) is only valid for GSM.
 	"""
 
 class FreeFormatData:
@@ -1394,15 +1276,6 @@ class FreeFormatData:
 	/---------------------------------------/
 	|                                    LSB|  octet 160
 	/---------------------------------------/
-	"""
-
-class FreeFormatDataAppendIndicator:
-	"""Free Format Data Append Indicator
-	This parameter is needed in CDR postprocessing to indicate
-	whether the free format data is to be appended to the free
-	format data in the previous partial CDR, i.e. if the free
-	format data in the previous partial CDR is valid. The
-	indicator must not be output to the first partial record.
 	"""
 
 class FrequencyBandSupported:
@@ -1425,33 +1298,143 @@ class FrequencyBandSupported:
 	1: Frequency Band supported
 	"""
 
-class GenericChargingDigits:
-	"""Generic Charging Digits
-	This parameter indicates a set of generic digits
-	to be included in the Call Data Record. It originates
-	from INAP operation FurnishChargingInformation.
-	This parameter makes it possible to provide generic
-	charging information as a digit string for off-line
-	billing purposes. The information can be Binary Coded
-	Decimal (BCD),binary, or International Alphabetical
-	number 5 (IA5) coded. Use of this parameter is operator
-	specific and is intended for flexible introduction of
-	service- or operator-specific charging information without
-	impact on the on-line charging process.
+class GenericDigitsSet:
+	"""ASN.1 Formal Description
+	GenericDigitsSet ::= SET SIZE (1..20) OF GenericDigits
+	GenericDigits ::= OCTET STRING (SIZE(2..15))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|              contents                 |  octet 1
+	+---------------------------------------+
+	|              contents                 |  octet 2
+	/---------------------------------------/
 	.
+	.
+	.
+	/---------------------------------------/
+	|              contents                 |  octet n (<16)
+	/---------------------------------------/
+	The contents of each octet are specified in the Function
+	Specification (FS) for a particular Ericsson provided IN
+	service, and in INAP protocol specifications.
 	"""
 
-class GenericChargingNumbers:
-	"""Generic Charging Numbers
-	This parameter indicates a set of generic numbers
-	to be included in the Call Data Record. It originates
-	from INAP operation FurnishChargingInformation.
-	This parameter makes it possible to provide generic
-	charging information in number format for off-line
-	billing purposes. Use of this parameter is operator
-	specific and is intended for flexible introduction of
-	service- or operator-specific charging information without
-	impact on the on-line charging process.
+class GenericNumbersSet:
+	"""ASN.1 Formal Description
+	GenericNumbersSet ::= SET SIZE (1..20) OF GenericNumber
+	GenericNumber ::= OCTET STRING (SIZE(3..17))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|              contents                 |  octet 1
+	+---------------------------------------+
+	|              contents                 |  octet 2
+	/---------------------------------------/
+	.
+	.
+	.
+	/---------------------------------------/
+	|              contents                 |  octet n (<18)
+	/---------------------------------------/
+	The contents of each octet are specified in the
+	Function Specification (FS) for a particular Ericsson
+	provided IN service, and in INAP protocol specifications.
+	"""
+
+class GlobalTitle:
+	"""ASN.1 Formal Description
+	GlobalTitle ::= OCTET STRING (SIZE(4..12))
+	|    |    |    |    |    |    |    |    |
+	| 8  | 7  | 6  | 5  | 4  | 3  | 2  | 1  |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|  Translation Type                     | octet 1
+	+---------------------------------------+
+	| Numbering Plan    | ODD/EVEN Indicator| octet 2
+	+---------------------------------------+
+	| Nature of Address Indicator           | octet 3
+	+---------------------------------------+
+	|    2nd digit      |     1st digit     | octet 4
+	/---------------------------------------/
+	.
+	.
+	.
+	/---------------------------------------/
+	|    18th digit     |     17th digit    | octet 12
+	/---------------------------------------/
+	Octet 2:  Bits 4-1 Odd/Even Indicator:
+	0 0 0 1  BCD, odd number of digits
+	0 0 1 0  BCD, even number of digits
+	Bits 8-5 Numbering plan:
+	0 0 0 1  ISDN numbering plan (E.164)
+	0 0 1 1  Data numbering plan (X.121)
+	0 1 0 0  Telex numbering plan (F.69)
+	0 1 0 1  Maritime mobile numbering plan
+	0 1 1 0  Land mobile numbering plan
+	0 1 1 1  ISDN mobile numbering plan
+	Octet 3:  Bits 7-1 Nature of address indicator:
+	0 0 0 0 0 0 1  Subscriber number
+	0 0 0 0 0 1 0  Unknown
+	0 0 0 0 0 1 1  National significant number
+	0 0 0 0 1 0 0  International number
+	Bit 8  Spare
+	Octets 4..12: Address signals, BCD coded
+	Digits value range: H'0-H'9,
+	H'B (code 11)
+	and H'C (code 12)
+	Note: Filler H'0 (last digit) is used in case
+	of odd number of digits.
+	"""
+
+class GlobalTitleAndSubSystemNumber:
+	"""ASN.1 Formal Description
+	GlobalTitleAndSubSystemNumber ::=
+	OCTET STRING (SIZE(5..13))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|  SubSystemNumber                      | octet 1
+	+---------------------------------------+
+	|  Translation Type                     | octet 2
+	+---------------------------------------+
+	| Numbering Plan    | ODD/EVEN Indicator| octet 3
+	+---------------------------------------+
+	| Nature of Address Indicator           | octet 4
+	+---------------------------------------+
+	|    2nd digit      |     1st digit     | octet 5
+	/---------------------------------------/
+	.
+	.
+	.
+	/---------------------------------------/
+	|    18th digit     |     17th digit    | octet 13
+	/---------------------------------------/
+	Octet 3:  Bits 4-1 Odd/Even Indicator:
+	0 0 0 1  BCD, odd number of digits
+	0 0 1 0  BCD, even number of digits
+	Bits 8-5 Numbering plan:
+	0 0 0 1  ISDN numbering plan (E.164)
+	0 0 1 1  Data numbering plan (X.121)
+	0 1 0 0  Telex numbering plan (F.69)
+	0 1 0 1  Maritime mobile numbering plan
+	0 1 1 0  Land mobile numbering plan
+	0 1 1 1  ISDN mobile numbering plan
+	Octet 4:  Bits 7-1 Nature of address indicator:
+	0 0 0 0 0 0 1  Subscriber number
+	0 0 0 0 0 1 0  Unknown
+	0 0 0 0 0 1 1  National significant number
+	0 0 0 0 1 0 0  International number
+	Bit 8  Spare
+	Octets 5..13: Address signals, BCD coded
+	Digits value range: H'0-H'9,
+	H'B (code 11)
+	and H'C (code 12)
+	Note: Filler H'0 (last digit) is used in case
+	of odd number of digits.
 	"""
 
 class GSMCallReferenceNumber:
@@ -1473,77 +1456,72 @@ class GSMCallReferenceNumber:
 	/---------------------------------------/
 	"""
 
-class GsmSCFControlOfAoC:
-	"""gsmSCF Control of Advice of Charge
-	The gsmSCF Control of AoC is CAMEL specific parameter.
-	It is used to indicate that the associated Charge Rate
-	Info data is received from gsmSCF.
+class IMEI:
+	"""ASN.1 Formal Description
+	IMEI ::= TBCDString (SIZE(8))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|  TAC digit 2      |  TAC digit 1      | octet 1
+	+-------------------+-------------------+
+	|  TAC digit 4      |  TAC digit 3      | octet 2
+	+-------------------+-------------------+
+	|  TAC digit 6      |  TAC digit 5      | octet 3
+	+-------------------+-------------------+
+	|  TAC digit 8      |  TAC digit 7      | octet 4
+	+-------------------+-------------------+
+	|  SNR digit 2      |  SNR digit 1      | octet 5
+	+-------------------+-------------------+
+	|  SNR digit 4      |  SNR digit 3      | octet 6
+	+-------------------+-------------------+
+	|  SNR digit 6      |  SNR digit 5      | octet 7
+	+-------------------+-------------------+
+	|  See note         |  See note         | octet 8
+	/---------------------------------------/
+	TAC Type Allocation Code (octet 1, 2, 3 and 4).
+	SNR Serial Number (octet 5, 6 and 7).
+	Digits 0 to 9, two digits per octet,
+	each digit encoded 0000 to 1001
+	Note:
+	Bits 1-4 of octet 8: Spare
+	Bits 5-8 of octet 8: 1111 used as a filler.
 	"""
 
-class GuaranteedBitRate:
-	"""Guaranteed Bit Rate
-	This parameter indicates the minimum bit rate
-	required on the Iu interface to handle the wanted
-	quality of service.
-	The parameter is used at Radio Access Bearer (RAB)
-	assignment during call setup.
-	The parameter is only applicable for WCDMA.
-	"""
-
-class HorizontalAccuracy:
-	"""Horizontal Accuracy
-	This LCS parameter expresses the requested horizontal
-	accuracy of the UE being positioned. The parameter is
-	a part of LCS Quality of Service (QoS) received.
-	"""
-
-class ICIOrdered:
-	"""Immediate Call Itemization Ordered
-	This parameter indicates that ICI has been ordered for
-	the call. It is included both in TT and ICI records when
-	ICI is ordered.
-	"""
-
-class IncomingAssignedRoute:
-	"""Incoming Assigned Route
-	This parameter registers the assigned incoming route.
-	The route identification of the radio access network
-	interface (the interface between the MSC and BSC/RNC) is
-	registered.
-	The assigned route is taken into consideration after
-	successful initial traffic assignment.
-	This parameter is unavailable if the route has no name.
-	"""
-
-class IncomingRoute:
-	"""Incoming Route
-	This parameter registers the incoming route name.
-	In case of the mobile originating Call Component, the
-	route identification of the radio access network
-	interface (the interface between the MSC and BSC/RNC)
-	is registered.
-	This is the initial route taken into consideration
-	at reception of the SETUP message from the UE.
-	This parameter is unavailable if the route has no name.
-	"""
-
-class IncompleteCallDataIndicator:
-	"""Incomplete Call Data Indicator
-	This parameter indicates that some data in the call
-	or Event Module are missing because of congestion
-	in recording resources, forlopp release during output,
-	or a small/large restart during the call.
-	"""
-
-class IncompleteCompositeCDRIndicator:
-	"""Incomplete Composite Call Data Record Indicator
-	This parameter indicates that the Composite Call
-	Data Record is incomplete because the data
-	buffer is too small to handle the whole
-	Composite Call Data Record or forlopp during output has
-	occurred and one or more of the last records is
-	missing (discarded). This parameter is included only in
-	the first record in the Composite Call Data Record.
+class IMSI:
+	"""ASN.1 Formal Description
+	IMSI ::= TBCDString (SIZE(3..8))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|  MCC digit 2      |  MCC digit 1      | octet 1
+	+-------------------+-------------------+
+	|  MNC digit 1      |  MCC digit 3      | octet 2
+	+-------------------+-------------------+
+	|  MSIN digit 1     |  MNC digit 2      | octet 3
+	+-------------------+-------------------+
+	|  MSIN digit 3     |  MSIN digit 2     | octet 4
+	/---------------------------------------/
+	.
+	.
+	.
+	/---------------------------------------/
+	|  MSIN digit 2n-7  |  MSIN digit 2n-8  | octet n-1
+	+-------------------+-------------------+
+	|  See note         |  MSIN digit 2n-6  | octet n
+	/---------------------------------------/
+	Note: bits 5-8 of octet n contain
+	- last MSIN digit, or
+	- 1111 used as a filler when there is an odd
+	total number of digits.
+	MCC Mobile Country Code (octet 1 and bits 1-4 of octet 2)
+	MNC Mobile Network Code (bits 5-8 of octet 2 and bits 1-4
+	of octet 3).
+	MSIN Mobile Subscriber Identification Number
+	The total number of digits should not exceed 15.
+	Digits 0 to 9, two digits per octet,
+	each digit encoded 0000 to 1001
 	"""
 
 class INMarkingOfMS:
@@ -1585,12 +1563,6 @@ class INServiceTrigger:
 	Value range: H'0 - H'FFFF
 	"""
 
-class InterExchangeCarrierIndicator:
-	"""InterExchange Carrier Indicator
-	This parameter indicates that a Call Component
-	involved an inter-exchange carrier.
-	"""
-
 class IntermediateRate:
 	"""ASN.1 Formal Description
 	IntermediateRate ::= ENUMERATED
@@ -1616,61 +1588,28 @@ class InternalCauseAndLoc:
 	Codes and Location Information".
 	"""
 
-class InternationalCallIndicator:
-	"""International Call Indicator
-	Contains an indication obtained from Forward Call Indicators
-	in Initial Address Message (IAM) in ISUP. The indication is
-	needed to distinguish between national transit call and
-	international call. This parameter is output on the Call
-	Data Record only in case of international call.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class InterruptionTime:
-	"""Interruption Time  (P)
-	This parameter indicates the time during the call when
-	the call has not been charged. The call is not charged
-	when the calling subscriber is on-hook.
-	Whether the B-subscriber on-hook time is registered
-	as interruption time or as chargeable duration can be
-	defined by AXE parameter.
-	If originating or terminating Call Components, or both,
-	are not charged but chargeable Supplementary Service
-	invocations exist, the parameter contains a value of zero.
-	"""
-
-class InvocationOfCallHold:
-	"""Invocation of Call Hold
-	This parameter indicates that supplementary service
-	call hold has been used during the call. This field
-	is output only for ISOCODE or PACKED postprocessing
-	purposes.
-	The parameter is not applicable for WCDMA Japan.
-	"""
-
-class LastCalledLocationInformation:
-	"""Last Called Location Information
-	This parameter contains the cell (GSM) or service
-	area (WCDMA) identity of the last cell (GSM) or service
-	area (WCDMA) used by the called subscriber at
-	disconnection.
-	In case of delivery of multiple short messages, this
-	parameter contains the location where the last successful
-	short message transaction was made.
-	"""
-
-class LastCallingLocationInformation:
-	"""Last Calling Location Information
-	This parameter contains the cell (GSM) or service area
-	(WCDMA) identity of the last cell or service area used
-	by the calling subscriber at disconnection.
-	"""
-
-class LastPartialOutput:
-	"""Last Partial Output
-	This parameter indicates that this output is the last
-	partial output. It appears only when partial output
-	has previously taken place.
+class LCSAccuracy:
+	"""ASN.1 Formal Description
+	LCSAccuracy ::= OCTET STRING (SIZE(1))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                               LSB |
+	/---------------------------------------/
+	Bits 7 - 1 = Uncertainty Code
+	Bit  8 = 0
+	Value range: H'0 - H'7F (0 - 127)
+	The uncertainty is coded on 7 bits, as the binary
+	encoding of K. The uncertainty r, expressed in metres,
+	is mapped to a number K, with the following formula:
+	K
+	r = C ((1 + x)   - 1)
+	With C = 10 and x = 0,1. With 0 <= K <= 127,
+	a range between 0 and 1800 kilometres is achieved for the
+	uncertainty, still being able to code down to values as
+	small as 1 metre.
+	For further details for Uncertainty Code see 3G TS 23.032.
 	"""
 
 class LCSClientType:
@@ -1680,6 +1619,18 @@ class LCSClientType:
 	valueAddedServices                 (1),
 	plmnOperatorServices               (2),
 	lawfulInterceptServices            (3))
+	"""
+
+class LegID:
+	"""ASN.1 Formal Description
+	LegID ::= OCTET STRING (SIZE(1))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                               LSB |
+	/---------------------------------------/
+	Note: OCTET STRING is coded as an unsigned integer.
 	"""
 
 class LocationCode:
@@ -2070,20 +2021,45 @@ class LocationEstimate:
 	3G TS 23.032.
 	"""
 
-class MaxBitRateDownlink:
-	"""Max Bit Rate Downlink
-	This parameter indicates the maximum number of bits
-	delivered by UMTS Terrestrial Radio Access Network (UTRAN)
-	at a Service Action Point (SAP) within a period of time.
-	The parameter is only applicable for WCDMA.
-	"""
-
-class MaxBitRateUplink:
-	"""Max Bit Rate Uplink
-	This parameter indicates the maximum number of bits
-	delivered to UMTS Terrestrial Radio Access Network (UTRAN)
-	at a Service Action Point (SAP) within a period of time.
-	The parameter is only applicable for WCDMA.
+class LocationInformation:
+	"""ASN.1 Formal Description
+	LocationInformation ::= OCTET STRING (SIZE(7))
+	|   |   |   |   |   |   |   |   |
+	| 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
+	|   |   |   |   |   |   |   |   |
+	/-------------------------------/
+	|  MCC digit 2  |  MCC digit 1  | octet 1
+	+---------------+---------------+
+	|  MNC digit 3  |  MCC digit 3  | octet 2
+	+---------------+---------------+
+	|  MNC digit 2  |  MNC digit 1  | octet 3
+	+-------------------------------+
+	| MSB          LAC              | octet 4
+	+-------------------------------+
+	|              LAC, cont.   LSB | octet 5
+	+-------------------------------+
+	| MSB   CI/SAC value            | octet 6
+	+-------------------------------+
+	|       CI/SAC value, cont. LSB | octet 7
+	/-------------------------------/
+	MCC, Mobile country code (octet 1 and octet 2)
+	MNC, Mobile network code (octet 2 and octet 3).
+	Note: If MNC uses only 2 digits, then 3rd
+	is coded with filler H'F.
+	LAC Location area code (octet 4 and 5)
+	CI  Cell Identity, value (octets 6 and 7) (GSM)
+	SAC Service Area Code, value (octets 6 and 7) (WCDMA)
+	In the CI/SAC value field bit 8 of octet 6 is the most
+	significant bit.  Bit 1 of octet 7 is the least
+	significant bit.  Coding using full hexadecimal
+	representation is used.
+	In the LAC field, bit 8 of octet 4 is the most
+	significant bit.Bit 1 of octet 5 is the least
+	significant bit.Coding using full hexadecimal
+	representation is used.
+	In the case of a deleted or non-existent Location
+	Area Identity (LAI), both octets of the location
+	area code are coded with zeros.
 	"""
 
 class MessageReference:
@@ -2121,13 +2097,6 @@ class MiscellaneousInformation:
 	/---------------------------------------/
 	Note: OCTET STRING is coded as an unsigned integer.
 	Value range: H'0 - H'FE, value H'FF is reserved.
-	"""
-
-class MLCAddress:
-	"""MLC Address
-	This parameter includes the Gateway Mobile Location Center
-	(GMLC) through which the LCS Client is accessed, when
-	requesting location information for a specific target UE.
 	"""
 
 class MobileUserClass1:
@@ -2178,15 +2147,6 @@ class MobileUserClass2:
 	11111111
 	"""
 
-class MultimediaCall:
-	"""Multimedia Call
-	This parameter is output when the call is of a 3G.324M
-	standard type, that is, low bit rate multimedia
-	communication call using either a real-time video, audio,
-	data or any combination between two multimedia terminals
-	over a PSTN or ISDN network.
-	"""
-
 class MultimediaInformation:
 	"""ASN.1 Formal Description
 	MultimediaInformation ::= SEQUENCE(
@@ -2195,6 +2155,11 @@ class MultimediaInformation:
 	asyncSyncIndicator        (1) IMPLICIT AsyncSyncIndicator
 	OPTIONAL,
 	uILayer1Protocol          (2) IMPLICIT UILayer1Protocol)
+	"""
+
+class MSNB:
+	"""ASN.1 Formal Description
+	MSNB ::= TBCDString (SIZE(3..8))
 	"""
 
 class NetworkCallReference:
@@ -2222,20 +2187,17 @@ class NetworkCallReference:
 	Value range of Switch identity: H'1 - H'FFFF
 	"""
 
-class NetworkInitiatedUSSDOperations:
-	"""Network Initiated Unstructured Supplementary Service
-	Data Operations
-	This parameter indicates the number of successful
-	network initiated USSD operations.
-	"""
-
-class NumberOfChannelsRequested:
-	"""Number of Channels Requested
-	This parameter contains the maximum number of full-rate
-	traffic channels requested by the UE for a connection.
-	The parameter is available in case of multi-slot
-	configurations or 14.4 kbit/s channel coding.
-	The parameter is only applicable for GSM.
+class NumberOfChannels:
+	"""ASN.1 Formal Description
+	NumberOfChannels ::= ENUMERATED
+	(oneTrafficChannel         (0),
+	twoTrafficChannels        (1),
+	threeTrafficChannels      (2),
+	fourTrafficChannels       (3),
+	fiveTrafficChannels       (4),
+	sixTrafficChannels        (5),
+	sevenTrafficChannels      (6),
+	eightTrafficChannels      (7))
 	"""
 
 class NumberOfMeterPulses:
@@ -2255,17 +2217,50 @@ class NumberOfMeterPulses:
 	Value range: H'1 - H'FFFFFF
 	"""
 
-class NumberOfShortMessages:
-	"""Number of Short Messages (M)
-	This parameter indicates the number of successfully
-	delivered SMS in case of Multiple Short Message
-	Mobile Terminated transfers.
+class NumberOfOperations:
+	"""ASN.1 Formal Description
+	NumberOfOperations ::= OCTET STRING (SIZE(1))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                               LSB |
+	/---------------------------------------/
+	Note: OCTET STRING is coded as an unsigned integer.
+	Value range: H'0 - H'FF
 	"""
 
-class OptimalRoutingInvocationFailed:
-	"""Optimal Routing Invocation Failed
-	This parameter indicates that Optimal Routing (OR) was
-	not successfully invoked.
+class NumberOfShortMessage:
+	"""ASN.1 Formal Description
+	NumberOfShortMessage ::= OCTET STRING (SIZE(2))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                                   | octet 1
+	+---------------------------------------+
+	|                                   LSB | octet 2
+	/---------------------------------------/
+	Note: OCTET STRING is coded as an unsigned integer.
+	Value range: H'0 - H'FFFF
+	"""
+
+class OperationIdentifier:
+	"""ASN.1 Formal Description
+	OperationIdentifier ::= OCTET STRING (SIZE(1))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                               LSB |
+	/---------------------------------------/
+	Note: OCTET STRING is coded as an unsigned integer.
+	Value range: H'0 - H'FF
+	The meaning of each value is specified in the Application
+	Information documents of the application owner blocks.
+	The application owner blocks are listed in Application
+	Information document "Mobile Telephony Data" in the "USSD
+	Application Identifiers" chapter.
 	"""
 
 class OptimalRoutingType:
@@ -2287,49 +2282,6 @@ class OriginatedCode:
 	testCallWithIndividualSelectionExceptB-Subscriber (7),
 	testCallWithSelectionInSpecifiedRoute             (8),
 	operator                                          (9))
-	"""
-
-class OriginatingAccessISDN:
-	"""Originating Access ISDN
-	This parameter indicates that the originating access
-	has ISDN capabilities.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class OriginatingAddress:
-	"""Originating Address
-	This parameter contains the address for the user of a
-	service, when a service center replies by sending user
-	data to the UE, or when the service center informs the
-	UE of the status of a previously submitted short message.
-	"""
-
-class OriginatingCarrier:
-	"""Originating Carrier
-	Contains the Carrier Identification Code of the network
-	from which the call originates, that is, the Originating
-	Local Exchange Carrier (OLEC). Originating carrier received
-	from another network may also contain POI-hierarchy
-	information.
-	Originating carrier is not output for calls within one
-	carrier network.
-	Note: For an enquiry call after an Inter MSC Handover
-	Originating Carrier will contain the carrier
-	identification code of the Anchor MSC.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class OriginatingChargeArea:
-	"""Originating Charge Area (OCA)
-	This parameter contains the location, specified with
-	a Charge Area code, from which the call originates.
-	Note: For an enquiry call after an Inter MSC Handover
-	this parameter will contain the Charge Area Code
-	of the drift MSC.
-	If a call originates from international carrier OCA
-	might not be received and a default value is output.
-	If no default value is defined OCA is not output.
-	The parameter is only applicable for WCDMA Japan.
 	"""
 
 class OriginatingLineInformation:
@@ -2364,39 +2316,6 @@ class OriginatingLineInformation:
 	of called mobile subscriber.
 	"""
 
-class OriginForCharging:
-	"""Origin for Charging
-	The value of the parameter is specified by the operator.
-	The value of this parameter reflects the origin for the
-	call and is received from, for example, the incoming route
-	or originating cell.
-	When a call is routed from the SSF, the parameter may be
-	modified by SCF.
-	"""
-
-class OutgoingAssignedRoute:
-	"""Outgoing Assigned Route
-	This parameter registers the assigned outgoing route name.
-	The route identification of the radio access network
-	interface (the interface between the MSC and RNC) is
-	registered.
-	This assigned route is taken into consideration after
-	successful initial traffic channel assignment.
-	This parameter is unavailable if the route has no name.
-	"""
-
-class OutgoingRoute:
-	"""Outgoing Route
-	This parameter registers the outgoing route name.
-	In case of mobile terminating Call Component, the route
-	identification of the initial radio access network
-	interface (the interface  between the MSC and RNC) is
-	registered.
-	This is the initial route taken into consideration at
-	sending of the SETUP message to the UE.
-	This information is unavailable if the route has no name.
-	"""
-
 class OutputForSubscriber:
 	"""ASN.1 Formal Description
 	OutputForSubscriber ::= ENUMERATED
@@ -2429,6 +2348,69 @@ class PartialOutputRecNum:
 	/---------------------------------------/
 	Note: OCTET STRING is coded as an unsigned integer.
 	Value range: H'1 - H'FF
+	"""
+
+class PositioningDelivery:
+	"""ASN.1 Formal Description
+	PositioningDelivery ::= OCTET STRING (SIZE(1))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                              LSB  |
+	/---------------------------------------/
+	Bits 1-2: Positioning Data Delivery to UE
+	Bits 3-4: Positioning Data Delivery to GMLC
+	Bits 5-6: Positioning Data Delivery to Emergency Center
+	Bits 7-8: Validity indicator
+	Bits 1-2, 3-4, 5-6
+	Values: 0 = Successful positioning data
+	Result successfully delivered
+	1 = Successful positioning data
+	Result unsuccessfully delivered
+	2 = Unsuccessful positioning data
+	Result successfully delivered
+	3 = Unsuccessful positioning data
+	Result unsuccessfully delivered
+	Bits 7-8
+	Values: 0 = Delivering required to UE
+	(Bits 1-2 valid)
+	1 = Delivering required to GMLC
+	(Bits 3-4 valid)
+	2 = Delivering required to Emergency Center
+	(Bits 5-6 valid)
+	3 = Delivering required to Emergency Center
+	and to GMLC (Bits 3-4 and 5-6 valid)
+	Note: Positioning Delivery to Emergency Center is not
+	valid for WCDMA.
+	"""
+
+class PointCodeAndSubSystemNumber:
+	"""ASN.1 Formal Description
+	PointCodeAndSubSystemNumber ::= OCTET STRING (SIZE (4))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|  1st SPC                              | octet 1
+	+---------------------------------------+
+	|  2nd SPC                              | octet 2
+	+---------------------------------------+
+	|  3rd SPC                              | octet 3
+	+---------------------------------------+
+	|  SubSystemNumber                      | octet 4
+	/---------------------------------------/
+	- octets 1..3: SPC
+	-              CCITT TCAP:
+	The 2 most significant bits
+	of the 2nd octet, and the 3rd octet
+	are coded 0.
+	-              ANSI TCAP
+	All three octets used for SPC
+	-              JAPANESE BLUE TCAP
+	First two octets used for SPC. 3rd octet
+	coded 0.
+	- octet 4    : SubSystemNumber
 	"""
 
 class PositionAccuracy:
@@ -2471,41 +2453,6 @@ class PositionAccuracy:
 	kilometers.
 	"""
 
-class PositioningDelivery:
-	"""ASN.1 Formal Description
-	PositioningDelivery ::= OCTET STRING (SIZE(1))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                              LSB  |
-	/---------------------------------------/
-	Bits 1-2: Positioning Data Delivery to UE
-	Bits 3-4: Positioning Data Delivery to GMLC
-	Bits 5-6: Positioning Data Delivery to Emergency Center
-	Bits 7-8: Validity indicator
-	Bits 1-2, 3-4, 5-6
-	Values: 0 = Successful positioning data
-	Result successfully delivered
-	1 = Successful positioning data
-	Result unsuccessfully delivered
-	2 = Unsuccessful positioning data
-	Result successfully delivered
-	3 = Unsuccessful positioning data
-	Result unsuccessfully delivered
-	Bits 7-8
-	Values: 0 = Delivering required to UE
-	(Bits 1-2 valid)
-	1 = Delivering required to GMLC
-	(Bits 3-4 valid)
-	2 = Delivering required to Emergency Center
-	(Bits 5-6 valid)
-	3 = Delivering required to Emergency Center
-	and to GMLC (Bits 3-4 and 5-6 valid)
-	Note: Positioning Delivery to Emergency Center is not
-	valid for WCDMA.
-	"""
-
 class PresentationAndScreeningIndicator:
 	"""ASN.1 Formal Description
 	PresentationAndScreeningIndicator ::= OCTET STRING (SIZE(1))
@@ -2522,6 +2469,11 @@ class PresentationAndScreeningIndicator:
 	- Bits 4-1:   Presentation indicator
 	0000   Presentation allowed
 	0001   Presentation restricted
+	"""
+
+class ProcedureCode:
+	"""ASN.1 Formal Description
+	ProcedureCode ::= TBCDString (SIZE(1))
 	"""
 
 class RadioChannelProperty:
@@ -2562,19 +2514,6 @@ class RANAPCauseCode:
 	"Information Elements".
 	"""
 
-class RedirectingDropBack:
-	"""Redirecting Drop Back
-	The presence of this parameter indicates that Call
-	Drop Back function is used.
-	The parameter is not applicable for WCDMA Japan.
-	"""
-
-class RedirectingIMSI:
-	"""Redirecting IMSI
-	This parameter contains the IMSI of the subscriber who
-	forwarded the call, when the call is redirected.
-	"""
-
 class RedirectionCounter:
 	"""ASN.1 Formal Description
 	RedirectionCounter ::= OCTET STRING (SIZE(1))
@@ -2600,42 +2539,6 @@ class RegionalServiceUsed:
 	regionalSubcriptionAndSubscriptionWithTariffAreas  (3))
 	"""
 
-class RegionDependentChargingOrigin:
-	"""Region Dependent Charging Origin
-	The value of the parameter reflects the used region
-	dependent service and region. The meaning of the
-	value is specified by the operator.
-	"""
-
-class RelatedCallNumber:
-	"""Related Call Number
-	This parameter contains the call identification number of
-	a previous Call Data Record, which belongs to the same
-	call in the same node.
-	In the Subscriber Service Procedure module, in the case
-	of call-related USSD transaction, the parameter indicates
-	the call identification number of the related call.
-	If the Call Data Record for the previous Call Component
-	is not produced, this parameter is irrelevant.
-	"""
-
-class ReroutingIndicator:
-	"""Rerouting Indicator
-	This parameter indicates if the call has been rerouted
-	(for example a new B-number analysis has been performed)
-	by the exchange where the charging data is output. This
-	field is output only for ISOCODE or PACKED postprocessing
-	purposes.
-	"""
-
-class ResidualBitErrorRatio13:
-	"""Residual Bit Error Ratio
-	These parameters are a reliability attribute, which
-	indicates the undetected bit error ratio for each
-	subflow in the delivered Service Data Unit (SDU).
-	These parameters are only applicable for WCDMA.
-	"""
-
 class ResponseTimeCategory:
 	"""ASN.1 Formal Description
 	ResponseTimeCategory ::= ENUMERATED
@@ -2643,48 +2546,23 @@ class ResponseTimeCategory:
 	delaytolerant  (1))
 	"""
 
-class RestartDuringCall:
-	"""Restart During the Call  (P)
-	This parameter indicates that a restart has taken place
-	during the call.
-	"""
-
-class RestartDuringOutputIndicator:
-	"""Restart During Output Indicator
-	This parameter indicates that a restart has occurred
-	after an output has been initiated but before the output
-	procedure was completed.
-	"""
-
-class RetrievalOfHeldCall:
-	"""Retrieval of Held Call
-	This parameter indicates retrieval of the held call
-	has been used during the call. This field is output
-	only for ISOCODE or PACKED postprocessing purposes.
-	The parameter is not applicable for WCDMA Japan.
-	"""
-
-class RNCidOfFirstRNC:
-	"""RNC id of First RNC
-	The RNC id Of First RNC identifies the original RNC
-	for WCDMA originated/terminating call or transaction.
-	The parameter is only applicable for WCDMA.
-	"""
-
-class RNCidOfTargetRNC:
-	"""RNC id of Target RNC
-	The RNC id Of Target RNC identifies the target for the
-	handover of a call from GSM to WCDMA.
-	The parameter is applicable for GSM900/1800.
-	"""
-
-class SDUErrorRatio13:
-	"""SDU Error Ratio
-	These parameters are reliability attributes which indicates
-	the fraction of Service Data Unit (SDU) lost or detected
-	as erroneous when transferring data in a Radio Access
-	Bearer (RAB).
-	These parameters are only applicable for WCDMA.
+class Route:
+	"""ASN.1 Formal Description
+	Route ::= IA5STRING (SIZE(1..7))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|            1st character              | octet 1
+	/---------------------------------------/
+	.
+	.
+	.
+	/---------------------------------------/
+	|            6th character              | octet 6
+	+---------------------------------------+
+	|            7th character              | octet 7
+	/---------------------------------------/
 	"""
 
 class SelectedCodec:
@@ -2703,6 +2581,11 @@ class SelectedCodec:
 	Note: Only value 15 is used.
 	"""
 
+class ServiceCode:
+	"""ASN.1 Formal Description
+	ServiceCode ::= TBCDString (SIZE(1..2))
+	"""
+
 class ServiceFeatureCode:
 	"""ASN.1 Formal Description
 	ServiceFeatureCode ::= OCTET STRING (SIZE(2))
@@ -2719,6 +2602,24 @@ class ServiceFeatureCode:
 	INAP protocol specifications.
 	"""
 
+class ServiceKey:
+	"""ASN.1 Formal Description
+	ServiceKey ::=  OCTET STRING (SIZE(4))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                                   | octet 1
+	+---------------------------------------+
+	|                                       | octet 2
+	+---------------------------------------+
+	|                                       | octet 3
+	+---------------------------------------+
+	|                                 LSB   | octet 4
+	/---------------------------------------/
+	Value Range H'0 - H'7FFFFFFF
+	"""
+
 class ServiceSwitchingType:
 	"""ASN.1 Formal Description
 	ServiceSwitchingType ::= ENUMERATED
@@ -2726,11 +2627,13 @@ class ServiceSwitchingType:
 	faxToSpeech       (1))
 	"""
 
-class SMSReferenceNumber:
-	"""SMS Reference Number
-	The SMS Reference Number can be used for correlation
-	of CDRs produced in the MSC/VLR Server with CDRs produced
-	in the gsmSCF.
+class Single:
+	"""ASN.1 Formal Description
+	Single ::=  ENUMERATED
+	(aPartyToBeCharged      (0),
+	bPartyToBeCharged      (1),
+	cPartyToBeCharged      (2),
+	otherPartyToBeCharged  (3))
 	"""
 
 class SMSResult:
@@ -2759,6 +2662,17 @@ class SpeechCoderPreferenceList:
 	/---------------------------------------/
 	Value range for all octets: 0 - 5, encoded as
 	enumerated SpeechCoderVersion value.
+	"""
+
+class SpeechCoderVersion:
+	"""ASN.1 Formal Description
+	SpeechCoderVersion ::= ENUMERATED
+	(fullRateVersion1         (0),
+	fullRateVersion2         (1),
+	fullRateVersion3         (2),
+	halfRateVersion1         (3),
+	halfRateVersion2         (4),
+	halfRateVersion3         (5))
 	"""
 
 class SSCode:
@@ -2830,13 +2744,6 @@ class SSCode:
 	PLMN specific SS - F                        1 1 1 1 1 1 1 1
 	"""
 
-class SSFLegID:
-	"""SSF Leg Identity
-	This parameter indicates the call leg identity.
-	It originates from gsmSCF in FurnishChargingInformation
-	operation.
-	"""
-
 class SSFChargingCase:
 	"""ASN.1 Formal Description
 	SSFChargingCase ::= OCTET STRING (SIZE(2))
@@ -2851,13 +2758,6 @@ class SSFChargingCase:
 	The meaning of the value can be specified by the operator.
 	Note: OCTET STRING is coded as an unsigned integer.
 	Value range: H'0 - H'FFFF
-	"""
-
-class SSInvocationNotification:
-	"""Supplementary Service Invocation Notification
-	This parameter is a CAMEL specific parameter.
-	It indicates successful SS invocation notification
-	to gsmSCF.
 	"""
 
 class SSRequest:
@@ -2911,24 +2811,35 @@ class SwitchIdentity:
 	Value range: H'1 - H'FFFF
 	"""
 
-class TargetIMEI:
-	"""Target IMEI
-	This LCS parameter includes the IMEI number for the UE
-	being positioned.
-	"""
-
-class TargetIMSI:
-	"""Target IMSI
-	This LCS parameter includes the IMSI number for the UE
-	being positioned.
-	"""
-
-class TargetLocationInformation:
-	"""Target Location Information
-	The Target Location Information contains the Cell Global
-	Identity (CGI) if the target of the handover is GSM. The
-	Target Location Information contains the Service Area
-	Identity (SAI) if the target of the handover is WCDMA.
+class TargetRNCid:
+	"""ASN.1 Formal Description
+	TargetRNCid ::= OCTET STRING (SIZE(7))
+	|   |   |   |   |   |   |   |   |
+	| 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
+	|   |   |   |   |   |   |   |   |
+	/-------------------------------/
+	|  MCC digit 2  |  MCC digit 1  | octet 1
+	+---------------+---------------+
+	|  MNC digit 3  |  MCC digit 3  | octet 2
+	+---------------+---------------+
+	|  MNC digit 2  |  MNC digit 1  | octet 3
+	+-------------------------------+
+	| MSB          LAC              | octet 4
+	+-------------------------------+
+	|              LAC, cont.   LSB | octet 5
+	+-------------------------------+
+	| MSB   RNC-id                  | octet 6
+	+-------------------------------+
+	|       RNC-id,     cont.   LSB | octet 7
+	/-------------------------------/
+	Note: The OCTET STRING is coded as an unsigned INTEGER.
+	MCC, Mobile country code (octet 1 and 2).
+	MNC, Mobile network code (octet 2 and 3).
+	Note: If MNC uses only 2 digits, 3rd is coded with
+	filler H'F.
+	LAC, Location area code (octet 4 and 5).
+	RNC-id, Radio Network Control id (octet 6 and 7),
+	value range: H'0 - H'FFF.
 	"""
 
 class TariffClass:
@@ -2953,16 +2864,6 @@ class TariffSwitchInd:
 	TariffSwitchInd ::= ENUMERATED
 	(noTariffSwitch                    (0),
 	tariffSwitchAfterStartOfCharging  (2))
-	"""
-
-class TDSCounter:
-	"""TDS Counter
-	The TDS Counter contains the number of received TDS
-	related CHG messages, i.e. it reflects the number of
-	telephone numbers supplied by the service provider
-	when a mobile subscriber is using the telephone
-	directory service.
-	The parameter is only applicable for WCDMA Japan.
 	"""
 
 class TeleServiceCode:
@@ -3003,182 +2904,28 @@ class TeleServiceCode:
 	Point-to-Point.
 	"""
 
-class TerminatingAccessISDN:
-	"""Terminating Access ISDN
-	This parameter indicates that the terminating access has
-	ISDN capabilities.
-	It is received in the ACM message, and is output only in
-	the case of an ISDN-ISDN call.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class TerminatingCarrier:
-	"""Terminating Carrier
-	This parameter contains the Carrier Identification Code
-	of the network in which the call terminates, that is,
-	Terminating Local Exchange Carrier (TLEC). Terminating
-	carrier received from another network may also contain
-	POI-hierarchy information.
-	Terminating carrier is not output for calls within one
-	carrier network.
-	Note: The last received Terminating Carrier will be stored
-	in the CDR.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class TerminatingChargeArea:
-	"""Terminating Charge Area
-	This parameter contains the location, specified with
-	a Charge Area code, in which the call terminates. If
-	a call terminates at an international carrier Terminating
-	Charge Area may not be output.
-	Note: The last received Terminating Charge Area will be
-	stored in the CDR.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class TerminatingMobileUserClass1:
-	"""Terminating Mobile User Class 1
-	This parameter contains Additional Mobile Service
-	Information Type 1, obtained from Additional User Category
-	(AUC) parameter transmitted in ISUP messages eACM/ACM, CHG,
-	CPG and ANM.
-	It is used to indicate service related information in
-	the terminating side of the call, for example 'cellular
-	telephone service'. It is received only from a mobile
-	carrier.
-	Note: The last received Terminating Mobile User Class
-	1 is stored in the CDR.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class TerminatingMobileUserClass2:
-	"""Terminating Mobile User Class 2
-	This parameter contains Additional Mobile Service
-	Information Type 2, obtained from Additional User
-	Category (AUC) parameter transmitted in ISUP messages
-	eACM/ACM, CHG, CPG and ANM.
-	It is used to indicate telecommunication method related
-	information in the terminating side of the call,
-	for example 'PDC 1500 MHz'. It is received only from
-	a mobile carrier.
-	Note: The last received Terminating Mobile User Class 2
-	is stored in the CDR.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class TerminatingUserClass:
-	"""Terminating User Class
-	This parameter is derived from the Additional User
-	Category (AUC) parameter transmitted in ISUP messages
-	eACM/ACM, CHG, CPG and ANM.
-	Terminating user class specifies the type of phone
-	used on the terminating side of the call in the fixed
-	network.
-	Values can be set to Pink or Train Payphone in the fixed
-	system. This is possibly received from fixed network.
-	Note: The last received Terminating User Class is stored
-	in the CDR.
-	The parameter is only applicable for WCDMA Japan.
-	"""
-
-class TimeForEvent:
-	"""Time for Event  (M)
-	This parameter is a time stamp for events.
-	In case of AoC Charging service, the time of the
-	reception of the acknowledgement from the mobile
-	subscriber is recorded, both at call set-up and
-	tariff switching.
-	In case of AoC Information service, the time of
-	sending the AoC data to the user equipment at
-	tariff switching is recorded. At call set-up,
-	no timestamp is recorded for the AoC information.
-	In case of SCF charging output call record, the time
-	for event of the first SCF transaction that generates
-	charging data is registered in the IN service data
-	Event Module. The corresponding date for event of the
-	first SCF transaction that generates charging data is
-	contained in parameter date in SCF Charging Output
-	Call Module.
-	"""
-
-class TimeForStartOfCharge:
-	"""Time for Start of Charging  (M)(P)
-	Start of charging begins at B-answer. The time being
-	registered is recorded using a 24-hour clock system.
-	In mobile originating, roaming call forwarding, call
-	forwarding, and transit Call Components, this parameter
-	contains the time when the ISUP "ANSWER" message is
-	received. In the mobile terminating Call Component,
-	this parameter contains the time when the BSSAP/RANAP
-	"CONNECT" message is received from the user equipment.
-	For calls released before start of charging, the time
-	for the release is registered. For long calls with partial
-	outputs, the time for start of charging is the time
-	when the previous output was made.
-	For SMS and Subscriber Service Procedure, the
-	time when charging is reserved is registered.
-	If originating or terminating Call Components, or both,
-	are not charged but Supplementary Service invocations made
-	by the originating or terminating leg are charged, the
-	Time for Start of Charge parameter is registered when the
-	first chargeable Supplementary Service invocation is made
-	from the beginning of the call or during the partial output
-	period.
-	"""
-
-class TimeForStopOfCharge:
-	"""Time for Stop of Charging  (P)
-	The time for stop of charging is registered in
-	this parameter. The time being registered
-	is recorded using a 24-hour clock system.
-	For mobile-originating and mobile-terminating call
-	components, the reception of the BSSAP/RANAP message
-	"DISCONNECT" or the ISUP message "RELEASE" marks the
-	point where timing ends.
-	If originating or terminating Call Components, or
-	both, are not charged but Supplementary Service
-	invocations made by the originating or terminating
-	leg are charged, the Time for Stop of Charge parameter
-	has the same value as the Time for Start of Charge
-	parameter.
-	"""
-
-class TimeForTCSeizureCalled:
-	"""Time for Called Party Traffic Channel Seizure
-	This parameter contains the time of called party
-	traffic channel seizure. The timestamp is registered
-	after reception of the BSSAP message "ASSIGNMENT COMPLETE"
-	or the RANAP message "ASSIGNMENT RESPONSE".
-	In the case of a waiting call, this parameter is not output
-	in the UE terminating Call Module.
-	"""
-
-class TimeForTCSeizureCalling:
-	"""Time for Calling Party Traffic Channel Seizure
-	This parameter contains the time of calling party
-	traffic channel seizure. The timestamp is registered
-	after reception of the BSSAP message "ASSIGNMENT COMPLETE"
-	or the RANAP message "ASSIGNMENT RESPONSE".
-	In the case of an enquiry call, this parameter is not
-	output in the UE originating Call Module.
-	"""
-
-class TimeFromRegisterSeizureToStartOfCharging:
-	"""Time from Register Seizure to Start of Charging  (M)
-	This parameter registers the time from register seizure
-	to start of charging.
-	In case of calls for which charging is started (see
-	the Time for Start of Charging parameter), this parameter
-	contains the length of time from when the Register was
-	seized until charging was started. The Register is seized
-	for mobile-originating record when the BSSAP/RANAP message
-	"SETUP" is received from the user equipment. For roaming
-	call forwarding, call forwarding, transit, and mobile
-	terminating records, the Register is seized when the
-	ISUP "INITIAL ADDRESS MESSAGE" (IAM) message is received.
-	In the case of call release before start of charging, the
-	time from register seizure to call release is registered.
+class Time:
+	"""ASN.1 Formal Description
+	Time ::= OCTET STRING (SIZE(3..4))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|                                       | octet 1 (Hour)
+	+---------------------------------------+
+	|                                       | octet 2 (Minute)
+	+---------------------------------------+
+	|                                       | octet 3 (Second)
+	+---------------------------------------+
+	|                                       | octet 4 (10th of
+	/---------------------------------------/          a second)
+	Note: OCTET STRING is coded as an unsigned integer.
+	Hour             (octet 1): value range  0-23 (H'0 - H'17)
+	Minute           (octet 2): value range  0-59 (H'0 - H'3B)
+	Second           (octet 3): value range  0-59 (H'0 - H'3B)
+	10th of a second (octet 4): value range  0-9  (H'0 - H'9)
+	Note: 10th of a second is only included for the parameter
+	chargeableDuration and only used for WCDMA Japan.
 	"""
 
 class TrafficActivityCode:
@@ -3234,1168 +2981,6 @@ class TransferDelay:
 	/---------------------------------------/
 	Note : The OCTET STRING is coded as an unsigned INTEGER.
 	Value range: H'0 - H'FFFF
-	"""
-
-class TransparencyIndicator:
-	"""ASN.1 Formal Description
-	TransparencyIndicator ::= ENUMERATED
-	(transparent                              (0),
-	nonTransparent                           (1))
-	"""
-
-class TriggerData07:
-	"""Trigger Data
-	The Trigger data parameter stores data for each SCF
-	invocation.
-	The trigger data is sent to Charging Data Output when
-	a dialogue towards an SCF has been opened as a result
-	of processing an armed Trigger Detection Point (TDP).
-	The first data will be stored in TriggerData 0. In the
-	case of several dialogues resulting from processing of
-	armed TDPs in the same call then each will produce
-	trigger data to Call Data Output by using the first
-	free number of Trigger Data.
-	Note that if criteria for invoking a dialogue towards
-	the SCF is not met during the call then no Trigger Data
-	will be sent to Call Data Output. Trigger Data applies
-	to CAMEL calls, extended CAMEL calls and to IN calls.
-	The Trigger data are built up of the following:
-	- Trigger Detection Point
-	This parameter indicates at what point in the
-	call the SCF invocation took place.
-	- Service Key
-	The Service key is sent to the SCF in the Initial
-	Detection Point Operation. It is used as a
-	reference by the SCF.
-	- SCP Address
-	The SCP address includes the full network address of
-	the SCF/gsmSCF used for sending the Initial Detection
-	Point operation.
-	"""
-
-class TypeOfCalledSubscriber:
-	"""ASN.1 Formal Description
-	TypeOfCalledSubscriber ::= ENUMERATED
-	(pSTNSubscriber       (0),
-	iSDNSubscriber       (1),
-	unknownSubscriber    (2))
-	"""
-
-class TypeOfLocationRequest:
-	"""ASN.1 Formal Description
-	TypeOfLocationRequest ::= ENUMERATED
-	(mT_LocationRequestCurrentLocation              (0),
-	mT_LocationRequestCurrentOrLastKnownLocation   (1),
-	mO_LocationRequestLocEstimateToMS              (2),
-	mO_LocationRequestLocEstimateToThirdParty      (3),
-	mO_LocationRequestAssistData                   (4),
-	mO_LocationRequestDeciphKeys                   (5),
-	nI_LocationRequest                             (6))
-	Note: nI_LocationRequest is not valid for WCDMA.
-	"""
-
-class TypeOfSignalling:
-	"""ASN.1 Formal Description
-	TypeOfSignalling ::= ENUMERATED
-	(iSUPIsNotAppliedAllTheWay       (0),
-	iSUPIsAppliedAllTheWay          (1),
-	unknownSignalling               (2))
-	"""
-
-class UnsuccessfulPositioningDataReason:
-	"""ASN.1 Formal Description
-	UnsuccessfulPositioningDataReason ::= ENUMERATED
-	(systemError                           (0),
-	userDeniedDueToPrivacyVerification    (1))
-	"""
-
-class UserClass:
-	"""ASN.1 Formal Description
-	UserClass ::= OCTET STRING (SIZE(1))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                         |     LSB |
-	/---------------------------------------/
-	-- Bit 8-3 Spare
-	-- Bit 2-1 Additional Fixed User Information,
-	--         supplementary user type information
-	00 Spare
-	01 Train Payphone
-	10 Pink (non-NTT Payphone)
-	11 Spare
-	"""
-
-class UserTerminalPosition:
-	"""ASN.1 Formal Description
-	UserTerminalPosition ::= OCTET STRING (SIZE(7))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|                   |F/S |N/S |E/W | D  |  Octet 1
-	+-------------------+-------------------+
-	|Longitude degrees  |Longitude degrees  |  Octet 2
-	+-------------------+-------------------+
-	|Longitude minutes  |Longitude minutes  |  Octet 3
-	+-------------------+-------------------+
-	|Longitude seconds  |Longitude seconds  |  Octet 4
-	+-------------------+-------------------+
-	|Latitude degrees   |Latitude degrees   |  Octet 5
-	+-------------------+-------------------+
-	|Latitude minutes   |Latitude minutes   |  Octet 6
-	+-------------------+-------------------+
-	|Latitude seconds   |Latitude seconds   |  Octet 7
-	/---------------------------------------/
-	Octet 1 bits 8-5 are coded as zero.
-	F/S (octet 1 bit 4):
-	0: Full representation
-	(latitude/longitude down to seconds)
-	1: Short representation
-	(latitude/longitude down to minutes)
-	N/S (octet 1 bit 3):
-	0: Latitude value is to the SOUTH of the equator
-	1: Latitude value is to the NORTH of the equator
-	E/W (octet 1 bit 2):
-	0: Longitude value is to the EAST of
-	the prime meridian
-	1: Longitude value is to the WEST of
-	the prime meridian
-	D (octet 1 bit 1):
-	0: Longitude value less than 100 degrees
-	(Actual Longitude value is the value in
-	Octets 2-4)
-	1: Longitude value is greater than or equal to
-	100 degrees
-	(Actual Longitude value is 100 added to
-	the value in Octet 2-4)
-	Octet 2:  Bits 8-5 Longitude degrees
-	(most significant digit),
-	BCD coded
-	Value range: H'0-H'9
-	Bits 4-1 Longitude degrees
-	(least significant digit),
-	BCD coded
-	Value range: H'0-H'9
-	Octet 3:  Bits 8-5 Longitude minutes
-	(most significant digit),
-	BCD coded
-	Value range: H'0-H'5
-	Bits 4-1 Longitude minutes
-	(least significant digit),
-	BCD coded
-	Value range: H'0-H'9
-	Octet 4:  Bits 8-5 Longitude seconds
-	(most significant digit),
-	BCD coded
-	Value range: H'0-H'5
-	Bits 4-1 Longitude seconds
-	(least significant digit),
-	BCD coded
-	Value range: H'0-H'9
-	Octet 5:  Bits 8-5 Latitude degrees
-	(most significant digit),
-	BCD coded
-	Value range: H'0-H'9
-	Bits 4-1 Latitude degrees
-	(least significant digit),
-	BCD coded
-	Value range: H'0-H'9
-	Octet 6:  Bits 8-5 Latitude minutes
-	(most significant digit),
-	BCD coded
-	Value range: H'0-H'5
-	Bits 4-1 Latitude minutes
-	(least significant digit),
-	BCD coded
-	Value range: H'0-H'9
-	Octet 7:  Bits 8-5 Latitude seconds
-	(most significant digit),
-	BCD coded
-	Value range: H'0-H'5
-	Bits 4-1 Latitude seconds
-	(least significant digit),
-	BCD coded
-	Value range: H'0-H'9
-	"""
-
-class UserToUserService1Information:
-	"""ASN.1 Formal Description
-	UserToUserService1Information ::= OCTET STRING (SIZE(1))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|                                       |  Octet 1
-	/---------------------------------------/
-	Bit 1:
-	Attempt to use User to User Service 1 at call set up
-	0 = was not made
-	1 = was made
-	Bit 2:
-	Request to use User to User Service 1 at call set up
-	0 = was implicit
-	1 = was explicit
-	Bit 3:
-	Attempt to use User to User Service 1 at call set up
-	0 = was successful
-	1 = was not successful
-	Bit 4:
-	Attempt to use User to User Service 1 at call clear
-	0 = was not made
-	1 = was made
-	Bit 5:
-	Request to use User to User Service 1 at call clear
-	0 = was implicit
-	1 = was explicit
-	Bit 6:
-	Attempt to use User to User Service 1 at call clear
-	0 = was not successful
-	1 = was successful
-	Bit 7 - 8 Spare (set to 0)
-	"""
-
-class USSDApplicationIdentifier:
-	"""Unstructured Supplementary Service Data
-	Application Identifier
-	This parameter identifies the invoked or invoking
-	USSD application.
-	Each USSD application in an MSC/VLR is uniquely defined
-	by an application identifier. This application identifier
-	is a fixed value.
-	The operator may associate service or procedure codes
-	to these application identifiers.
-	"""
-
-class USSDOperationIdentifier:
-	"""Unstructured Supplementary Service Data Operation
-	Identifier
-	This parameter contains detailed information about the
-	invoked service within a USSD application.
-	The USSD operation identifier allows identification
-	of different operations which may exist and can be
-	invoked within the same USSD application.
-	This identifier is optional, that is, USSD
-	applications may exist which do not need the use
-	of the USSD operation identifier at all.
-	"""
-
-class USSDProcedureCode:
-	"""Unstructured Supplementary Service Data Procedure Code
-	This parameter identifies the call-related USSD service
-	for a mobile-initiated service request.
-	The parameter values are defined by operator and are
-	administered with General Purpose Digit Analysis.
-	The operator can associate a USSD procedure code with a
-	USSD application identifier. The USSD procedure code is
-	part of the MSC/VLR-supported format for the USSD strings
-	of the user equipment which initiated USSD operations. For
-	further details, see the Application Information for
-	function block MUSSAN.
-	This parameter is unavailable for a network-initiated
-	service request.
-	"""
-
-class USSDServiceCode:
-	"""Unstructured Supplementary Service Data Service Code
-	This parameter identifies the call-independent
-	USSD service in the case of a mobile-initiated
-	service request.
-	The parameter values are defined by the operator and
-	are administered with General Purpose Digit Analysis.
-	The operator can associate a USSD Service Code with
-	a USSD Application Identifier. The service code is
-	part of the MSC/VLR-supported formats for USSD strings
-	of UE-initiated USSD operations. For further details,
-	see the Application Information for function
-	block MUSSAN.
-	This parameter is unavailable for a network-initiated
-	service request.
-	"""
-
-class VerticalAccuracy:
-	"""Vertical Accuracy
-	This LCS parameter expresses the requested vertical
-	accuracy of the UE being positioned. The parameter is
-	a part of LCS Quality of Service (QoS) received.
-	"""
-
-class VerticalCoordinateRequest:
-	"""Vertical Coordinate Request
-	This LCS parameter indicates in case vertical coordinates
-	are requested for positioning the UE. The parameter is part
-	of LCS Quality of Service (QoS) received.
-	"""
-
-class WPSCallIndicator:
-	"""WPS Usage CDR Indicator
-	This parameter indicates a Wireless Priority Service (WPS)
-	call.
-	The parameter is only applicable for GSM.
-	1.5   Call Data Parameter Data Types
-	"""
-
-class AddressStringExtended:
-	"""ASN.1 Formal Description
-	AddressStringExtended ::= OCTET STRING (SIZE(1..20))
-	TBCD representation
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|        TON        |        NPI        |
-	+-------------------+-------------------+
-	|     2nd digit     |     1st digit     | octet 1 of TBCD
-	+-------------------+-------------------+
-	|     4th digit     |     3rd digit     | octet 2 of TBCD
-	+-------------------+-------------------+
-	|     6th digit     |     5th digit     | octet 3 of TBCD
-	/---------------------------------------/
-	.
-	.
-	.
-	/---------------------------------------/
-	|    (2n)th digit   | (2n - 1)th digit  | octet n of TBCD
-	/---------------------------------------/
-	Character representation
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|       TON         |        NPI        |
-	+---------------------------------------+
-	|               1st character           | octet 1 of char
-	+---------------------------------------+
-	|               2nd character           | octet 2 of char
-	+---------------------------------------+
-	|               3rd character           | octet 3 of char
-	/---------------------------------------/
-	.
-	.
-	.
-	/---------------------------------------/
-	|               Nth character           | octet N of char
-	/---------------------------------------/
-	Note: The OCTET STRING is coded as an unsigned INTEGER.
-	The first octet uses 4 bits for Type Of Number (TON)
-	and 4 bits for Numbering Plan Indicator (NPI):
-	- Bit 8-5: Type of number
-	- Bit 4-1: Numbering plan indicator
-	Note: The values and their meanings for TON and NPI are
-	described in the Application Information "Type Of
-	Number and Numbering Plan Indicator".
-	Subsequent octets representing address digits or characters
-	are encoded as TBCD string or as GSM 7-bit default alphabet
-	character depending on the NPI value.
-	"""
-
-class AirInterfaceUserRate:
-	"""ASN.1 Formal Description
-	AirInterfaceUserRate ::= ENUMERATED
-	(aIUR9600bps                  (1),
-	aIUR14400bps                 (2),
-	aIUR19200bps                 (3),
-	aIUR28800bps                 (5),
-	aIUR38400bps                 (6),
-	aIUR43200bps                 (7),
-	aIUR57600bps                 (8),
-	aIUR38400bps1                (9),
-	aIUR38400bps2                (10),
-	aIUR38400bps3                (11),
-	aIUR38400bps4                (12))
-	Note: Values 9 - 12 mean that the network has interpreted
-	AirInterfaceUserRate as 38400 bits/s.
-	"""
-
-class ApplicationIdentifier:
-	"""ASN.1 Formal Description
-	ApplicationIdentifier ::= OCTET STRING (SIZE(2))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                                   |  octet 1
-	+---------------------------------------+
-	|                                    LSB|  octet 2
-	/---------------------------------------/
-	Note: OCTET STRING is coded as an unsigned integer.
-	Value range: H'0 - H'1FF
-	The meaning of each value is specified in Application
-	Information document "Mobile Telephony Data".
-	"""
-
-class AsyncSyncIndicator:
-	"""ASN.1 Formal Description
-	AsyncSyncIndicator ::= ENUMERATED
-	(syncData        (0),
-	asyncData       (1))
-	"""
-
-class BitRate:
-	"""ASN.1 Formal Description
-	BitRate ::= OCTET STRING (SIZE(1))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                                LSB|  octet 1
-	/---------------------------------------/
-	BitRate                      Bits 8 7 6 5 4 3 2 1
-	4.75 kbps                        0 0 0 0 0 0 0 1
-	5.15 kbps                        0 0 0 0 0 0 1 0
-	5.9  kbps                        0 0 0 0 0 0 1 1
-	6.7  kbps                        0 0 0 0 0 1 0 0
-	7.4  kbps                        0 0 0 0 0 1 0 1
-	7.95 kbps                        0 0 0 0 0 1 1 0
-	10.2  kbps                        0 0 0 0 0 1 1 1
-	12.2  kbps                        0 0 0 0 1 0 0 0
-	14.4  kbps                        0 0 0 0 1 0 0 1
-	64.0  kbps                        0 0 0 0 1 0 1 0
-	28.8  kbps                        0 0 0 0 1 0 1 1
-	57.6  kbps                        0 0 0 0 1 1 0 0
-	"""
-
-class CAMELTDPData:
-	"""ASN.1 Formal Description
-	CAMELTDPData ::= SEQUENCE(
-	serviceKey     (0) IMPLICIT  ServiceKey,
-	gsmSCFAddress  (1) IMPLICIT  AddressString (SIZE (1..9)))
-	"""
-
-class CarrierInfo:
-	"""ASN.1 Formal Description
-	CarrierInfo ::= OCTET STRING (SIZE(2..3))
-	The digits for ID Code are encoded as a TBCD-STRING.
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| 2nd ID Code digit | 1st ID Code digit | octet 1 of TBCD
-	+-------------------+-------------------+
-	| 4th ID Code digit | 3rd ID Code digit | octet 2 of TBCD
-	+-------------------+-------------------+
-	|Entry POI-Hierarchy| Exit POI-Hierarchy| octet 3 (Note 2)
-	/---------------------------------------/
-	Acceptable digits are between 0 and 9.
-	Note 1: OLEC and TLEC information contains always Carrier
-	identification code.
-	Note 2: POI-Hierarchy information is optional.
-	Exit/Entry POI Hierarchy
-	0000  No Indication
-	0001  Hierarchy level 1
-	0010  Hierarchy level 2
-	0011
-	to    Spare
-	1111
-	"""
-
-class ChannelCodings:
-	"""ASN.1 Formal Description
-	ChannelCodings ::= OCTET STRING (SIZE(1))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|                                       |
-	/---------------------------------------/
-	Bit assignment:
-	Bit 1:         4.8 kbps channel coding
-	Bit 2:         9.6 kbps channel coding
-	Bit 4:         14.4 kbps channel coding
-	Bits 3, 5 - 8: Spare
-	Bit values:
-	0: Channel Coding not Acceptable/Used
-	1: Channel Coding Acceptable/Used
-	"""
-
-class ChargeAreaCode:
-	"""ASN.1 Formal Description
-	ChargeAreaCode ::= OCTET STRING (SIZE(3))
-	The digits for ID Code are encoded as a TBCD-STRING.
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| 2nd CA Code digit | 1st CA Code digit | octet 1 of TBCD
-	+-------------------+-------------------+
-	| 4th CA Code digit | 3rd CA Code digit | octet 2 of TBCD
-	+-------------------+-------------------+
-	| Filler            | 5th CA Code digit | octet 3 of TBCD
-	/---------------------------------------/
-	Acceptable digits are between 0 and 9.
-	Note1: CA Code consists currently of max 5 digits and
-	the 6th digit is filler (H'F).
-	Note2: In case of POICA the 6th digit is filler (H'0).
-	"""
-
-class ChargingIndicator:
-	"""ASN.1 Formal Description
-	ChargingIndicator ::= OCTET STRING (SIZE(1))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                               LSB |
-	/---------------------------------------/
-	- Bit 8-3: Unused, set always to 00000
-	- Bit 2-1: Charging indicator
-	00   No Indication
-	01   No Charge
-	10   Charge
-	11   Spare
-	"""
-
-class ChargingOrigin:
-	"""ASN.1 Formal Description
-	ChargingOrigin ::= OCTET STRING (SIZE(1))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                               LSB |
-	/---------------------------------------/
-	Note: The OCTET STRING is coded as an unsigned integer.
-	Values vary according to operator's definition.
-	Value range: H'1 - H'7F
-	"""
-
-class Counter:
-	"""ASN.1 Formal Description
-	Counter ::= OCTET STRING (SIZE(1..4))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                                   | octet 1
-	+---------------------------------------+
-	|                                       | octet 2
-	+---------------------------------------+
-	|                                       | octet 3
-	+---------------------------------------+
-	|                                    LSB| octet 4
-	/---------------------------------------/
-	Value range 0 - H'FFFFFFFF (4 Octets)
-	1 - H'F        (1 Octet )
-	Note : The OCTET STRING is internally coded as
-	an unsigned INTEGER.
-	For WCDMA ETSI and GSM the number of octets is
-	always 4 and for WCDMA Japan the number of octets
-	is always 1.
-	"""
-
-class C7CHTMessage:
-	"""ASN.1 Formal Description
-	C7CHTMessage ::= OCTET STRING (SIZE (5))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|                  Hours                | octet 1
-	+---------------------------------------+
-	|                 Minutes               | octet 2
-	+---------------------------------------+
-	|  Message Ind.     |  Tariff Ind.      | octet 3
-	+---------------------------------------+
-	|            Traffic Factor             | octet 4
-	+---------------------------------------+
-	|            Time Indicator             | octet 5
-	/---------------------------------------/
-	TIME OF RECEPTION OF THE MESSAGE (octets 1 and 2)
-	Octet 1 contains hours, value range 00-23
-	Octet 2 contains minutes, value range 00-59
-	MESSAGE INDICATOR (octet 3 bits 8-5)
-	Indicator of the next tariff
-	B8-B6 are reserved.
-	B5:  0=  Tariff indicator is not present.
-	1=  Tariff indicator is present.
-	TARIFF INDICATOR (octet 3 bits 4-1)
-	Value                Meaning
-	_____                _______
-	0                 Tariff scale 0
-	(no time-dependent Tariff)
-	1                 Tariff scale I (reserved)
-	2                 Tariff scale II (0.1 second)
-	3                 Tariff scale III (0.2 second)
-	4                 Tariff scale IV (0.5 second)
-	5                 Tariff scale V (1 second)
-	6                 Tariff scale VI (2 second)
-	7                 Tariff scale VII(4 second)
-	8-15              Tariff scale VIII to XV (reserved)
-	TARIFF FACTOR (octet 4)
-	Number from H'1 to H'FF (coded in hexadecimal).
-	TIME INDICATOR (octet 5)
-	Bit 1 is coded as zero (reserved).
-	Bits 8 7 6 5 4 3 2 1      Meaning:
-	-------------
-	0 0 0 0 0 0 0 0      Immediate Change
-	0 0 0 0 0 0 1 0      00 Hours 15 Minutes
-	0 0 0 0 0 1 0 0      00 Hours 30 Minutes
-	0 0 0 0 0 1 1 0      00 Hours 45 Minutes
-	.
-	.
-	1 1 0 0 0 0 0 0      24 Hours 00 Minutes
-	1 1 0 0 0 0 1 0      Reserved
-	.
-	.
-	1 1 1 1 1 1 1 0
-	"""
-
-class DeliveryOfErroneousSDU:
-	"""ASN.1 Formal Description
-	DeliveryOfErroneousSDU ::= ENUMERATED
-	(yes                              (0),
-	no                               (1),
-	noErrorDetectionConsideration    (2))
-	"""
-
-class Distributed:
-	"""ASN.1 Formal Description
-	Distributed ::=  OCTET STRING (SIZE(4))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/----------------------------------------/
-	|     Percentage for A-party             |  octet 1
-	+----------------------------------------+
-	|     Percentage for B-party             |  octet 2
-	+----------------------------------------+
-	|     Percentage for C-party             |  octet 3
-	+----------------------------------------+
-	|     Percentage for Other Party         |  octet 4
-	/----------------------------------------/
-	Octet 1: Value range 0 - 99  (H'0 - H'63)
-	Octet 2: Value range 0 - 99  (H'0 - H'63)
-	Octet 3: Value range 0 - 99  (H'0 - H'63)
-	Octet 4: Value range 0 - 99  (H'0 - H'63)
-	"""
-
-class ErrorRatio:
-	"""ASN.1 Formal Description
-	ErrorRatio ::= OCTET STRING (SIZE(2))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|               Mantissa                |  octet 1
-	+---------------------------------------+
-	|               Exponent                |  octet 2
-	/---------------------------------------/
-	Note: The OCTET STRING is coded as an unsigned INTEGER.
-	Value range:  0 - 9 for both octets.
-	"""
-
-class FixedNetworkUserRate:
-	"""ASN.1 Formal Description
-	FixedNetworkUserRate ::= ENUMERATED
-	(fNUR9600bps                  (1),
-	fNUR14400bps                 (2),
-	fNUR19200bps                 (3),
-	fNUR28800bps                 (4),
-	fNUR38400bps                 (5),
-	fNUR48000bps                 (6),
-	fNUR56000bps                 (7),
-	fNUR64000bps                 (8),
-	fNURautobauding              (9))
-	Note: Value (6) is only valid for GSM.
-	"""
-
-class GenericDigitsSet:
-	"""ASN.1 Formal Description
-	GenericDigitsSet ::= SET SIZE (1..20) OF GenericDigits
-	GenericDigits ::= OCTET STRING (SIZE(2..15))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|              contents                 |  octet 1
-	+---------------------------------------+
-	|              contents                 |  octet 2
-	/---------------------------------------/
-	.
-	.
-	.
-	/---------------------------------------/
-	|              contents                 |  octet n (<16)
-	/---------------------------------------/
-	The contents of each octet are specified in the Function
-	Specification (FS) for a particular Ericsson provided IN
-	service, and in INAP protocol specifications.
-	"""
-
-class GenericNumbersSet:
-	"""ASN.1 Formal Description
-	GenericNumbersSet ::= SET SIZE (1..20) OF GenericNumber
-	GenericNumber ::= OCTET STRING (SIZE(3..17))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|              contents                 |  octet 1
-	+---------------------------------------+
-	|              contents                 |  octet 2
-	/---------------------------------------/
-	.
-	.
-	.
-	/---------------------------------------/
-	|              contents                 |  octet n (<18)
-	/---------------------------------------/
-	The contents of each octet are specified in the
-	Function Specification (FS) for a particular Ericsson
-	provided IN service, and in INAP protocol specifications.
-	"""
-
-class GlobalTitle:
-	"""ASN.1 Formal Description
-	GlobalTitle ::= OCTET STRING (SIZE(4..12))
-	|    |    |    |    |    |    |    |    |
-	| 8  | 7  | 6  | 5  | 4  | 3  | 2  | 1  |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|  Translation Type                     | octet 1
-	+---------------------------------------+
-	| Numbering Plan    | ODD/EVEN Indicator| octet 2
-	+---------------------------------------+
-	| Nature of Address Indicator           | octet 3
-	+---------------------------------------+
-	|    2nd digit      |     1st digit     | octet 4
-	/---------------------------------------/
-	.
-	.
-	.
-	/---------------------------------------/
-	|    18th digit     |     17th digit    | octet 12
-	/---------------------------------------/
-	Octet 2:  Bits 4-1 Odd/Even Indicator:
-	0 0 0 1  BCD, odd number of digits
-	0 0 1 0  BCD, even number of digits
-	Bits 8-5 Numbering plan:
-	0 0 0 1  ISDN numbering plan (E.164)
-	0 0 1 1  Data numbering plan (X.121)
-	0 1 0 0  Telex numbering plan (F.69)
-	0 1 0 1  Maritime mobile numbering plan
-	0 1 1 0  Land mobile numbering plan
-	0 1 1 1  ISDN mobile numbering plan
-	Octet 3:  Bits 7-1 Nature of address indicator:
-	0 0 0 0 0 0 1  Subscriber number
-	0 0 0 0 0 1 0  Unknown
-	0 0 0 0 0 1 1  National significant number
-	0 0 0 0 1 0 0  International number
-	Bit 8  Spare
-	Octets 4..12: Address signals, BCD coded
-	Digits value range: H'0-H'9,
-	H'B (code 11)
-	and H'C (code 12)
-	Note: Filler H'0 (last digit) is used in case
-	of odd number of digits.
-	"""
-
-class GlobalTitleAndSubSystemNumber:
-	"""ASN.1 Formal Description
-	GlobalTitleAndSubSystemNumber ::=
-	OCTET STRING (SIZE(5..13))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|  SubSystemNumber                      | octet 1
-	+---------------------------------------+
-	|  Translation Type                     | octet 2
-	+---------------------------------------+
-	| Numbering Plan    | ODD/EVEN Indicator| octet 3
-	+---------------------------------------+
-	| Nature of Address Indicator           | octet 4
-	+---------------------------------------+
-	|    2nd digit      |     1st digit     | octet 5
-	/---------------------------------------/
-	.
-	.
-	.
-	/---------------------------------------/
-	|    18th digit     |     17th digit    | octet 13
-	/---------------------------------------/
-	Octet 3:  Bits 4-1 Odd/Even Indicator:
-	0 0 0 1  BCD, odd number of digits
-	0 0 1 0  BCD, even number of digits
-	Bits 8-5 Numbering plan:
-	0 0 0 1  ISDN numbering plan (E.164)
-	0 0 1 1  Data numbering plan (X.121)
-	0 1 0 0  Telex numbering plan (F.69)
-	0 1 0 1  Maritime mobile numbering plan
-	0 1 1 0  Land mobile numbering plan
-	0 1 1 1  ISDN mobile numbering plan
-	Octet 4:  Bits 7-1 Nature of address indicator:
-	0 0 0 0 0 0 1  Subscriber number
-	0 0 0 0 0 1 0  Unknown
-	0 0 0 0 0 1 1  National significant number
-	0 0 0 0 1 0 0  International number
-	Bit 8  Spare
-	Octets 5..13: Address signals, BCD coded
-	Digits value range: H'0-H'9,
-	H'B (code 11)
-	and H'C (code 12)
-	Note: Filler H'0 (last digit) is used in case
-	of odd number of digits.
-	"""
-
-class IMEI:
-	"""ASN.1 Formal Description
-	IMEI ::= TBCDString (SIZE(8))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|  TAC digit 2      |  TAC digit 1      | octet 1
-	+-------------------+-------------------+
-	|  TAC digit 4      |  TAC digit 3      | octet 2
-	+-------------------+-------------------+
-	|  TAC digit 6      |  TAC digit 5      | octet 3
-	+-------------------+-------------------+
-	|  TAC digit 8      |  TAC digit 7      | octet 4
-	+-------------------+-------------------+
-	|  SNR digit 2      |  SNR digit 1      | octet 5
-	+-------------------+-------------------+
-	|  SNR digit 4      |  SNR digit 3      | octet 6
-	+-------------------+-------------------+
-	|  SNR digit 6      |  SNR digit 5      | octet 7
-	+-------------------+-------------------+
-	|  See note         |  See note         | octet 8
-	/---------------------------------------/
-	TAC Type Allocation Code (octet 1, 2, 3 and 4).
-	SNR Serial Number (octet 5, 6 and 7).
-	Digits 0 to 9, two digits per octet,
-	each digit encoded 0000 to 1001
-	Note:
-	Bits 1-4 of octet 8: Spare
-	Bits 5-8 of octet 8: 1111 used as a filler.
-	"""
-
-class IMSI:
-	"""ASN.1 Formal Description
-	IMSI ::= TBCDString (SIZE(3..8))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|  MCC digit 2      |  MCC digit 1      | octet 1
-	+-------------------+-------------------+
-	|  MNC digit 1      |  MCC digit 3      | octet 2
-	+-------------------+-------------------+
-	|  MSIN digit 1     |  MNC digit 2      | octet 3
-	+-------------------+-------------------+
-	|  MSIN digit 3     |  MSIN digit 2     | octet 4
-	/---------------------------------------/
-	.
-	.
-	.
-	/---------------------------------------/
-	|  MSIN digit 2n-7  |  MSIN digit 2n-8  | octet n-1
-	+-------------------+-------------------+
-	|  See note         |  MSIN digit 2n-6  | octet n
-	/---------------------------------------/
-	Note: bits 5-8 of octet n contain
-	- last MSIN digit, or
-	- 1111 used as a filler when there is an odd
-	total number of digits.
-	MCC Mobile Country Code (octet 1 and bits 1-4 of octet 2)
-	MNC Mobile Network Code (bits 5-8 of octet 2 and bits 1-4
-	of octet 3).
-	MSIN Mobile Subscriber Identification Number
-	The total number of digits should not exceed 15.
-	Digits 0 to 9, two digits per octet,
-	each digit encoded 0000 to 1001
-	"""
-
-class LCSAccuracy:
-	"""ASN.1 Formal Description
-	LCSAccuracy ::= OCTET STRING (SIZE(1))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                               LSB |
-	/---------------------------------------/
-	Bits 7 - 1 = Uncertainty Code
-	Bit  8 = 0
-	Value range: H'0 - H'7F (0 - 127)
-	The uncertainty is coded on 7 bits, as the binary
-	encoding of K. The uncertainty r, expressed in metres,
-	is mapped to a number K, with the following formula:
-	K
-	r = C ((1 + x)   - 1)
-	With C = 10 and x = 0,1. With 0 <= K <= 127,
-	a range between 0 and 1800 kilometres is achieved for the
-	uncertainty, still being able to code down to values as
-	small as 1 metre.
-	For further details for Uncertainty Code see 3G TS 23.032.
-	"""
-
-class LegID:
-	"""ASN.1 Formal Description
-	LegID ::= OCTET STRING (SIZE(1))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                               LSB |
-	/---------------------------------------/
-	Note: OCTET STRING is coded as an unsigned integer.
-	"""
-
-class LocationInformation:
-	"""ASN.1 Formal Description
-	LocationInformation ::= OCTET STRING (SIZE(7))
-	|   |   |   |   |   |   |   |   |
-	| 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
-	|   |   |   |   |   |   |   |   |
-	/-------------------------------/
-	|  MCC digit 2  |  MCC digit 1  | octet 1
-	+---------------+---------------+
-	|  MNC digit 3  |  MCC digit 3  | octet 2
-	+---------------+---------------+
-	|  MNC digit 2  |  MNC digit 1  | octet 3
-	+-------------------------------+
-	| MSB          LAC              | octet 4
-	+-------------------------------+
-	|              LAC, cont.   LSB | octet 5
-	+-------------------------------+
-	| MSB   CI/SAC value            | octet 6
-	+-------------------------------+
-	|       CI/SAC value, cont. LSB | octet 7
-	/-------------------------------/
-	MCC, Mobile country code (octet 1 and octet 2)
-	MNC, Mobile network code (octet 2 and octet 3).
-	Note: If MNC uses only 2 digits, then 3rd
-	is coded with filler H'F.
-	LAC Location area code (octet 4 and 5)
-	CI  Cell Identity, value (octets 6 and 7) (GSM)
-	SAC Service Area Code, value (octets 6 and 7) (WCDMA)
-	In the CI/SAC value field bit 8 of octet 6 is the most
-	significant bit.  Bit 1 of octet 7 is the least
-	significant bit.  Coding using full hexadecimal
-	representation is used.
-	In the LAC field, bit 8 of octet 4 is the most
-	significant bit.Bit 1 of octet 5 is the least
-	significant bit.Coding using full hexadecimal
-	representation is used.
-	In the case of a deleted or non-existent Location
-	Area Identity (LAI), both octets of the location
-	area code are coded with zeros.
-	"""
-
-class MSNB:
-	"""ASN.1 Formal Description
-	MSNB ::= TBCDString (SIZE(3..8))
-	"""
-
-class NumberOfChannels:
-	"""ASN.1 Formal Description
-	NumberOfChannels ::= ENUMERATED
-	(oneTrafficChannel         (0),
-	twoTrafficChannels        (1),
-	threeTrafficChannels      (2),
-	fourTrafficChannels       (3),
-	fiveTrafficChannels       (4),
-	sixTrafficChannels        (5),
-	sevenTrafficChannels      (6),
-	eightTrafficChannels      (7))
-	"""
-
-class NumberOfOperations:
-	"""ASN.1 Formal Description
-	NumberOfOperations ::= OCTET STRING (SIZE(1))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                               LSB |
-	/---------------------------------------/
-	Note: OCTET STRING is coded as an unsigned integer.
-	Value range: H'0 - H'FF
-	"""
-
-class NumberOfShortMessage:
-	"""ASN.1 Formal Description
-	NumberOfShortMessage ::= OCTET STRING (SIZE(2))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                                   | octet 1
-	+---------------------------------------+
-	|                                   LSB | octet 2
-	/---------------------------------------/
-	Note: OCTET STRING is coded as an unsigned integer.
-	Value range: H'0 - H'FFFF
-	"""
-
-class OperationIdentifier:
-	"""ASN.1 Formal Description
-	OperationIdentifier ::= OCTET STRING (SIZE(1))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                               LSB |
-	/---------------------------------------/
-	Note: OCTET STRING is coded as an unsigned integer.
-	Value range: H'0 - H'FF
-	The meaning of each value is specified in the Application
-	Information documents of the application owner blocks.
-	The application owner blocks are listed in Application
-	Information document "Mobile Telephony Data" in the "USSD
-	Application Identifiers" chapter.
-	"""
-
-class PointCodeAndSubSystemNumber:
-	"""ASN.1 Formal Description
-	PointCodeAndSubSystemNumber ::= OCTET STRING (SIZE (4))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|  1st SPC                              | octet 1
-	+---------------------------------------+
-	|  2nd SPC                              | octet 2
-	+---------------------------------------+
-	|  3rd SPC                              | octet 3
-	+---------------------------------------+
-	|  SubSystemNumber                      | octet 4
-	/---------------------------------------/
-	- octets 1..3: SPC
-	-              CCITT TCAP:
-	The 2 most significant bits
-	of the 2nd octet, and the 3rd octet
-	are coded 0.
-	-              ANSI TCAP
-	All three octets used for SPC
-	-              JAPANESE BLUE TCAP
-	First two octets used for SPC. 3rd octet
-	coded 0.
-	- octet 4    : SubSystemNumber
-	"""
-
-class ProcedureCode:
-	"""ASN.1 Formal Description
-	ProcedureCode ::= TBCDString (SIZE(1))
-	"""
-
-class Route:
-	"""ASN.1 Formal Description
-	Route ::= IA5STRING (SIZE(1..7))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|            1st character              | octet 1
-	/---------------------------------------/
-	.
-	.
-	.
-	/---------------------------------------/
-	|            6th character              | octet 6
-	+---------------------------------------+
-	|            7th character              | octet 7
-	/---------------------------------------/
-	"""
-
-class ServiceCode:
-	"""ASN.1 Formal Description
-	ServiceCode ::= TBCDString (SIZE(1..2))
-	"""
-
-class ServiceKey:
-	"""ASN.1 Formal Description
-	ServiceKey ::=  OCTET STRING (SIZE(4))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	| MSB                                   | octet 1
-	+---------------------------------------+
-	|                                       | octet 2
-	+---------------------------------------+
-	|                                       | octet 3
-	+---------------------------------------+
-	|                                 LSB   | octet 4
-	/---------------------------------------/
-	Value Range H'0 - H'7FFFFFFF
-	"""
-
-class Single:
-	"""ASN.1 Formal Description
-	Single ::=  ENUMERATED
-	(aPartyToBeCharged      (0),
-	bPartyToBeCharged      (1),
-	cPartyToBeCharged      (2),
-	otherPartyToBeCharged  (3))
-	"""
-
-class SpeechCoderVersion:
-	"""ASN.1 Formal Description
-	SpeechCoderVersion ::= ENUMERATED
-	(fullRateVersion1         (0),
-	fullRateVersion2         (1),
-	fullRateVersion3         (2),
-	halfRateVersion1         (3),
-	halfRateVersion2         (4),
-	halfRateVersion3         (5))
-	"""
-
-class TargetRNCid:
-	"""ASN.1 Formal Description
-	TargetRNCid ::= OCTET STRING (SIZE(7))
-	|   |   |   |   |   |   |   |   |
-	| 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
-	|   |   |   |   |   |   |   |   |
-	/-------------------------------/
-	|  MCC digit 2  |  MCC digit 1  | octet 1
-	+---------------+---------------+
-	|  MNC digit 3  |  MCC digit 3  | octet 2
-	+---------------+---------------+
-	|  MNC digit 2  |  MNC digit 1  | octet 3
-	+-------------------------------+
-	| MSB          LAC              | octet 4
-	+-------------------------------+
-	|              LAC, cont.   LSB | octet 5
-	+-------------------------------+
-	| MSB   RNC-id                  | octet 6
-	+-------------------------------+
-	|       RNC-id,     cont.   LSB | octet 7
-	/-------------------------------/
-	Note: The OCTET STRING is coded as an unsigned INTEGER.
-	MCC, Mobile country code (octet 1 and 2).
-	MNC, Mobile network code (octet 2 and 3).
-	Note: If MNC uses only 2 digits, 3rd is coded with
-	filler H'F.
-	LAC, Location area code (octet 4 and 5).
-	RNC-id, Radio Network Control id (octet 6 and 7),
-	value range: H'0 - H'FFF.
-	"""
-
-class Time:
-	"""ASN.1 Formal Description
-	Time ::= OCTET STRING (SIZE(3..4))
-	|    |    |    |    |    |    |    |    |
-	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-	|    |    |    |    |    |    |    |    |
-	/---------------------------------------/
-	|                                       | octet 1 (Hour)
-	+---------------------------------------+
-	|                                       | octet 2 (Minute)
-	+---------------------------------------+
-	|                                       | octet 3 (Second)
-	+---------------------------------------+
-	|                                       | octet 4 (10th of
-	/---------------------------------------/          a second)
-	Note: OCTET STRING is coded as an unsigned integer.
-	Hour             (octet 1): value range  0-23 (H'0 - H'17)
-	Minute           (octet 2): value range  0-59 (H'0 - H'3B)
-	Second           (octet 3): value range  0-59 (H'0 - H'3B)
-	10th of a second (octet 4): value range  0-9  (H'0 - H'9)
-	Note: 10th of a second is only included for the parameter
-	chargeableDuration and only used for WCDMA Japan.
 	"""
 
 class TransitCarrierInfo:
@@ -4564,6 +3149,13 @@ class TransitCarrierInfo:
 	1111
 	"""
 
+class TransparencyIndicator:
+	"""ASN.1 Formal Description
+	TransparencyIndicator ::= ENUMERATED
+	(transparent                              (0),
+	nonTransparent                           (1))
+	"""
+
 class TriggerData:
 	"""ASN.1 Formal Description
 	TriggerData ::= SEQUENCE(
@@ -4611,6 +3203,35 @@ class TriggerDetectionPoint:
 	originatingCallAttemptAlerting                     (255))
 	"""
 
+class TypeOfCalledSubscriber:
+	"""ASN.1 Formal Description
+	TypeOfCalledSubscriber ::= ENUMERATED
+	(pSTNSubscriber       (0),
+	iSDNSubscriber       (1),
+	unknownSubscriber    (2))
+	"""
+
+class TypeOfLocationRequest:
+	"""ASN.1 Formal Description
+	TypeOfLocationRequest ::= ENUMERATED
+	(mT_LocationRequestCurrentLocation              (0),
+	mT_LocationRequestCurrentOrLastKnownLocation   (1),
+	mO_LocationRequestLocEstimateToMS              (2),
+	mO_LocationRequestLocEstimateToThirdParty      (3),
+	mO_LocationRequestAssistData                   (4),
+	mO_LocationRequestDeciphKeys                   (5),
+	nI_LocationRequest                             (6))
+	Note: nI_LocationRequest is not valid for WCDMA.
+	"""
+
+class TypeOfSignalling:
+	"""ASN.1 Formal Description
+	TypeOfSignalling ::= ENUMERATED
+	(iSUPIsNotAppliedAllTheWay       (0),
+	iSUPIsAppliedAllTheWay          (1),
+	unknownSignalling               (2))
+	"""
+
 class UILayer1Protocol:
 	"""ASN.1 Formal Description
 	UILayer1Protocol ::= ENUMERATED
@@ -4624,6 +3245,31 @@ class UILayer1Protocol:
 	V120                         (8),
 	X31                          (9),
 	vSELP_Speech                (10))
+	"""
+
+class UnsuccessfulPositioningDataReason:
+	"""ASN.1 Formal Description
+	UnsuccessfulPositioningDataReason ::= ENUMERATED
+	(systemError                           (0),
+	userDeniedDueToPrivacyVerification    (1))
+	"""
+
+class UserClass:
+	"""ASN.1 Formal Description
+	UserClass ::= OCTET STRING (SIZE(1))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	| MSB                         |     LSB |
+	/---------------------------------------/
+	-- Bit 8-3 Spare
+	-- Bit 2-1 Additional Fixed User Information,
+	--         supplementary user type information
+	00 Spare
+	01 Train Payphone
+	10 Pink (non-NTT Payphone)
+	11 Spare
 	"""
 
 class UserRate:
@@ -4666,5 +3312,134 @@ class UserRate:
 	rate is the transmit rate in the backward direction of
 	the call.
 	Value 17 is an additional user rate for the French network.
+	"""
+
+class UserTerminalPosition:
+	"""ASN.1 Formal Description
+	UserTerminalPosition ::= OCTET STRING (SIZE(7))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|                   |F/S |N/S |E/W | D  |  Octet 1
+	+-------------------+-------------------+
+	|Longitude degrees  |Longitude degrees  |  Octet 2
+	+-------------------+-------------------+
+	|Longitude minutes  |Longitude minutes  |  Octet 3
+	+-------------------+-------------------+
+	|Longitude seconds  |Longitude seconds  |  Octet 4
+	+-------------------+-------------------+
+	|Latitude degrees   |Latitude degrees   |  Octet 5
+	+-------------------+-------------------+
+	|Latitude minutes   |Latitude minutes   |  Octet 6
+	+-------------------+-------------------+
+	|Latitude seconds   |Latitude seconds   |  Octet 7
+	/---------------------------------------/
+	Octet 1 bits 8-5 are coded as zero.
+	F/S (octet 1 bit 4):
+	0: Full representation
+	(latitude/longitude down to seconds)
+	1: Short representation
+	(latitude/longitude down to minutes)
+	N/S (octet 1 bit 3):
+	0: Latitude value is to the SOUTH of the equator
+	1: Latitude value is to the NORTH of the equator
+	E/W (octet 1 bit 2):
+	0: Longitude value is to the EAST of
+	the prime meridian
+	1: Longitude value is to the WEST of
+	the prime meridian
+	D (octet 1 bit 1):
+	0: Longitude value less than 100 degrees
+	(Actual Longitude value is the value in
+	Octets 2-4)
+	1: Longitude value is greater than or equal to
+	100 degrees
+	(Actual Longitude value is 100 added to
+	the value in Octet 2-4)
+	Octet 2:  Bits 8-5 Longitude degrees
+	(most significant digit),
+	BCD coded
+	Value range: H'0-H'9
+	Bits 4-1 Longitude degrees
+	(least significant digit),
+	BCD coded
+	Value range: H'0-H'9
+	Octet 3:  Bits 8-5 Longitude minutes
+	(most significant digit),
+	BCD coded
+	Value range: H'0-H'5
+	Bits 4-1 Longitude minutes
+	(least significant digit),
+	BCD coded
+	Value range: H'0-H'9
+	Octet 4:  Bits 8-5 Longitude seconds
+	(most significant digit),
+	BCD coded
+	Value range: H'0-H'5
+	Bits 4-1 Longitude seconds
+	(least significant digit),
+	BCD coded
+	Value range: H'0-H'9
+	Octet 5:  Bits 8-5 Latitude degrees
+	(most significant digit),
+	BCD coded
+	Value range: H'0-H'9
+	Bits 4-1 Latitude degrees
+	(least significant digit),
+	BCD coded
+	Value range: H'0-H'9
+	Octet 6:  Bits 8-5 Latitude minutes
+	(most significant digit),
+	BCD coded
+	Value range: H'0-H'5
+	Bits 4-1 Latitude minutes
+	(least significant digit),
+	BCD coded
+	Value range: H'0-H'9
+	Octet 7:  Bits 8-5 Latitude seconds
+	(most significant digit),
+	BCD coded
+	Value range: H'0-H'5
+	Bits 4-1 Latitude seconds
+	(least significant digit),
+	BCD coded
+	Value range: H'0-H'9
+	"""
+
+class UserToUserService1Information:
+	"""ASN.1 Formal Description
+	UserToUserService1Information ::= OCTET STRING (SIZE(1))
+	|    |    |    |    |    |    |    |    |
+	|  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+	|    |    |    |    |    |    |    |    |
+	/---------------------------------------/
+	|                                       |  Octet 1
+	/---------------------------------------/
+	Bit 1:
+	Attempt to use User to User Service 1 at call set up
+	0 = was not made
+	1 = was made
+	Bit 2:
+	Request to use User to User Service 1 at call set up
+	0 = was implicit
+	1 = was explicit
+	Bit 3:
+	Attempt to use User to User Service 1 at call set up
+	0 = was successful
+	1 = was not successful
+	Bit 4:
+	Attempt to use User to User Service 1 at call clear
+	0 = was not made
+	1 = was made
+	Bit 5:
+	Request to use User to User Service 1 at call clear
+	0 = was implicit
+	1 = was explicit
+	Bit 6:
+	Attempt to use User to User Service 1 at call clear
+	0 = was not successful
+	1 = was successful
+	Bit 7 - 8 Spare (set to 0)
 	"""
 
