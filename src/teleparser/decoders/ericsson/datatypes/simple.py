@@ -2,6 +2,7 @@
 It's organized here because it's just the boilerplate of the type name and its description
 """
 
+from functools import cached_property
 from . import primitives
 
 
@@ -119,6 +120,37 @@ class CAMELSMSAddress(primitives.AddressString):
     """
 
 
+class ChargeAreaCode(primitives.DigitString):
+    r"""ChargeAreaCode ::= OCTET STRING (SIZE(3))
+ 
+    The digits for ID Code are encoded as a TBCD-STRING.
+    
+    |    |    |    |    |    |    |    |    | 
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 | 
+    |    |    |    |    |    |    |    |    | 
+    /---------------------------------------\ 
+    | 2nd CA Code digit | 1st CA Code digit | octet 1 of TBCD 
+    +-------------------+-------------------+ 
+    | 4th CA Code digit | 3rd CA Code digit | octet 2 of TBCD 
+    +-------------------+-------------------+ 
+    | Filler            | 5th CA Code digit | octet 3 of TBCD 
+    \---------------------------------------/ 
+    
+    Acceptable digits are between 0 and 9.
+    
+    Note1: CA Code consists currently of max 5 digits and
+        the 6th digit is filler (H'F).
+    Note2: In case of POICA the 6th digit is filler (H'0)."""
+
+    @cached_property
+    def digits(self):
+        digits = [int.from_bytes(byte, byteorder="big") for byte in self.octets]
+        assert all(0 <= digit <= 9 for digit in digits), (
+            " Acceptable digits are between 0 and 9."
+        )
+        return digits
+
+
 class ChargeNumber(primitives.AddressString):
     """Charge Number  (M)
 
@@ -155,6 +187,61 @@ class ChargedCallingPartyNumber(primitives.AddressString):
     The parameter is not applicable for WCDMA Japan."""
 
 
+class ChargingIndicator(primitives.OctetString):
+    """Charging Indicator
+    
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------\
+    | MSB                               LSB |
+    \---------------------------------------/
+    
+    - Bit 8-3: Unused, set always to 00000
+    - Bit 2-1: Charging indicator
+    
+        00   No Indication
+        01   No Charge
+        10   Charge
+        11   Spare
+    """
+
+    # Constants for charging indicator values
+    NO_INDICATION = 0
+    NO_CHARGE = 1
+    CHARGE = 2
+    SPARE = 3
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, size=1)
+        self._parse_indicator()
+
+    def _parse_indicator(self):
+        value = int.from_bytes(self.octets, byteorder="big")
+        # Extract bits 2-1 (the last 2 bits)
+        self.indicator = value & 0x03
+        # Validate that bits 8-3 are all zeros
+        unused_bits = (value >> 2) & 0x3F
+        assert unused_bits == 0, (
+            f"Bits 8-3 should be all zeros, got: {bin(unused_bits)}"
+        )
+
+    @property
+    def value(self):
+        """Return the charging indicator as a string"""
+        match self.indicator:
+            case self.NO_INDICATION:
+                return "No Indication"
+            case self.NO_CHARGE:
+                return "No Charge"
+            case self.CHARGE:
+                return "Charge"
+            case self.SPARE:
+                return "Spare"
+            case _:
+                return f"Unknown ({self.indicator})"
+
+
 class ContractorNumber(primitives.AddressString):
     """Contractor Number
 
@@ -166,6 +253,106 @@ class ContractorNumber(primitives.AddressString):
     """
 
 
+class Date(primitives.OctetString):
+    r"""Date ::= OCTET STRING (SIZE(3..4))
+
+    Note: The OCTET STRING is coded as an unsigned
+        integer.
+
+        The number of year digits is determined by exchange
+        parameter.
+
+    Two digit (Year) format:
+
+
+    |    |    |    |    |    |    |    |    | 
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 | 
+    |    |    |    |    |    |    |    |    | 
+    /---------------------------------------\ 
+    |                                       | octet 1 (Year) 
+    +---------------------------------------+ 
+    |                                       | octet 2 (Month) 
+    +---------------------------------------+ 
+    |                                       | octet 3 (Day) 
+    \---------------------------------------/ 
+
+    Year  (octet 1): Value range 0-99 (H'0 - H'63)
+    Month (octet 2): Value range 1-12 (H'1 - H'C)
+    Day   (octet 3): Value range 1-31 (H'1 - H'1F)
+
+
+    Four digit (Year) format:
+
+
+    |    |    |    |    |    |    |    |    | 
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 | 
+    |    |    |    |    |    |    |    |    | 
+    /---------------------------------------\ 
+    |                                       | octet 1 (Year) 
+    +---------------------------------------+ 
+    |                                       | octet 2 (Year) 
+    +---------------------------------------+ 
+    |                                       | octet 3 (Month)
+    +---------------------------------------+ 
+    |                                       | octet 4 (Day) 
+    \---------------------------------------/ 
+
+
+    Year  (octet 1): Value range 19 or 20 (H'13 or H'14)
+    Year  (octet 2): Value range 0 - 99 (H'0 - H'63)
+    Month (octet 3): Value range 1 - 12 (H'1 - H'C)
+    Day   (octet 4): Value range 1 - 31 (H'1 - H'1F)"""
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, lower=3, upper=4)
+        self._parse_digits()
+
+    def _parse_digits(self):
+        if self.size == 4:
+            self._extract_4digits_year()
+            i = 2
+        else:
+            year = int.from_bytes(self.octets[:1], "big")
+            assert 0 <= year <= 99, f"Year should be in range 0-99: {year}"
+            self.year = year
+            i = 1
+        month = int.from_bytes(self.octets[i], "big")
+        assert 1 <= month <= 12, f"Month should be in range 1-12: {month}"
+        day = int.from_bytes(self.octets[i + 1], "big")
+        assert 1 <= day <= 31, f"Day should be in range 1-31: {day}"
+        self.month = month
+        self.day = day
+
+    def _extract_4digits_year(self):
+        year1 = int.from_bytes(self.octets[:1], "big")
+        year2 = int.from_bytes(self.octets[1:2], "big")
+        assert 19 <= year1 <= 20, f"Year should be in range 19-20: {year1}"
+        assert 0 <= year2 <= 99, f"Year should be in range 0-99: {year2}"
+        self.year = year1 * 100 + year2
+
+    @property
+    def value(self):
+        """Return date string"""
+        if self.size == 4:
+            return f"{self.year:04d}-{self.month:02d}-{self.day:02d}"
+        else:
+            return f"{self.year:02d}-{self.month:02d}-{self.day:02d}"
+
+
+class GSMCallReferenceNumber(primitives.DigitString):
+    """GSM Call Reference Number
+
+    This parameter is CAMEL specific information parameter.
+    It applies to CAMEL calls and extended CAMEL calls with
+    IN Capability. It correlates Call Data Records output
+    from the GMSC/gsmSSF and the terminating MSC, or call
+    data records from the originating MSC/gsmSSF and a network
+    optional Call Data Record from the gsmSCF."""
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, lower=1, upper=8)
+
+
 class GsmSCFAddress(primitives.AddressString):
     """gsmSCF Address
 
@@ -174,6 +361,9 @@ class GsmSCFAddress(primitives.AddressString):
     to which successful Supplementary Service Invocation
     notification(s) are sent during the call.
     """
+
+    def __init__(self, octets):
+        super().__init__(octets, lower=1, upper=9)
 
 
 class LCSClientIdentity(primitives.AddressString):
@@ -364,6 +554,11 @@ class ServedSubscriberNumber(primitives.AddressString):
     The parameter is not applicable for WCDMA Japan."""
 
 
+class ServiceKey(primitives.DigitString):
+    def __init__(self, octets: bytes):
+        super().__init__(octets, size=4)
+
+
 class TargetMSISDN(primitives.AddressString):
     """Target MSISDN
 
@@ -382,6 +577,62 @@ class TerminatingLocationNumber(primitives.AddressString):
     to the called-subscriber's cell, location area or MSC/VLR
     cell.
     """
+
+
+class Time(primitives.AddressString):
+    r"""Time ::= OCTET STRING (SIZE(3..4))
+
+    |    |    |    |    |    |    |    |    | 
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 | 
+    |    |    |    |    |    |    |    |    | 
+    /---------------------------------------\ 
+    |                                       | octet 1 (Hour)
+    +---------------------------------------+ 
+    |                                       | octet 2 (Minute)
+    +---------------------------------------+ 
+    |                                       | octet 3 (Second)
+    +---------------------------------------+ 
+    |                                       | octet 4 (10th of
+    \---------------------------------------/          a second)
+
+    Note: OCTET STRING is coded as an unsigned integer.
+
+    Hour             (octet 1): value range  0-23 (H'0 - H'17)
+    Minute           (octet 2): value range  0-59 (H'0 - H'3B)
+    Second           (octet 3): value range  0-59 (H'0 - H'3B)
+    10th of a second (octet 4): value range  0-9  (H'0 - H'9)
+
+    Note: 10th of a second is only included for the parameter
+        chargeableDuration and only used for WCDMA Japan."""
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, lower=3, upper=4)
+        self._parse_digits()
+
+    def _parse_digits(self):
+        hour = int.from_bytes(self.octets[:1], "big")
+        minute = int.from_bytes(self.octets[1:2], "big")
+        second = int.from_bytes(self.octets[2:3], "big")
+        assert 0 <= hour <= 23, f"Hour should be in range 0-23: {hour}"
+        assert 0 <= minute <= 59, f"Minute should be in range 0-59: {minute}"
+        assert 0 <= second <= 59, f"Second should be in range 0-59: {second}"
+        self.hour = hour
+        self.minute = minute
+        self.second = second
+        if self.size == 4:
+            tenth_of_a_second = int.from_bytes(self.octets[3:4], "big")
+            assert 0 <= tenth_of_a_second <= 9, (
+                f"10th of a second should be in range 0-9: {tenth_of_a_second}"
+            )
+            self.tenth_of_a_second = tenth_of_a_second
+
+    @property
+    def value(self):
+        """Return datetime string"""
+        value = f"{self.hour:02d}:{self.minute:02d}:{self.second:02d}"
+        if self.size == 4:
+            value += f".{self.tenth_of_a_second:01d}"
+        return value
 
 
 class TranslatedNumber(primitives.AddressString):

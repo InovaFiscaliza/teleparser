@@ -4,6 +4,8 @@ from typing import Optional, Tuple
 from io import BufferedReader, BytesIO
 from binascii import hexlify
 
+from .ericsson.decoder import TlvVozEricsson
+
 # Basic ASN.1 Reference
 # https://luca.ntop.org/Teaching/Appunti/asn1.html
 
@@ -41,17 +43,6 @@ class BerTag:
 
 
 @dataclass
-class TlvObject:
-    """Tag-Length-Value object for BER encoding"""
-
-    tag: BerTag
-    length: int
-    value: bytes
-    offset: int
-    children: list["TlvObject"] = None
-
-
-@dataclass
 class BerDecoder:
     """Basic Encoding Rules decoder"""
 
@@ -80,8 +71,12 @@ class BerDecoder:
         return (tag.tag_class, tag.constructed, tag.number, length) in EOC
 
     def decode_tlv(
-        self, stream: BufferedReader | BytesIO, offset: int = 0, depth: int = 0
-    ) -> Optional[TlvObject]:
+        self,
+        stream: BufferedReader | BytesIO,
+        offset: int = 0,
+        depth: int = 0,
+        schema: dict = None,
+    ) -> Optional[TlvVozEricsson]:
         start_offset = offset
         if (tag_bytes := self._read_tag(stream)) is None:
             return None
@@ -98,20 +93,23 @@ class BerDecoder:
             raise ValueError("Unexpected end of data")
 
         # Update offset after tag and length
-        tlv = TlvObject(tag, length, value, start_offset)
+        tlv = TlvVozEricsson(tag.number, value, schema)
 
         # Parse constructed types recursively
         if tag.constructed:
             tlv.children = []
             value_stream = BytesIO(value)
             while value_stream.tell() < length:
-                if child := self.decode_tlv(value_stream, offset, depth + 1):
+                if child := self.decode_tlv(
+                    value_stream, offset, depth + 1, tlv.schema
+                ):
                     tlv.children.append(child)
                     offset += child.length
 
         return tlv
 
-    def _read_tag(self, stream: BufferedReader) -> Optional[bytes]:
+    @staticmethod
+    def _read_tag(stream: BufferedReader) -> Optional[bytes]:
         first_byte = stream.read(1)
         if not first_byte:
             return None
@@ -129,7 +127,8 @@ class BerDecoder:
 
         return tag_bytes
 
-    def _read_length(self, stream: BufferedReader) -> Tuple[int, int]:
+    @staticmethod
+    def _read_length(stream: BufferedReader) -> Tuple[int, int]:
         first_byte = stream.read(1)[0]
         # definite short form
         if first_byte >> SHIFT_7 == 0:
