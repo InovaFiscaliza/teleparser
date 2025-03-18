@@ -1,7 +1,7 @@
 """This module implement simple datatypes inherited from the primitives
 It's organized here because it's just the boilerplate of the type name and its description
 """
-
+from datetime import datetime
 from . import primitives
 
 
@@ -383,7 +383,60 @@ class TerminatingLocationNumber(primitives.AddressString):
     cell.
     """
 
+class Time(primitives.AddressString):
+    """Time ::= OCTET STRING (SIZE(3..4))
 
+    |    |    |    |    |    |    |    |    | 
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 | 
+    |    |    |    |    |    |    |    |    | 
+    /---------------------------------------\ 
+    |                                       | octet 1 (Hour)
+    +---------------------------------------+ 
+    |                                       | octet 2 (Minute)
+    +---------------------------------------+ 
+    |                                       | octet 3 (Second)
+    +---------------------------------------+ 
+    |                                       | octet 4 (10th of
+    \---------------------------------------/          a second)
+
+    Note: OCTET STRING is coded as an unsigned integer.
+
+    Hour             (octet 1): value range  0-23 (H'0 - H'17)
+    Minute           (octet 2): value range  0-59 (H'0 - H'3B)
+    Second           (octet 3): value range  0-59 (H'0 - H'3B)
+    10th of a second (octet 4): value range  0-9  (H'0 - H'9)
+
+    Note: 10th of a second is only included for the parameter
+        chargeableDuration and only used for WCDMA Japan."""
+    def __init__(self, octets: bytes):
+        super().__init__(octets, lower=3, upper=4)
+        self._parse_digits()
+
+    
+
+    def _parse_digits(self):
+        hour = int.from_bytes(self.octets[:1], "big")
+        minute = int.from_bytes(self.octets[1:2], "big")
+        second = int.from_bytes(self.octets[2:3], "big")
+        assert 0 <= hour <= 23, f"Hour should be in range 0-23: {hour}"
+        assert 0 <= minute <= 59, f"Minute should be in range 0-59: {minute}"
+        assert 0 <= second <= 59, f"Second should be in range 0-59: {second}"
+        self.hour = hour
+        self.minute = minute
+        self.second = second
+        if self.size == 4:
+            tenth_of_a_second = int.from_bytes(self.octets[3:4], "big")
+            assert 0 <= tenth_of_a_second <= 9, f"10th of a second should be in range 0-9: {tenth_of_a_second}"
+            self.tenth_of_a_second = tenth_of_a_second
+        
+    @property
+    def value(self):
+        """Return datetime string"""
+        value = f"{self.hour:02d}:{self.minute:02d}:{self.second:02d}
+        if self.size == 4:
+            value += f".{self.tenth_of_a_second:01d}"
+        return value
+    
 class TranslatedNumber(primitives.AddressString):
     """Translated Number
 
