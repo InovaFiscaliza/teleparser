@@ -187,6 +187,61 @@ class ChargedCallingPartyNumber(primitives.AddressString):
     The parameter is not applicable for WCDMA Japan."""
 
 
+class ChargingIndicator(primitives.OctetString):
+    """Charging Indicator
+    
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------\
+    | MSB                               LSB |
+    \---------------------------------------/
+    
+    - Bit 8-3: Unused, set always to 00000
+    - Bit 2-1: Charging indicator
+    
+        00   No Indication
+        01   No Charge
+        10   Charge
+        11   Spare
+    """
+
+    # Constants for charging indicator values
+    NO_INDICATION = 0
+    NO_CHARGE = 1
+    CHARGE = 2
+    SPARE = 3
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, size=1)
+        self._parse_indicator()
+
+    def _parse_indicator(self):
+        value = int.from_bytes(self.octets, byteorder="big")
+        # Extract bits 2-1 (the last 2 bits)
+        self.indicator = value & 0x03
+        # Validate that bits 8-3 are all zeros
+        unused_bits = (value >> 2) & 0x3F
+        assert unused_bits == 0, (
+            f"Bits 8-3 should be all zeros, got: {bin(unused_bits)}"
+        )
+
+    @property
+    def value(self):
+        """Return the charging indicator as a string"""
+        match self.indicator:
+            case self.NO_INDICATION:
+                return "No Indication"
+            case self.NO_CHARGE:
+                return "No Charge"
+            case self.CHARGE:
+                return "Charge"
+            case self.SPARE:
+                return "Spare"
+            case _:
+                return f"Unknown ({self.indicator})"
+
+
 class ContractorNumber(primitives.AddressString):
     """Contractor Number
 
