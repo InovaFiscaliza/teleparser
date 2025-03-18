@@ -3271,23 +3271,6 @@ class TrafficActivityCode(primitives.AddressString):
     """
 
 
-class TrafficClass(primitives.AddressString):
-    """ASN.1 Formal Description
-    TrafficClass ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                                       | octet 1
-    /---------------------------------------/
-    TrafficClass             Bits 8 7 6 5 4 3 2 1
-    Conversational Class          0 0 0 0 0 0 0 0
-    Streaming Class               0 0 0 0 0 0 0 1
-    Interactive Class             0 0 0 0 0 0 1 0
-    Background Class              0 0 0 0 0 0 1 1
-    """
-
-
 class TransferDelay(primitives.AddressString):
     """ASN.1 Formal Description
     TransferDelay ::= OCTET STRING (SIZE(2))

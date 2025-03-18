@@ -828,6 +828,24 @@ class TargetMSISDN(primitives.AddressString):
     positioning is performed."""
 
 
+@fixed_size_unsigned_int(1)
+class TrafficClass(primitives.UnsignedInt):
+    """ASN.1 Formal Description
+    TrafficClass ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |                                       | octet 1
+    /---------------------------------------/
+    TrafficClass             Bits 8 7 6 5 4 3 2 1
+    Conversational Class          0 0 0 0 0 0 0 0
+    Streaming Class               0 0 0 0 0 0 0 1
+    Interactive Class             0 0 0 0 0 0 1 0
+    Background Class              0 0 0 0 0 0 1 1
+    """
+
+
 class TerminatingLocationNumber(primitives.AddressString):
     """Terminating Location Number
 
