@@ -261,6 +261,9 @@ class GsmSCFAddress(primitives.AddressString):
     notification(s) are sent during the call.
     """
 
+    def __init__(self, octets):
+        super().__init__(octets, lower=1, upper=9)
+
 
 class LCSClientIdentity(primitives.AddressString):
     """LCS Client Identity

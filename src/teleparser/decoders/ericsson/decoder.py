@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Mapping
 from . import modules
 
 
@@ -9,7 +9,7 @@ class TlvVozEricsson:
         self,
         tag_number: int,
         value: bytes,
-        schema: dict = None,
+        schema: Mapping = None,
     ):
         if schema is None:  # root
             tag_mapping = modules.CallDataRecord[tag_number]
