@@ -1609,46 +1609,6 @@ class IMSI:
     """
 
 
-class INMarkingOfMS(primitives.ByteEnum):
-    """ASN.1 Formal Description
-    INMarkingOfMS ::= ENUMERATED
-    (originatingINService                                 (1),
-    terminatingINService                                 (2),
-    originatingINCategoryKeyService                      (3),
-    terminatingINCategoryKeyService                      (4),
-    originatingCAMELService                              (5),
-    terminatingCAMELService                              (6),
-    originatingExtendedCAMELServiceWithINCapabilityIndicator
-    (7),
-    terminatingExtendedCAMELServiceWithINCapabilityIndicator
-    (8),
-    originatingExtendedCAMELServiceWithOriginatingINCategoryKey
-    (9),
-    terminatingExtendedCAMELServiceWithTerminatingINCategoryKey
-    (10),
-    subscriberDialledCAMELService                       (11),
-    subscriberDialledCAMELServiceAndOriginatingCAMELService
-    (12),
-    visitedTerminatingCAMELService                      (13))
-    """
-
-    VALUES = {
-        1: "originatingINService",
-        2: "terminatingINService",
-        3: "originatingINCategoryKeyService",
-        4: "terminatingINCategoryKeyService",
-        5: "originatingCAMELService",
-        6: "terminatingCAMELService",
-        6: "terminatingCAMELService",
-        6: "terminatingCAMELService",
-        6: "terminatingCAMELService",
-        6: "terminatingCAMELService",
-        11: "subscriberDialledCAMELService",
-        11: "subscriberDialledCAMELService",
-        13: "visitedTerminatingCAMELService",
-    }
-
-
 class INServiceTrigger(primitives.AddressString):
     """ASN.1 Formal Description
     INServiceTrigger ::= OCTET STRING (SIZE (2))
