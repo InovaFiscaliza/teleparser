@@ -284,6 +284,20 @@ class Date(primitives.OctetString):
             return f"{self.year:02d}-{self.month:02d}-{self.day:02d}"
 
 
+class GSMCallReferenceNumber(primitives.DigitString):
+    """GSM Call Reference Number
+
+    This parameter is CAMEL specific information parameter.
+    It applies to CAMEL calls and extended CAMEL calls with
+    IN Capability. It correlates Call Data Records output
+    from the GMSC/gsmSSF and the terminating MSC, or call
+    data records from the originating MSC/gsmSSF and a network
+    optional Call Data Record from the gsmSCF."""
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, lower=1, upper=8)
+
+
 class GsmSCFAddress(primitives.AddressString):
     """gsmSCF Address
 
