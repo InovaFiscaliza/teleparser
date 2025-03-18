@@ -1142,8 +1142,7 @@ class Time(primitives.AddressString):
         return value
 
 
-@fixed_size_unsigned_int(1)
-class TrafficClass(primitives.UnsignedInt):
+class TrafficClass(primitives.ByteEnum):
     """ASN.1 Formal Description
     TrafficClass ::= OCTET STRING (SIZE(1))
     |    |    |    |    |    |    |    |    |
@@ -1158,6 +1157,13 @@ class TrafficClass(primitives.UnsignedInt):
     Interactive Class             0 0 0 0 0 0 1 0
     Background Class              0 0 0 0 0 0 1 1
     """
+
+    VALUES = {
+        0: "Conversational Class",
+        1: "Streaming Class",
+        2: "Interactive Class",
+        3: "Background Class",
+    }
 
 
 class TranslatedNumber(primitives.AddressString):
