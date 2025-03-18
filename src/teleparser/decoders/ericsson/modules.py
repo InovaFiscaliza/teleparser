@@ -77,18 +77,18 @@ Transit = {
     70: {"name": "chargeInformation", "type": ChargeInformation},
     71: {"name": "disconnectionDate", "type": dt.Date},
     72: {"name": "disconnectionTime", "type": dt.Time},
-    73: {"name": "entryPOICA", "type": ChargeAreaCode},
-    74: {"name": "exitPOICA", "type": ChargeAreaCode},
+    73: {"name": "entryPOICA", "type": dt.ChargeAreaCode},
+    74: {"name": "exitPOICA", "type": dt.ChargeAreaCode},
     75: {"name": "internationalCallIndicator", "type": dt.Bool},  # NULL type
     76: {"name": "mobileUserClass1", "type": MobileUserClass1},
     77: {"name": "mobileUserClass2", "type": MobileUserClass2},
     78: {"name": "originatingAccessISDN", "type": dt.Bool},  # NULL type
     79: {"name": "originatingCarrier", "type": CarrierInfo},
-    80: {"name": "originatingChargeArea", "type": ChargeAreaCode},
+    80: {"name": "originatingChargeArea", "type": dt.ChargeAreaCode},
     81: {"name": "tDSCounter", "type": Counter},
     82: {"name": "terminatingAccessISDN", "type": dt.Bool},  # NULL type
     83: {"name": "terminatingCarrier", "type": CarrierInfo},
-    84: {"name": "terminatingChargeArea", "type": ChargeAreaCode},
+    84: {"name": "terminatingChargeArea", "type": dt.ChargeAreaCode},
     85: {"name": "terminatingMobileUserClass1", "type": MobileUserClass1},
     86: {"name": "terminatingMobileUserClass2", "type": MobileUserClass2},
     87: {"name": "contractorNumber", "type": dt.AddressString},

@@ -2,6 +2,7 @@
 It's organized here because it's just the boilerplate of the type name and its description
 """
 
+from functools import cached_property
 from . import primitives
 
 
@@ -117,6 +118,37 @@ class CAMELSMSAddress(primitives.AddressString):
     notification(s) are sent during the handling of short
     message.
     """
+
+
+class ChargeAreaCode(primitives.DigitString):
+    r"""ChargeAreaCode ::= OCTET STRING (SIZE(3))
+ 
+    The digits for ID Code are encoded as a TBCD-STRING.
+    
+    |    |    |    |    |    |    |    |    | 
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 | 
+    |    |    |    |    |    |    |    |    | 
+    /---------------------------------------\ 
+    | 2nd CA Code digit | 1st CA Code digit | octet 1 of TBCD 
+    +-------------------+-------------------+ 
+    | 4th CA Code digit | 3rd CA Code digit | octet 2 of TBCD 
+    +-------------------+-------------------+ 
+    | Filler            | 5th CA Code digit | octet 3 of TBCD 
+    \---------------------------------------/ 
+    
+    Acceptable digits are between 0 and 9.
+    
+    Note1: CA Code consists currently of max 5 digits and
+        the 6th digit is filler (H'F).
+    Note2: In case of POICA the 6th digit is filler (H'0)."""
+
+    @cached_property
+    def digits(self):
+        digits = [int.from_bytes(byte, byteorder="big") for byte in self.octets]
+        assert all(0 <= digit <= 9 for digit in digits), (
+            " Acceptable digits are between 0 and 9."
+        )
+        return digits
 
 
 class ChargeNumber(primitives.AddressString):
