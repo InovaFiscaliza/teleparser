@@ -626,21 +626,6 @@ class ChargingIndicator(primitives.AddressString):
     """
 
 
-class ChargingOrigin(primitives.AddressString):
-    """ASN.1 Formal Description
-    ChargingOrigin ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                               LSB |
-    /---------------------------------------/
-    Note: The OCTET STRING is coded as an unsigned integer.
-    Values vary according to operator's definition.
-    Value range: H'1 - H'7F
-    """
-
-
 class ChargingUnitsAddition(primitives.AddressString):
     """ASN.1 Formal Description
     ChargingUnitsAddition ::= OCTET STRING (SIZE(2))

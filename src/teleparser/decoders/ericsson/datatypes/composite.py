@@ -342,6 +342,22 @@ class ChargingIndicator(primitives.OctetString):
                 return f"Unknown ({self.indicator})"
 
 
+@fixed_size_unsigned_int(1)
+class ChargingOrigin(primitives.UnsignedInt):
+    """ASN.1 Formal Description
+    ChargingOrigin ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                               LSB |
+    /---------------------------------------/
+    Note: The OCTET STRING is coded as an unsigned integer.
+    Values vary according to operator's definition.
+    Value range: H'1 - H'7F
+    """
+
+
 class ContractorNumber(primitives.AddressString):
     """Contractor Number
 

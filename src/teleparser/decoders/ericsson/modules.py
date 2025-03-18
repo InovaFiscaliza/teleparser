@@ -20,7 +20,7 @@ Transit = {
     12: {"name": "interruptionTime", "type": dt.Time},
     13: {"name": "timeFromRegisterSeizureToStartOfCharging", "type": dt.Time},
     14: {"name": "chargedParty", "type": dt.ChargedParty},
-    15: {"name": "originForCharging", "type": ChargingOrigin},
+    15: {"name": "originForCharging", "type": dt.ChargingOrigin},
     16: {"name": "tariffClass", "type": TariffClass},
     17: {"name": "tariffSwitchInd", "type": TariffSwitchInd},
     18: {"name": "numberOfMeterPulses", "type": NumberOfMeterPulses},
