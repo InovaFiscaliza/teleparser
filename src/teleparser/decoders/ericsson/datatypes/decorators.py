@@ -40,3 +40,5 @@ def fixed_size_digit_string(size):
 
         cls.__init__ = new_init
         return cls
+
+    return decorator
