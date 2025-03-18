@@ -1,7 +1,7 @@
 """This module implement simple datatypes inherited from the primitives
 It's organized here because it's just the boilerplate of the type name and its description
 """
-from datetime import datetime
+
 from . import primitives
 
 
@@ -164,6 +164,92 @@ class ContractorNumber(primitives.AddressString):
 
     The parameter is only applicable for WCDMA Japan.
     """
+
+
+class Date(primitives.OctetString):
+    r"""Date ::= OCTET STRING (SIZE(3..4))
+
+    Note: The OCTET STRING is coded as an unsigned
+        integer.
+
+        The number of year digits is determined by exchange
+        parameter.
+
+    Two digit (Year) format:
+
+
+    |    |    |    |    |    |    |    |    | 
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 | 
+    |    |    |    |    |    |    |    |    | 
+    /---------------------------------------\ 
+    |                                       | octet 1 (Year) 
+    +---------------------------------------+ 
+    |                                       | octet 2 (Month) 
+    +---------------------------------------+ 
+    |                                       | octet 3 (Day) 
+    \---------------------------------------/ 
+
+    Year  (octet 1): Value range 0-99 (H'0 - H'63)
+    Month (octet 2): Value range 1-12 (H'1 - H'C)
+    Day   (octet 3): Value range 1-31 (H'1 - H'1F)
+
+
+    Four digit (Year) format:
+
+
+    |    |    |    |    |    |    |    |    | 
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 | 
+    |    |    |    |    |    |    |    |    | 
+    /---------------------------------------\ 
+    |                                       | octet 1 (Year) 
+    +---------------------------------------+ 
+    |                                       | octet 2 (Year) 
+    +---------------------------------------+ 
+    |                                       | octet 3 (Month)
+    +---------------------------------------+ 
+    |                                       | octet 4 (Day) 
+    \---------------------------------------/ 
+
+
+    Year  (octet 1): Value range 19 or 20 (H'13 or H'14)
+    Year  (octet 2): Value range 0 - 99 (H'0 - H'63)
+    Month (octet 3): Value range 1 - 12 (H'1 - H'C)
+    Day   (octet 4): Value range 1 - 31 (H'1 - H'1F)"""
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, lower=3, upper=4)
+        self._parse_digits()
+
+    def _parse_digits(self):
+        if self.size == 4:
+            self._extract_4digits_year()
+            i = 2
+        else:
+            year = int.from_bytes(self.octets[:1], "big")
+            assert 0 <= year <= 99, f"Year should be in range 0-99: {year}"
+            self.year = year
+            i = 1
+        month = int.from_bytes(self.octets[i], "big")
+        assert 1 <= month <= 12, f"Month should be in range 1-12: {month}"
+        day = int.from_bytes(self.octets[i + 1], "big")
+        assert 1 <= day <= 31, f"Day should be in range 1-31: {day}"
+        self.month = month
+        self.day = day
+
+    def _extract_4digits_year(self):
+        year1 = int.from_bytes(self.octets[:1], "big")
+        year2 = int.from_bytes(self.octets[1:2], "big")
+        assert 19 <= year1 <= 20, f"Year should be in range 19-20: {year1}"
+        assert 0 <= year2 <= 99, f"Year should be in range 0-99: {year2}"
+        self.year = year1 * 100 + year2
+
+    @property
+    def value(self):
+        """Return date string"""
+        if self.size == 4:
+            return f"{self.year:04d}-{self.month:02d}-{self.day:02d}"
+        else:
+            return f"{self.year:02d}-{self.month:02d}-{self.day:02d}"
 
 
 class GsmSCFAddress(primitives.AddressString):
@@ -383,8 +469,9 @@ class TerminatingLocationNumber(primitives.AddressString):
     cell.
     """
 
+
 class Time(primitives.AddressString):
-    """Time ::= OCTET STRING (SIZE(3..4))
+    r"""Time ::= OCTET STRING (SIZE(3..4))
 
     |    |    |    |    |    |    |    |    | 
     |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 | 
@@ -408,11 +495,10 @@ class Time(primitives.AddressString):
 
     Note: 10th of a second is only included for the parameter
         chargeableDuration and only used for WCDMA Japan."""
+
     def __init__(self, octets: bytes):
         super().__init__(octets, lower=3, upper=4)
         self._parse_digits()
-
-    
 
     def _parse_digits(self):
         hour = int.from_bytes(self.octets[:1], "big")
@@ -426,17 +512,20 @@ class Time(primitives.AddressString):
         self.second = second
         if self.size == 4:
             tenth_of_a_second = int.from_bytes(self.octets[3:4], "big")
-            assert 0 <= tenth_of_a_second <= 9, f"10th of a second should be in range 0-9: {tenth_of_a_second}"
+            assert 0 <= tenth_of_a_second <= 9, (
+                f"10th of a second should be in range 0-9: {tenth_of_a_second}"
+            )
             self.tenth_of_a_second = tenth_of_a_second
-        
+
     @property
     def value(self):
         """Return datetime string"""
-        value = f"{self.hour:02d}:{self.minute:02d}:{self.second:02d}
+        value = f"{self.hour:02d}:{self.minute:02d}:{self.second:02d}"
         if self.size == 4:
             value += f".{self.tenth_of_a_second:01d}"
         return value
-    
+
+
 class TranslatedNumber(primitives.AddressString):
     """Translated Number
 
