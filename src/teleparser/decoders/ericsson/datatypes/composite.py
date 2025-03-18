@@ -545,6 +545,21 @@ class LCSClientIdentity(primitives.AddressString):
     """
 
 
+@fixed_size_digit_string(1)
+class MiscellaneousInformation(primitives.DigitString):
+    """ASN.1 Formal Description
+    MiscellaneousInformation ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                               LSB |
+    /---------------------------------------/
+    Note: OCTET STRING is coded as an unsigned integer.
+    Value range: H'0 - H'FE, value H'FF is reserved.
+    """
+
+
 class MobileStationRoamingNumber(primitives.AddressString):
     """Mobile Station Roaming Number
 

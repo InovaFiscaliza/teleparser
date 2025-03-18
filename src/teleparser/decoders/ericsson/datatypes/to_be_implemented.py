@@ -2220,20 +2220,6 @@ class MessageTypeIndicator(primitives.ByteEnum):
     }
 
 
-class MiscellaneousInformation(primitives.AddressString):
-    """ASN.1 Formal Description
-    MiscellaneousInformation ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                               LSB |
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value range: H'0 - H'FE, value H'FF is reserved.
-    """
-
-
 class MobileUserClass1(primitives.AddressString):
     """ASN.1 Formal Description
     MobileUserClass1 ::= OCTET STRING (SIZE(1))
@@ -2350,24 +2336,6 @@ class NumberOfChannels(primitives.ByteEnum):
         6: "sevenTrafficChannels",
         7: "eightTrafficChannels",
     }
-
-
-class NumberOfMeterPulses(primitives.AddressString):
-    """ASN.1 Formal Description
-    NumberOfMeterPulses ::=  OCTET STRING (SIZE(3))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   | octet 1
-    +---------------------------------------+
-    |                                       | octet 2
-    +---------------------------------------+
-    |                                  LSB  | octet 3
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value range: H'1 - H'FFFFFF
-    """
 
 
 class NumberOfOperations(primitives.AddressString):
