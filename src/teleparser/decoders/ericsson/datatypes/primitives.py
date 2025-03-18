@@ -155,3 +155,11 @@ class UnsignedInt:
         it convert 3 bytes to integer (big endian)"
         """
         return int.from_bytes(self.octets, byteorder="big")
+
+
+class Bool:
+    """Flag type for presence of optional NULL values"""
+
+    @property
+    def value(self):
+        return True
