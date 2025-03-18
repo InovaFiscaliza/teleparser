@@ -2954,24 +2954,6 @@ class TargetRNCid(primitives.AddressString):
     """
 
 
-class TariffClass(primitives.AddressString):
-    """ASN.1 Formal Description
-    TariffClass ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   |  octet 1
-    +---------------------------------------+
-    |                                   LSB |  octet 2
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value varies according to operator's definition.
-    Value range: H'0 - H'FFFF
-    Value H'0: No tariff class is defined.
-    """
-
-
 class TeleServiceCode(primitives.AddressString):
     """ASN.1 Formal Description
     TeleServiceCode ::= OCTET STRING (SIZE (1))

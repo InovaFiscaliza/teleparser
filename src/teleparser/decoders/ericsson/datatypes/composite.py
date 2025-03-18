@@ -288,7 +288,7 @@ class ChargedCallingPartyNumber(primitives.AddressString):
 
 
 class ChargingIndicator(primitives.OctetString):
-    """Charging Indicator
+    r"""Charging Indicator
     
     |    |    |    |    |    |    |    |    |
     |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
@@ -432,9 +432,9 @@ class Date(primitives.OctetString):
             assert 0 <= year <= 99, f"Year should be in range 0-99: {year}"
             self.year = year
             i = 1
-        month = int.from_bytes(self.octets[i], "big")
+        month = int.from_bytes(self.octets[i : i + 1], "big")
         assert 1 <= month <= 12, f"Month should be in range 1-12: {month}"
-        day = int.from_bytes(self.octets[i + 1], "big")
+        day = int.from_bytes(self.octets[i + 1 :], "big")
         assert 1 <= day <= 31, f"Day should be in range 1-31: {day}"
         self.month = month
         self.day = day
@@ -1060,6 +1060,25 @@ class TargetMSISDN(primitives.AddressString):
     positioning is performed."""
 
 
+@fixed_size_digit_string(2)
+class TariffClass(primitives.DigitString):
+    """ASN.1 Formal Description
+    TariffClass ::= OCTET STRING (SIZE(2))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                                   |  octet 1
+    +---------------------------------------+
+    |                                   LSB |  octet 2
+    /---------------------------------------/
+    Note: OCTET STRING is coded as an unsigned integer.
+    Value varies according to operator's definition.
+    Value range: H'0 - H'FFFF
+    Value H'0: No tariff class is defined.
+    """
+
+
 class TariffSwitchInd(primitives.ByteEnum):
     """ASN.1 Formal Description
     TariffSwitchInd ::= ENUMERATED
@@ -1086,7 +1105,7 @@ class TerminatingLocationNumber(primitives.AddressString):
     """
 
 
-class Time(primitives.AddressString):
+class Time(primitives.DigitString):
     r"""Time ::= OCTET STRING (SIZE(3..4))
 
     |    |    |    |    |    |    |    |    | 
