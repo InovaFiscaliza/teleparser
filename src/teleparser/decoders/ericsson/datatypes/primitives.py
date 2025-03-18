@@ -43,13 +43,14 @@ class DigitString(OctetString):
         super().__init__(*args, **kwargs)
 
     @cached_property
-    def digits(self):
-        return [int.from_bytes(byte, byteorder="big") for byte in self.octets]
+    def digits(self):  # sourcery skip: identity-comprehension
+        # When you iterate over a bytes object, it returns the bytes as integers
+        return [byte for byte in self.octets]
 
     @property
     def value(self) -> str:
         """Returns the n digits as a string"""
-        return "".join(self.digits)
+        return "".join(str(d) for d in self.digits)
 
 
 class AddressString(OctetString):
@@ -79,7 +80,7 @@ class AddressString(OctetString):
     NPI_RESERVED = 15
 
     def __init__(self, octets: bytes):
-        super.__init__(octets, lower=1, upper=20)
+        super().__init__(octets, lower=1, upper=20)
         self._parse_ton_npi()
         self._parse_digits()
 
