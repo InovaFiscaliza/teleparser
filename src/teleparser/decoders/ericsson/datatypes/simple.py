@@ -42,6 +42,39 @@ CARRIERS = (
 )
 
 
+class AirInterfaceUserRate(primitives.ByteEnum):
+    """ASN.1 Formal Description
+    AirInterfaceUserRate ::= ENUMERATED
+    (aIUR9600bps                  (1),
+    aIUR14400bps                 (2),
+    aIUR19200bps                 (3),
+    aIUR28800bps                 (5),
+    aIUR38400bps                 (6),
+    aIUR43200bps                 (7),
+    aIUR57600bps                 (8),
+    aIUR38400bps1                (9),
+    aIUR38400bps2                (10),
+    aIUR38400bps3                (11),
+    aIUR38400bps4                (12))
+    Note: Values 9 - 12 mean that the network has interpreted
+    AirInterfaceUserRate as 38400 bits/s.
+    """
+
+    VALUES = {
+        1: "aIUR9600bps",
+        2: "aIUR14400bps",
+        3: "aIUR19200bps",
+        5: "aIUR28800bps",
+        6: "aIUR38400bps",
+        7: "aIUR43200bps",
+        8: "aIUR57600bps",
+        9: "aIUR38400bps1",
+        10: "aIUR38400bps2",
+        11: "aIUR38400bps3",
+        12: "aIUR38400bps4",
+    }
+
+
 class CalledPartyNumber(primitives.AddressString):
     """Called Party Number
 
