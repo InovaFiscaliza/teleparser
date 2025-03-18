@@ -450,6 +450,11 @@ class ServedSubscriberNumber(primitives.AddressString):
     The parameter is not applicable for WCDMA Japan."""
 
 
+class ServiceKey(primitives.DigitString):
+    def __init__(self, octets: bytes):
+        super().__init__(octets, size=4)
+
+
 class TargetMSISDN(primitives.AddressString):
     """Target MSISDN
 
