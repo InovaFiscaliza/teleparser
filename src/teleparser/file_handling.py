@@ -120,59 +120,58 @@ class CDRFileManager:
 
 
 if __name__ == "__main__":
-    # import asyncio
-    # from collections import Counter
-    # from time import perf_counter
+    import asyncio
+    from collections import Counter
+    from time import perf_counter
 
-    # blocks = Counter()
-    # types = Counter()
+    blocks = Counter()
+    types = Counter()
 
-    # async def process_cdr_files():
-    #     input_folder = Path(r"D:\code\cdr\data\input\ClaroVozEricssonMenu1")
-    #     # input_folder = Path(__file__).parent.parent.parent / "data"
-    #     output_path = Path(__file__).parent.parent.parent / "data"
-    #     start = perf_counter()
+    async def process_cdr_files():
+        input_folder = Path(r"D:\code\cdr\data\input\ClaroVozEricssonMenu1")
+        # input_folder = Path(__file__).parent.parent.parent / "data"
+        output_path = Path(__file__).parent.parent.parent / "data"
+        start = perf_counter()
 
-    #     file_manager = CDRFileManager(input_folder, output_path, "VozEricsson")
-    #     decoded_files = await file_manager.decode_async()
+        file_manager = CDRFileManager(input_folder, output_path, "VozEricsson")
+        decoded_files = await file_manager.decode_async()
 
-    #     for cdr in decoded_files:
-    #         for tlv in cdr:
-    #             if tlv.children is not None:
-    #                 for child in tlv.children:
-    #                     blocks[child.tag.number] += 1
-    #                     for c in child.children:
-    #                         types[(child.tag.number, c.tag.number)] += 1
-    #         # Clean up temporary files when done
-    #     file_manager.cleanup()
-    #     print(f"Count of CDR blocks: {blocks}")
-    #     print(f"Count of Parameter Types: {types}")
-    #     print(f"Total time: {perf_counter() - start}")
-
-    # asyncio.run(process_cdr_files())
-
-    folder = Path(__file__).parent.parent.parent / "data"
-    file = folder / "timvoz.gz"
-    buffer_manager = BufferManager(file)
-    ber = BerDecoder()
-    file_buffer = buffer_manager.open_file()
-    while file_buffer.has_data():
-        try:
-            while (tlv := ber.decode_tlv(file_buffer)) is not None:
-                print("Varredura: (Call Data Record)")
-                print(tlv)
+        for cdr in decoded_files:
+            for tlv in cdr:
                 if tlv.children is not None:
                     for child in tlv.children:
-                        print(80 * "=")
-                        print("Call Module")
-                        print(child)
-                        # print(f"string={child.tag.string}, tipo={child.tag.number}, comprimento={child.length}, bytes={child.value}")
-                        print(80 * "=")
-                        print(
-                            f"Quantidade de parâmetros dentro do Call Module: {len(child.children)}"
-                        )
-                        print("Parâmetros:")
+                        blocks[child.tag.number] += 1
                         for c in child.children:
-                            print(c)
-        except KeyError as e:
-            pass
+                            types[(child.tag.number, c.tag.number)] += 1
+            # Clean up temporary files when done
+        file_manager.cleanup()
+        print(f"Count of CDR blocks: {blocks}")
+        print(f"Count of Parameter Types: {types}")
+        print(f"Total time: {perf_counter() - start}")
+
+    # asyncio.run(process_cdr_files())
+    # from contextlib import suppress
+
+    # folder = Path(__file__).parent.parent.parent / "data"
+    # file = folder / "timvoz.gz"
+    # buffer_manager = BufferManager(file)
+    # ber = BerDecoder()
+    # file_buffer = buffer_manager.open_file()
+    # while file_buffer.has_data():
+    #     with suppress(KeyError):
+    #         while (tlv := ber.decode_tlv(file_buffer)) is not None:
+    #             print("Varredura: (Call Data Record)")
+    #             print(tlv)
+    #             if tlv.children is not None:
+    #                 for child in tlv.children:
+    #                     print(80 * "=")
+    #                     print("Call Module")
+    #                     print(child)
+    #                     # print(f"string={child.tag.string}, tipo={child.tag.number}, comprimento={child.length}, bytes={child.value}")
+    #                     print(80 * "=")
+    #                     print(
+    #                         f"Quantidade de parâmetros dentro do Call Module: {len(child.children)}"
+    #                     )
+    #                     print("Parâmetros:")
+    #                     for c in child.children:
+    #                         print(c)
