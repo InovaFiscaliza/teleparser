@@ -828,22 +828,17 @@ class TargetMSISDN(primitives.AddressString):
     positioning is performed."""
 
 
-@fixed_size_unsigned_int(1)
-class TrafficClass(primitives.UnsignedInt):
+class TariffSwitchInd(primitives.ByteEnum):
     """ASN.1 Formal Description
-    TrafficClass ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                                       | octet 1
-    /---------------------------------------/
-    TrafficClass             Bits 8 7 6 5 4 3 2 1
-    Conversational Class          0 0 0 0 0 0 0 0
-    Streaming Class               0 0 0 0 0 0 0 1
-    Interactive Class             0 0 0 0 0 0 1 0
-    Background Class              0 0 0 0 0 0 1 1
+    TariffSwitchInd ::= ENUMERATED
+    (noTariffSwitch                    (0),
+    tariffSwitchAfterStartOfCharging  (2))
     """
+
+    VALUES = {
+        0: "noTariffSwitch",
+        2: "tariffSwitchAfterStartOfCharging",
+    }
 
 
 class TerminatingLocationNumber(primitives.AddressString):
@@ -913,6 +908,24 @@ class Time(primitives.AddressString):
         if self.size == 4:
             value += f".{self.tenth_of_a_second:01d}"
         return value
+
+
+@fixed_size_unsigned_int(1)
+class TrafficClass(primitives.UnsignedInt):
+    """ASN.1 Formal Description
+    TrafficClass ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |                                       | octet 1
+    /---------------------------------------/
+    TrafficClass             Bits 8 7 6 5 4 3 2 1
+    Conversational Class          0 0 0 0 0 0 0 0
+    Streaming Class               0 0 0 0 0 0 0 1
+    Interactive Class             0 0 0 0 0 0 1 0
+    Background Class              0 0 0 0 0 0 1 1
+    """
 
 
 class TranslatedNumber(primitives.AddressString):

@@ -3169,19 +3169,6 @@ class TariffClass(primitives.AddressString):
     """
 
 
-class TariffSwitchInd(primitives.ByteEnum):
-    """ASN.1 Formal Description
-    TariffSwitchInd ::= ENUMERATED
-    (noTariffSwitch                    (0),
-    tariffSwitchAfterStartOfCharging  (2))
-    """
-
-    VALUES = {
-        0: "noTariffSwitch",
-        2: "tariffSwitchAfterStartOfCharging",
-    }
-
-
 class TeleServiceCode(primitives.AddressString):
     """ASN.1 Formal Description
     TeleServiceCode ::= OCTET STRING (SIZE (1))
