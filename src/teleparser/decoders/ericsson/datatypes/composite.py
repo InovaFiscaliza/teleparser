@@ -5,7 +5,7 @@ It's organized here because it's just the boilerplate of the type name and its d
 from collections import namedtuple
 from functools import cached_property
 from . import primitives
-from .decorators import fixed_size_unsigned_int, UnsignedInt
+from .decorators import fixed_size_unsigned_int, fixed_size_digit_string
 
 
 Carrier = namedtuple("Carrier", ["name", "mcc", "mnc"])
@@ -146,7 +146,7 @@ class CalledPartyMNPInfo(primitives.AddressString):
 
 
 @fixed_size_unsigned_int(3)
-class CallIDNumber(UnsignedInt):
+class CallIDNumber(primitives.UnsignedInt):
     """Call Identification Number  (M)
 
     This parameter is a unique number within the own exchange
@@ -631,6 +631,25 @@ class NetworkProvidedCallingPartyNumber(primitives.AddressString):
     """
 
 
+@fixed_size_digit_string(3)
+class NumberOfMeterPulses(primitives.DigitString):
+    """ASN.1 Formal Description
+    NumberOfMeterPulses ::=  OCTET STRING (SIZE(3))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                                   | octet 1
+    +---------------------------------------+
+    |                                       | octet 2
+    +---------------------------------------+
+    |                                  LSB  | octet 3
+    /---------------------------------------/
+    Note: OCTET STRING is coded as an unsigned integer.
+    Value range: H'1 - H'FFFFFF
+    """
+
+
 class OriginalCalledNumber(primitives.AddressString):
     """Original Called Number
 
@@ -668,7 +687,7 @@ class OriginatingLocationNumber(primitives.AddressString):
 
 
 @fixed_size_unsigned_int(3)
-class RecordSequenceNumber(UnsignedInt):
+class RecordSequenceNumber(primitives.UnsignedInt):
     """Record Sequence Number  (M)
 
     This parameter contains a consecutive number for each
@@ -805,7 +824,7 @@ class TAC(primitives.OctetString):
 
 
 @fixed_size_unsigned_int(1)
-class TypeOfCallingSubscriber(UnsignedInt):
+class TypeOfCallingSubscriber(primitives.UnsignedInt):
     """Type of Calling Subscriber
 
     This parameter indicates that the type of subscriber is

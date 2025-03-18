@@ -41,7 +41,6 @@ class DigitString(OctetString):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._parse_digits()
 
     @cached_property
     def digits(self):
