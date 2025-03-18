@@ -1,10 +1,21 @@
+from teleparser.decoders.ericsson.datatypes import primitives
+
+class ByteEnum:
+	def __init__(self, byte):
+		self.byte = byte
+
+	@property
+	def value(self):
+		return self.VALUES[int.from_bytes(self.byte, 'big')]
+
+
 class AccountCode:
 	"""ASN.1 Formal Description
 	AccountCode ::= TBCDString (SIZE(1..5))
 	Note: Only decimal digits are used.
 	"""
 
-class AddressStringExtended:
+class AddressStringExtended(primitives.AddressString):
 	"""ASN.1 Formal Description
 	AddressStringExtended ::= OCTET STRING (SIZE(1..20))
 	TBCD representation
@@ -58,7 +69,7 @@ class AddressStringExtended:
 	character depending on the NPI value.
 	"""
 
-class AgeOfLocationEstimate:
+class AgeOfLocationEstimate(primitives.AddressString):
 	"""ASN.1 Formal Description
 	AgeOfLocationEstimate ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -79,7 +90,7 @@ class AgeOfLocationEstimate:
 	32767 minutes (~22 days) old
 	"""
 
-class AirInterfaceUserRate:
+class AirInterfaceUserRate(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	AirInterfaceUserRate ::= ENUMERATED
 	(aIUR9600bps                  (1),
@@ -97,7 +108,21 @@ class AirInterfaceUserRate:
 	AirInterfaceUserRate as 38400 bits/s.
 	"""
 
-class AoCCurrencyAmountSent:
+	VALUES = {
+		1: 'aIUR9600bps',
+		2: 'aIUR14400bps',
+		3: 'aIUR19200bps',
+		5: 'aIUR28800bps',
+		6: 'aIUR38400bps',
+		7: 'aIUR43200bps',
+		8: 'aIUR57600bps',
+		9: 'aIUR38400bps1',
+		10: 'aIUR38400bps2',
+		11: 'aIUR38400bps3',
+		12: 'aIUR38400bps4',
+	}
+
+class AoCCurrencyAmountSent(primitives.AddressString):
 	"""ASN.1 Formal Description
 	AoCCurrencyAmountSent ::= OCTET STRING (SIZE(4))
 	|    |    |    |    |    |    |    |    |
@@ -123,7 +148,7 @@ class AoCCurrencyAmountSent:
 	Value range of Currency Amount: H'0 - H'FFFFFF
 	"""
 
-class ApplicationIdentifier:
+class ApplicationIdentifier(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ApplicationIdentifier ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -140,14 +165,19 @@ class ApplicationIdentifier:
 	Information document "Mobile Telephony Data".
 	"""
 
-class AsyncSyncIndicator:
+class AsyncSyncIndicator(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	AsyncSyncIndicator ::= ENUMERATED
 	(syncData        (0),
 	asyncData       (1))
 	"""
 
-class BearerServiceCode:
+	VALUES = {
+		0: 'syncData',
+		1: 'asyncData',
+	}
+
+class BearerServiceCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	BearerServiceCode ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -183,7 +213,7 @@ class BearerServiceCode:
 	case of an WCDMA call
 	"""
 
-class BitRate:
+class BitRate(primitives.AddressString):
 	"""ASN.1 Formal Description
 	BitRate ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -207,7 +237,7 @@ class BitRate:
 	57.6  kbps                        0 0 0 0 1 1 0 0
 	"""
 
-class BSSMAPCauseCode:
+class BSSMAPCauseCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	BSSMAPCauseCode ::= OCTET STRING (SIZE(1..2))
 	|    |    |    |    |    |    |    |    |
@@ -227,7 +257,7 @@ class BSSMAPCauseCode:
 	"Information Elements".
 	"""
 
-class CallAttemptState:
+class CallAttemptState(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	CallAttemptState ::= ENUMERATED
 	(initialState           (0),
@@ -239,6 +269,17 @@ class CallAttemptState:
 	unknownCallState       (6),
 	callActiveState        (7))
 	"""
+
+	VALUES = {
+		0: 'initialState',
+		1: 'callSentState',
+		2: 'callRejectedState',
+		3: 'callOfferedState',
+		4: 'noResponseState',
+		5: 'alertingState',
+		6: 'unknownCallState',
+		7: 'callActiveState',
+	}
 
 class CAMELTDPData:
 	"""ASN.1 Formal Description
@@ -252,7 +293,7 @@ class CarrierIdentificationCode:
 	CarrierIdentificationCode ::= TBCDString (SIZE(1..3))
 	"""
 
-class CarrierInfo:
+class CarrierInfo(primitives.AddressString):
 	"""ASN.1 Formal Description
 	CarrierInfo ::= OCTET STRING (SIZE(2..3))
 	The digits for ID Code are encoded as a TBCD-STRING.
@@ -279,7 +320,7 @@ class CarrierInfo:
 	1111
 	"""
 
-class CarrierInformation:
+class CarrierInformation(primitives.AddressString):
 	"""ASN.1 Formal Description
 	CarrierInformation ::= OCTET STRING (SIZE(1))
 	|   |   |   |   |   |   |   |   |
@@ -300,7 +341,7 @@ class CarrierInformation:
 	0010  4-digit carrier
 	"""
 
-class CarrierSelectionSubstitutionInformation:
+class CarrierSelectionSubstitutionInformation(primitives.AddressString):
 	"""ASN.1 Formal Description
 	CarrierSelectionSubstitutionInformation ::= OCTET STRING
 	(SIZE(1))
@@ -337,7 +378,7 @@ class CarrierSelectionSubstitutionInformation:
 	Default carrier is used.            0 0 0 0 0 1 1 1
 	"""
 
-class CauseCode:
+class CauseCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	CauseCode ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -353,14 +394,19 @@ class CauseCode:
 	and Location Information".
 	"""
 
-class ChangeInitiatingParty:
+class ChangeInitiatingParty(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	ChangeInitiatingParty ::= ENUMERATED
 	(userInitiated                  (0),
 	networkInitiated               (1))
 	"""
 
-class ChannelAllocationPriorityLevel:
+	VALUES = {
+		0: 'userInitiated',
+		1: 'networkInitiated',
+	}
+
+class ChannelAllocationPriorityLevel(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ChannelAllocationPriorityLevel ::= OCTET STRING (SIZE(1))
 	|   |   |   |   |   |   |   |   |
@@ -383,7 +429,7 @@ class ChannelAllocationPriorityLevel:
 	- Bits 2-1:  Spare
 	"""
 
-class ChannelCodings:
+class ChannelCodings(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ChannelCodings ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -402,7 +448,7 @@ class ChannelCodings:
 	1: Channel Coding Acceptable/Used
 	"""
 
-class ChargeAreaCode:
+class ChargeAreaCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ChargeAreaCode ::= OCTET STRING (SIZE(3))
 	The digits for ID Code are encoded as a TBCD-STRING.
@@ -422,7 +468,7 @@ class ChargeAreaCode:
 	Note2: In case of POICA the 6th digit is filler (H'0).
 	"""
 
-class ChargedParty:
+class ChargedParty(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	ChargedParty ::= ENUMERATED
 	(chargingOfCallingSubscriber  (0),
@@ -430,7 +476,13 @@ class ChargedParty:
 	noCharging                   (2))
 	"""
 
-class ChargeInformation:
+	VALUES = {
+		0: 'chargingOfCallingSubscriber',
+		1: 'chargingOfCalledSubscriber',
+		2: 'noCharging',
+	}
+
+class ChargeInformation(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ChargeInformation ::= OCTET STRING (SIZE(2..33))
 	|     |     |     |     |     |     |     |     |
@@ -572,7 +624,7 @@ class ChargeInformation:
 	view).
 	"""
 
-class ChargingCase:
+class ChargingCase(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ChargingCase ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -588,7 +640,7 @@ class ChargingCase:
 	Value range: H'0 - H'0FFF or value H'FFFF
 	"""
 
-class ChargingIndicator:
+class ChargingIndicator(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ChargingIndicator ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -605,7 +657,7 @@ class ChargingIndicator:
 	11   Spare
 	"""
 
-class ChargingOrigin:
+class ChargingOrigin(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ChargingOrigin ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -619,7 +671,7 @@ class ChargingOrigin:
 	Value range: H'1 - H'7F
 	"""
 
-class ChargingUnitsAddition:
+class ChargingUnitsAddition(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ChargingUnitsAddition ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -633,7 +685,7 @@ class ChargingUnitsAddition:
 	Value range: H'0 - H'7FFF
 	"""
 
-class Counter:
+class Counter(primitives.AddressString):
 	"""ASN.1 Formal Description
 	Counter ::= OCTET STRING (SIZE(1..4))
 	|    |    |    |    |    |    |    |    |
@@ -657,12 +709,17 @@ class Counter:
 	is always 1.
 	"""
 
-class CRIIndicator:
+class CRIIndicator(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	CRIIndicator ::= ENUMERATED
 	(chargeRateInformationAcknowledged       (1),
 	chargeRateInformationNotAcknowledged    (2))
 	"""
+
+	VALUES = {
+		1: 'chargeRateInformationAcknowledged',
+		2: 'chargeRateInformationNotAcknowledged',
+	}
 
 class CRIToMS:
 	"""ASN.1 Formal Description
@@ -707,7 +764,7 @@ class CRIToMS:
 	in TBCDString.
 	"""
 
-class CUGIndex:
+class CUGIndex(primitives.AddressString):
 	"""ASN.1 Formal Description
 	CUGIndex ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -722,7 +779,7 @@ class CUGIndex:
 	Value range:  H'0 - H'7FFF
 	"""
 
-class CUGInterlockCode:
+class CUGInterlockCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	CUGInterlockCode ::= OCTET STRING (SIZE (4))
 	|   |   |   |   |   |   |   |   |
@@ -742,7 +799,7 @@ class CUGInterlockCode:
 	the 2nd to 4th NI digits.
 	"""
 
-class C7ChargingMessage:
+class C7ChargingMessage(primitives.AddressString):
 	"""ASN.1 Formal Description
 	C7ChargingMessage ::= OCTET STRING (SIZE(8))
 	|    |    |    |    |    |    |    |    |
@@ -840,7 +897,7 @@ class C7ChargingMessage:
 	Number from 1 to 255.
 	"""
 
-class C7CHTMessage:
+class C7CHTMessage(primitives.AddressString):
 	"""ASN.1 Formal Description
 	C7CHTMessage ::= OCTET STRING (SIZE (5))
 	|    |    |    |    |    |    |    |    |
@@ -897,7 +954,7 @@ class C7CHTMessage:
 	1 1 1 1 1 1 1 0
 	"""
 
-class Date:
+class Date(primitives.AddressString):
 	"""ASN.1 Formal Description
 	Date ::= OCTET STRING (SIZE(3..4))
 	Note: The OCTET STRING is coded as an unsigned
@@ -937,7 +994,7 @@ class Date:
 	Day   (octet 4): Value range 1 - 31 (H'1 - H'1F)
 	"""
 
-class DecipheringKeys:
+class DecipheringKeys(primitives.AddressString):
 	"""ASN.1 Formal Description
 	DecipheringKeys ::= OCTET STRING (SIZE (8..15))
 	|    |    |    |    |    |    |    |    |
@@ -980,21 +1037,31 @@ class DecipheringKeys:
 	For further information see GSM 09.31.
 	"""
 
-class DefaultCallHandling:
+class DefaultCallHandling(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	DefaultCallHandling ::= ENUMERATED
 	(continueCall                    (0),
 	releaseCall                     (1))
 	"""
 
-class DefaultSMSHandling:
+	VALUES = {
+		0: 'continueCall',
+		1: 'releaseCall',
+	}
+
+class DefaultSMSHandling(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	DefaultSMS-Handling ::= ENUMERATED
 	(continueTransaction             (0),
 	releaseTransaction              (1))
 	"""
 
-class DeliveryOfErroneousSDU:
+	VALUES = {
+		0: 'continueTransaction',
+		1: 'releaseTransaction',
+	}
+
+class DeliveryOfErroneousSDU(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	DeliveryOfErroneousSDU ::= ENUMERATED
 	(yes                              (0),
@@ -1002,7 +1069,13 @@ class DeliveryOfErroneousSDU:
 	noErrorDetectionConsideration    (2))
 	"""
 
-class DisconnectingParty:
+	VALUES = {
+		0: 'yes',
+		1: 'no',
+		2: 'noErrorDetectionConsideration',
+	}
+
+class DisconnectingParty(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	DisconnectingParty ::= ENUMERATED
 	(callingPartyRelease          (0),
@@ -1010,7 +1083,13 @@ class DisconnectingParty:
 	networkRelease               (2))
 	"""
 
-class Distributed:
+	VALUES = {
+		0: 'callingPartyRelease',
+		1: 'calledPartyRelease',
+		2: 'networkRelease',
+	}
+
+class Distributed(primitives.AddressString):
 	"""ASN.1 Formal Description
 	Distributed ::=  OCTET STRING (SIZE(4))
 	|    |    |    |    |    |    |    |    |
@@ -1031,7 +1110,7 @@ class Distributed:
 	Octet 4: Value range 0 - 99  (H'0 - H'63)
 	"""
 
-class EMLPPPriorityLevel:
+class EMLPPPriorityLevel(primitives.AddressString):
 	"""ASN.1 Formal Description
 	EMLPPPriorityLevel ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -1054,7 +1133,7 @@ class EMLPPPriorityLevel:
 	subscription
 	"""
 
-class EndToEndAccessDataMap:
+class EndToEndAccessDataMap(primitives.AddressString):
 	"""ASN.1 Formal Description
 	EndToEndAccessDataMap ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -1096,7 +1175,7 @@ class EndToEndAccessDataMap:
 	Note that "SETUP" and "CONNECT" are functional messages.
 	"""
 
-class EosInfo:
+class EosInfo(primitives.AddressString):
 	"""ASN.1 Formal Description
 	EosInfo ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -1164,7 +1243,7 @@ class EosInfo:
 	3F         No acknowledgement from mobile subscriber.
 	"""
 
-class ErrorRatio:
+class ErrorRatio(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ErrorRatio ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -1220,7 +1299,7 @@ class ExchangeIdentity:
 	/---------------------------------------/
 	"""
 
-class FaultCode:
+class FaultCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	FaultCode ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -1237,14 +1316,19 @@ class FaultCode:
 	Of End-Of-Selection Codes".
 	"""
 
-class FirstRadioChannelUsed:
+class FirstRadioChannelUsed(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	FirstRadioChannelUsed ::= ENUMERATED
 	(fullRateChannel               (0),
 	halfRateChannel               (1))
 	"""
 
-class FixedNetworkUserRate:
+	VALUES = {
+		0: 'fullRateChannel',
+		1: 'halfRateChannel',
+	}
+
+class FixedNetworkUserRate(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	FixedNetworkUserRate ::= ENUMERATED
 	(fNUR9600bps                  (1),
@@ -1259,7 +1343,20 @@ class FixedNetworkUserRate:
 	Note: Value (6) is only valid for GSM.
 	"""
 
-class FreeFormatData:
+	VALUES = {
+		1: 'fNUR9600bps',
+		2: 'fNUR14400bps',
+		3: 'fNUR19200bps',
+		4: 'fNUR28800bps',
+		5: 'fNUR38400bps',
+		6: 'fNUR48000bps',
+		7: 'fNUR56000bps',
+		8: 'fNUR64000bps',
+		9: 'fNURautobauding',
+		9: 'fNURautobauding',
+	}
+
+class FreeFormatData(primitives.AddressString):
 	"""ASN.1 Formal Description
 	FreeFormatData ::= OCTET STRING (SIZE(1..160))
 	|    |    |    |    |    |    |    |    |
@@ -1278,7 +1375,7 @@ class FreeFormatData:
 	/---------------------------------------/
 	"""
 
-class FrequencyBandSupported:
+class FrequencyBandSupported(primitives.AddressString):
 	"""ASN.1 Formal Description
 	FrequencyBandSupported ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -1298,7 +1395,7 @@ class FrequencyBandSupported:
 	1: Frequency Band supported
 	"""
 
-class GenericDigitsSet:
+class GenericDigitsSet(primitives.AddressString):
 	"""ASN.1 Formal Description
 	GenericDigitsSet ::= SET SIZE (1..20) OF GenericDigits
 	GenericDigits ::= OCTET STRING (SIZE(2..15))
@@ -1321,7 +1418,7 @@ class GenericDigitsSet:
 	service, and in INAP protocol specifications.
 	"""
 
-class GenericNumbersSet:
+class GenericNumbersSet(primitives.AddressString):
 	"""ASN.1 Formal Description
 	GenericNumbersSet ::= SET SIZE (1..20) OF GenericNumber
 	GenericNumber ::= OCTET STRING (SIZE(3..17))
@@ -1344,7 +1441,7 @@ class GenericNumbersSet:
 	provided IN service, and in INAP protocol specifications.
 	"""
 
-class GlobalTitle:
+class GlobalTitle(primitives.AddressString):
 	"""ASN.1 Formal Description
 	GlobalTitle ::= OCTET STRING (SIZE(4..12))
 	|    |    |    |    |    |    |    |    |
@@ -1389,7 +1486,7 @@ class GlobalTitle:
 	of odd number of digits.
 	"""
 
-class GlobalTitleAndSubSystemNumber:
+class GlobalTitleAndSubSystemNumber(primitives.AddressString):
 	"""ASN.1 Formal Description
 	GlobalTitleAndSubSystemNumber ::=
 	OCTET STRING (SIZE(5..13))
@@ -1437,7 +1534,7 @@ class GlobalTitleAndSubSystemNumber:
 	of odd number of digits.
 	"""
 
-class GSMCallReferenceNumber:
+class GSMCallReferenceNumber(primitives.AddressString):
 	"""ASN.1 Formal Description
 	GSMCallReferenceNumber ::= OCTET STRING (SIZE(1..8))
 	|    |    |    |    |    |    |    |    |
@@ -1524,7 +1621,7 @@ class IMSI:
 	each digit encoded 0000 to 1001
 	"""
 
-class INMarkingOfMS:
+class INMarkingOfMS(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	INMarkingOfMS ::= ENUMERATED
 	(originatingINService                                 (1),
@@ -1547,7 +1644,23 @@ class INMarkingOfMS:
 	visitedTerminatingCAMELService                      (13))
 	"""
 
-class INServiceTrigger:
+	VALUES = {
+		1: 'originatingINService',
+		2: 'terminatingINService',
+		3: 'originatingINCategoryKeyService',
+		4: 'terminatingINCategoryKeyService',
+		5: 'originatingCAMELService',
+		6: 'terminatingCAMELService',
+		6: 'terminatingCAMELService',
+		6: 'terminatingCAMELService',
+		6: 'terminatingCAMELService',
+		6: 'terminatingCAMELService',
+		11: 'subscriberDialledCAMELService',
+		11: 'subscriberDialledCAMELService',
+		13: 'visitedTerminatingCAMELService',
+	}
+
+class INServiceTrigger(primitives.AddressString):
 	"""ASN.1 Formal Description
 	INServiceTrigger ::= OCTET STRING (SIZE (2))
 	|    |    |    |    |    |    |    |    |
@@ -1563,14 +1676,19 @@ class INServiceTrigger:
 	Value range: H'0 - H'FFFF
 	"""
 
-class IntermediateRate:
+class IntermediateRate(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	IntermediateRate ::= ENUMERATED
 	(rate8KbitPerSecondUsed           (2),
 	rate16KbitPerSecondUsed          (3))
 	"""
 
-class InternalCauseAndLoc:
+	VALUES = {
+		2: 'rate8KbitPerSecondUsed',
+		3: 'rate16KbitPerSecondUsed',
+	}
+
+class InternalCauseAndLoc(primitives.AddressString):
 	"""ASN.1 Formal Description
 	InternalCauseAndLoc ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -1588,7 +1706,7 @@ class InternalCauseAndLoc:
 	Codes and Location Information".
 	"""
 
-class LCSAccuracy:
+class LCSAccuracy(primitives.AddressString):
 	"""ASN.1 Formal Description
 	LCSAccuracy ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -1612,7 +1730,7 @@ class LCSAccuracy:
 	For further details for Uncertainty Code see 3G TS 23.032.
 	"""
 
-class LCSClientType:
+class LCSClientType(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	LCSClientType ::= ENUMERATED
 	(emergencyServices                  (0),
@@ -1621,7 +1739,14 @@ class LCSClientType:
 	lawfulInterceptServices            (3))
 	"""
 
-class LegID:
+	VALUES = {
+		0: 'emergencyServices',
+		1: 'valueAddedServices',
+		2: 'plmnOperatorServices',
+		3: 'lawfulInterceptServices',
+	}
+
+class LegID(primitives.AddressString):
 	"""ASN.1 Formal Description
 	LegID ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -1633,7 +1758,7 @@ class LegID:
 	Note: OCTET STRING is coded as an unsigned integer.
 	"""
 
-class LocationCode:
+class LocationCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	LocationCode ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -1649,7 +1774,7 @@ class LocationCode:
 	and Location Information".
 	"""
 
-class LocationEstimate:
+class LocationEstimate(primitives.AddressString):
 	"""ASN.1 Formal Description
 	LocationEstimate ::= OCTET STRING (SIZE(1..91))
 	When shape is 'Ellipsoid point':
@@ -2021,7 +2146,7 @@ class LocationEstimate:
 	3G TS 23.032.
 	"""
 
-class LocationInformation:
+class LocationInformation(primitives.AddressString):
 	"""ASN.1 Formal Description
 	LocationInformation ::= OCTET STRING (SIZE(7))
 	|   |   |   |   |   |   |   |   |
@@ -2062,7 +2187,7 @@ class LocationInformation:
 	area code are coded with zeros.
 	"""
 
-class MessageReference:
+class MessageReference(primitives.AddressString):
 	"""ASN.1 Formal Description
 	MessageReference ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2075,7 +2200,7 @@ class MessageReference:
 	Value range: H'0 - H'FF
 	"""
 
-class MessageTypeIndicator:
+class MessageTypeIndicator(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	MessageTypeIndicator ::= ENUMERATED
 	(sMSdeliverSCtoMS         (0),
@@ -2086,7 +2211,16 @@ class MessageTypeIndicator:
 	sMSsubmitReportSCtoMS    (5))
 	"""
 
-class MiscellaneousInformation:
+	VALUES = {
+		0: 'sMSdeliverSCtoMS',
+		1: 'sMSdeliveReportMStoSC',
+		2: 'sMSstatusReportSCtoMS',
+		3: 'sMScommanMStoSC',
+		4: 'sMSsubmitMStoSC',
+		5: 'sMSsubmitReportSCtoMS',
+	}
+
+class MiscellaneousInformation(primitives.AddressString):
 	"""ASN.1 Formal Description
 	MiscellaneousInformation ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2099,7 +2233,7 @@ class MiscellaneousInformation:
 	Value range: H'0 - H'FE, value H'FF is reserved.
 	"""
 
-class MobileUserClass1:
+class MobileUserClass1(primitives.AddressString):
 	"""ASN.1 Formal Description
 	MobileUserClass1 ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2121,7 +2255,7 @@ class MobileUserClass1:
 	11111111
 	"""
 
-class MobileUserClass2:
+class MobileUserClass2(primitives.AddressString):
 	"""ASN.1 Formal Description
 	MobileUserClass2 ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2162,7 +2296,7 @@ class MSNB:
 	MSNB ::= TBCDString (SIZE(3..8))
 	"""
 
-class NetworkCallReference:
+class NetworkCallReference(primitives.AddressString):
 	"""ASN.1 Formal Description
 	NetworkCallReference ::= OCTET STRING (SIZE(5))
 	|    |    |    |    |    |    |    |    |
@@ -2187,7 +2321,7 @@ class NetworkCallReference:
 	Value range of Switch identity: H'1 - H'FFFF
 	"""
 
-class NumberOfChannels:
+class NumberOfChannels(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	NumberOfChannels ::= ENUMERATED
 	(oneTrafficChannel         (0),
@@ -2200,7 +2334,18 @@ class NumberOfChannels:
 	eightTrafficChannels      (7))
 	"""
 
-class NumberOfMeterPulses:
+	VALUES = {
+		0: 'oneTrafficChannel',
+		1: 'twoTrafficChannels',
+		2: 'threeTrafficChannels',
+		3: 'fourTrafficChannels',
+		4: 'fiveTrafficChannels',
+		5: 'sixTrafficChannels',
+		6: 'sevenTrafficChannels',
+		7: 'eightTrafficChannels',
+	}
+
+class NumberOfMeterPulses(primitives.AddressString):
 	"""ASN.1 Formal Description
 	NumberOfMeterPulses ::=  OCTET STRING (SIZE(3))
 	|    |    |    |    |    |    |    |    |
@@ -2217,7 +2362,7 @@ class NumberOfMeterPulses:
 	Value range: H'1 - H'FFFFFF
 	"""
 
-class NumberOfOperations:
+class NumberOfOperations(primitives.AddressString):
 	"""ASN.1 Formal Description
 	NumberOfOperations ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2230,7 +2375,7 @@ class NumberOfOperations:
 	Value range: H'0 - H'FF
 	"""
 
-class NumberOfShortMessage:
+class NumberOfShortMessage(primitives.AddressString):
 	"""ASN.1 Formal Description
 	NumberOfShortMessage ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -2245,7 +2390,7 @@ class NumberOfShortMessage:
 	Value range: H'0 - H'FFFF
 	"""
 
-class OperationIdentifier:
+class OperationIdentifier(primitives.AddressString):
 	"""ASN.1 Formal Description
 	OperationIdentifier ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2263,13 +2408,17 @@ class OperationIdentifier:
 	Application Identifiers" chapter.
 	"""
 
-class OptimalRoutingType:
+class OptimalRoutingType(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	OptimalRoutingType ::= ENUMERATED
 	(optimalRoutingAtLateCallForwarding    (0))
 	"""
 
-class OriginatedCode:
+	VALUES = {
+		0: 'optimalRoutingAtLateCallForwarding',
+	}
+
+class OriginatedCode(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	OriginatedCode ::= ENUMERATED
 	(callOriginatingFromOwnSubscriberInSSN             (0),
@@ -2284,7 +2433,20 @@ class OriginatedCode:
 	operator                                          (9))
 	"""
 
-class OriginatingLineInformation:
+	VALUES = {
+		0: 'callOriginatingFromOwnSubscriberInSSN',
+		1: 'callOriginatingFromOwnSubscriberInGSN',
+		2: 'callOriginatingFromIncomingTrunk',
+		3: 'callOriginatingFromSUSblock',
+		4: 'callOriginatingFromOMSblock',
+		5: 'testCallTowardsIL-OL-BL',
+		6: 'testCallWithIndividualSelectionOfB-Subscriber',
+		7: 'testCallWithIndividualSelectionExceptB-Subscriber',
+		8: 'testCallWithSelectionInSpecifiedRoute',
+		9: 'operator',
+	}
+
+class OriginatingLineInformation(primitives.AddressString):
 	"""ASN.1 Formal Description
 	OriginatingLineInformation ::= OCTET STRING (SIZE(1))
 	|   |   |   |   |   |   |   |   |
@@ -2316,7 +2478,7 @@ class OriginatingLineInformation:
 	of called mobile subscriber.
 	"""
 
-class OutputForSubscriber:
+class OutputForSubscriber(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	OutputForSubscriber ::= ENUMERATED
 	(callingParty           (0),
@@ -2324,7 +2486,13 @@ class OutputForSubscriber:
 	callingAndCalledParty  (2))
 	"""
 
-class OutputType:
+	VALUES = {
+		0: 'callingParty',
+		1: 'calledParty',
+		2: 'callingAndCalledParty',
+	}
+
+class OutputType(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	OutputType ::= ENUMERATED
 	(noOutput                                (0),
@@ -2337,7 +2505,18 @@ class OutputType:
 	tTAndICIForCallingAndCalledSubscribers  (7))
 	"""
 
-class PartialOutputRecNum:
+	VALUES = {
+		0: 'noOutput',
+		1: 'iCIoutputForCallingSubscriber',
+		2: 'iCIOutputForCalledSubscriber',
+		3: 'iCIOutputForCallingAndCalledSubscribers',
+		4: 'tTOutputOnly',
+		5: 'tTAndICIForCallingSubscriber',
+		6: 'tTAndICIForCalledSubscriber',
+		7: 'tTAndICIForCallingAndCalledSubscribers',
+	}
+
+class PartialOutputRecNum(primitives.AddressString):
 	"""ASN.1 Formal Description
 	PartialOutputRecNum ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2350,7 +2529,7 @@ class PartialOutputRecNum:
 	Value range: H'1 - H'FF
 	"""
 
-class PositioningDelivery:
+class PositioningDelivery(primitives.AddressString):
 	"""ASN.1 Formal Description
 	PositioningDelivery ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2385,7 +2564,7 @@ class PositioningDelivery:
 	valid for WCDMA.
 	"""
 
-class PointCodeAndSubSystemNumber:
+class PointCodeAndSubSystemNumber(primitives.AddressString):
 	"""ASN.1 Formal Description
 	PointCodeAndSubSystemNumber ::= OCTET STRING (SIZE (4))
 	|    |    |    |    |    |    |    |    |
@@ -2413,7 +2592,7 @@ class PointCodeAndSubSystemNumber:
 	- octet 4    : SubSystemNumber
 	"""
 
-class PositionAccuracy:
+class PositionAccuracy(primitives.AddressString):
 	"""ASN.1 Formal Description
 	PositionAccuracy ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -2453,7 +2632,7 @@ class PositionAccuracy:
 	kilometers.
 	"""
 
-class PresentationAndScreeningIndicator:
+class PresentationAndScreeningIndicator(primitives.AddressString):
 	"""ASN.1 Formal Description
 	PresentationAndScreeningIndicator ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2476,7 +2655,7 @@ class ProcedureCode:
 	ProcedureCode ::= TBCDString (SIZE(1))
 	"""
 
-class RadioChannelProperty:
+class RadioChannelProperty(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	RadioChannelProperty ::= ENUMERATED
 	(halfRateChannel                            (0),
@@ -2498,7 +2677,25 @@ class RadioChannelProperty:
 	system and used only by GSM.
 	"""
 
-class RANAPCauseCode:
+	VALUES = {
+		0: 'halfRateChannel',
+		1: 'fullRateChannel',
+		2: 'dualRateHalfRatePreferred',
+		3: 'dualRateFullRatePreferred',
+		4: 'twoFullRateChannels',
+		5: 'threeFullRateChannels',
+		6: 'fourFullRateChannels',
+		7: 'twoAssignedAirTimeSlots',
+		8: 'fourAssignedAirTimeSlots',
+		9: 'sixAssignedAirTimeSlots',
+		10: 'eightAssignedAirTimeSlots',
+		11: 'twelveAssignedAirTimeSlots',
+		12: 'sixteenAssignedAirtimeSlots',
+		13: 'twoDownlinkOneUplinkAssignedAirTimeSlots',
+		14: 'fourDownlinkOneUplinkAssignedAirTimeSlots',
+	}
+
+class RANAPCauseCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	RANAPCauseCode ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2514,7 +2711,7 @@ class RANAPCauseCode:
 	"Information Elements".
 	"""
 
-class RedirectionCounter:
+class RedirectionCounter(primitives.AddressString):
 	"""ASN.1 Formal Description
 	RedirectionCounter ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2530,7 +2727,7 @@ class RedirectionCounter:
 	Exchange Parameter.
 	"""
 
-class RegionalServiceUsed:
+class RegionalServiceUsed(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	RegionalServiceUsed ::= ENUMERATED
 	(localSubscription                                  (0),
@@ -2539,12 +2736,24 @@ class RegionalServiceUsed:
 	regionalSubcriptionAndSubscriptionWithTariffAreas  (3))
 	"""
 
-class ResponseTimeCategory:
+	VALUES = {
+		0: 'localSubscription',
+		1: 'regionalSubcription',
+		2: 'subscriptionWithTariffAreas',
+		3: 'regionalSubcriptionAndSubscriptionWithTariffAreas',
+	}
+
+class ResponseTimeCategory(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	ResponseTimeCategory ::= ENUMERATED
 	(lowdelay       (0),
 	delaytolerant  (1))
 	"""
+
+	VALUES = {
+		0: 'lowdelay',
+		1: 'delaytolerant',
+	}
 
 class Route:
 	"""ASN.1 Formal Description
@@ -2565,7 +2774,7 @@ class Route:
 	/---------------------------------------/
 	"""
 
-class SelectedCodec:
+class SelectedCodec(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	SelectedCodec ::= ENUMERATED
 	(gSMFullRate                (0),
@@ -2581,12 +2790,25 @@ class SelectedCodec:
 	Note: Only value 15 is used.
 	"""
 
+	VALUES = {
+		0: 'gSMFullRate',
+		1: 'gSMHalfRate',
+		2: 'gSMEnhancedFullRate',
+		3: 'fullRateAdaptiveMultiRate',
+		4: 'halfRateAdaptiveMultiRate',
+		5: 'uMTSAdaptiveMultiRate',
+		6: 'uMTSAdaptiveMultiRate2',
+		7: 'tDMAEnhancedFullRate',
+		8: 'pDCEnhancedFullRate',
+		15: 'inmarsatCoding',
+	}
+
 class ServiceCode:
 	"""ASN.1 Formal Description
 	ServiceCode ::= TBCDString (SIZE(1..2))
 	"""
 
-class ServiceFeatureCode:
+class ServiceFeatureCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ServiceFeatureCode ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -2602,7 +2824,7 @@ class ServiceFeatureCode:
 	INAP protocol specifications.
 	"""
 
-class ServiceKey:
+class ServiceKey(primitives.AddressString):
 	"""ASN.1 Formal Description
 	ServiceKey ::=  OCTET STRING (SIZE(4))
 	|    |    |    |    |    |    |    |    |
@@ -2620,14 +2842,19 @@ class ServiceKey:
 	Value Range H'0 - H'7FFFFFFF
 	"""
 
-class ServiceSwitchingType:
+class ServiceSwitchingType(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	ServiceSwitchingType ::= ENUMERATED
 	(speechToFax       (0),
 	faxToSpeech       (1))
 	"""
 
-class Single:
+	VALUES = {
+		0: 'speechToFax',
+		1: 'faxToSpeech',
+	}
+
+class Single(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	Single ::=  ENUMERATED
 	(aPartyToBeCharged      (0),
@@ -2636,14 +2863,26 @@ class Single:
 	otherPartyToBeCharged  (3))
 	"""
 
-class SMSResult:
+	VALUES = {
+		0: 'aPartyToBeCharged',
+		1: 'bPartyToBeCharged',
+		2: 'cPartyToBeCharged',
+		3: 'otherPartyToBeCharged',
+	}
+
+class SMSResult(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	SMSResult ::= ENUMERATED
 	(unsuccessfulMOSMSDeliverytoSMSCDuetoCAMELReason  (0),
 	unsuccessfulMOSMSDeliverytoSMSCDuetoOtherReason  (1))
 	"""
 
-class SpeechCoderPreferenceList:
+	VALUES = {
+		0: 'unsuccessfulMOSMSDeliverytoSMSCDuetoCAMELReason',
+		1: 'unsuccessfulMOSMSDeliverytoSMSCDuetoOtherReason',
+	}
+
+class SpeechCoderPreferenceList(primitives.AddressString):
 	"""ASN.1 Formal Description
 	SpeechCoderPreferenceList ::= OCTET STRING (SIZE (1..6))
 	|    |    |    |    |    |    |    |    |
@@ -2664,7 +2903,7 @@ class SpeechCoderPreferenceList:
 	enumerated SpeechCoderVersion value.
 	"""
 
-class SpeechCoderVersion:
+class SpeechCoderVersion(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	SpeechCoderVersion ::= ENUMERATED
 	(fullRateVersion1         (0),
@@ -2675,7 +2914,16 @@ class SpeechCoderVersion:
 	halfRateVersion3         (5))
 	"""
 
-class SSCode:
+	VALUES = {
+		0: 'fullRateVersion1',
+		1: 'fullRateVersion2',
+		2: 'fullRateVersion3',
+		3: 'halfRateVersion1',
+		4: 'halfRateVersion2',
+		5: 'halfRateVersion3',
+	}
+
+class SSCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	SSCode ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2744,7 +2992,7 @@ class SSCode:
 	PLMN specific SS - F                        1 1 1 1 1 1 1 1
 	"""
 
-class SSFChargingCase:
+class SSFChargingCase(primitives.AddressString):
 	"""ASN.1 Formal Description
 	SSFChargingCase ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -2760,7 +3008,7 @@ class SSFChargingCase:
 	Value range: H'0 - H'FFFF
 	"""
 
-class SSRequest:
+class SSRequest(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	SSRequest ::= ENUMERATED
 	(registration               (0),
@@ -2773,7 +3021,18 @@ class SSRequest:
 	processUSSD                (7))
 	"""
 
-class SubscriberState:
+	VALUES = {
+		0: 'registration',
+		1: 'erasure',
+		2: 'activation',
+		3: 'deactivation',
+		4: 'interrogation',
+		5: 'invoke',
+		6: 'registerPassword',
+		7: 'processUSSD',
+	}
+
+class SubscriberState(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	SubscriberState ::= ENUMERATED
 	(detached                   (0),
@@ -2781,7 +3040,13 @@ class SubscriberState:
 	implicitDetached           (2))
 	"""
 
-class SubscriptionType:
+	VALUES = {
+		0: 'detached',
+		1: 'attached',
+		2: 'implicitDetached',
+	}
+
+class SubscriptionType(primitives.AddressString):
 	"""ASN.1 Formal Description
 	SubscriptionType ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2795,7 +3060,7 @@ class SubscriptionType:
 	Value H'1 - H'7F : Subscription type 1 - 127
 	"""
 
-class SwitchIdentity:
+class SwitchIdentity(primitives.AddressString):
 	"""ASN.1 Formal Description
 	SwitchIdentity ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -2811,7 +3076,7 @@ class SwitchIdentity:
 	Value range: H'1 - H'FFFF
 	"""
 
-class TargetRNCid:
+class TargetRNCid(primitives.AddressString):
 	"""ASN.1 Formal Description
 	TargetRNCid ::= OCTET STRING (SIZE(7))
 	|   |   |   |   |   |   |   |   |
@@ -2842,7 +3107,7 @@ class TargetRNCid:
 	value range: H'0 - H'FFF.
 	"""
 
-class TariffClass:
+class TariffClass(primitives.AddressString):
 	"""ASN.1 Formal Description
 	TariffClass ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -2859,14 +3124,19 @@ class TariffClass:
 	Value H'0: No tariff class is defined.
 	"""
 
-class TariffSwitchInd:
+class TariffSwitchInd(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	TariffSwitchInd ::= ENUMERATED
 	(noTariffSwitch                    (0),
 	tariffSwitchAfterStartOfCharging  (2))
 	"""
 
-class TeleServiceCode:
+	VALUES = {
+		0: 'noTariffSwitch',
+		2: 'tariffSwitchAfterStartOfCharging',
+	}
+
+class TeleServiceCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	TeleServiceCode ::= OCTET STRING (SIZE (1))
 	|    |    |    |    |    |    |    |    |
@@ -2904,7 +3174,7 @@ class TeleServiceCode:
 	Point-to-Point.
 	"""
 
-class Time:
+class Time(primitives.AddressString):
 	"""ASN.1 Formal Description
 	Time ::= OCTET STRING (SIZE(3..4))
 	|    |    |    |    |    |    |    |    |
@@ -2928,7 +3198,7 @@ class Time:
 	chargeableDuration and only used for WCDMA Japan.
 	"""
 
-class TrafficActivityCode:
+class TrafficActivityCode(primitives.AddressString):
 	"""ASN.1 Formal Description
 	TrafficActivityCode ::= OCTET STRING (SIZE(5))
 	|    |    |    |    |    |    |    |    |
@@ -2952,7 +3222,7 @@ class TrafficActivityCode:
 	definition.
 	"""
 
-class TrafficClass:
+class TrafficClass(primitives.AddressString):
 	"""ASN.1 Formal Description
 	TrafficClass ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -2968,7 +3238,7 @@ class TrafficClass:
 	Background Class              0 0 0 0 0 0 1 1
 	"""
 
-class TransferDelay:
+class TransferDelay(primitives.AddressString):
 	"""ASN.1 Formal Description
 	TransferDelay ::= OCTET STRING (SIZE(2))
 	|    |    |    |    |    |    |    |    |
@@ -2983,7 +3253,7 @@ class TransferDelay:
 	Value range: H'0 - H'FFFF
 	"""
 
-class TransitCarrierInfo:
+class TransitCarrierInfo(primitives.AddressString):
 	"""ASN.1 Formal Description
 	TransitCarrierInfo ::= OCTET STRING (SIZE(7..96))
 	The digits in the Carrier ID Code and POICA are encoded
@@ -3149,12 +3419,17 @@ class TransitCarrierInfo:
 	1111
 	"""
 
-class TransparencyIndicator:
+class TransparencyIndicator(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	TransparencyIndicator ::= ENUMERATED
 	(transparent                              (0),
 	nonTransparent                           (1))
 	"""
+
+	VALUES = {
+		0: 'transparent',
+		1: 'nonTransparent',
+	}
 
 class TriggerData:
 	"""ASN.1 Formal Description
@@ -3172,7 +3447,7 @@ class TriggerData:
 	GlobalTitleAndSubSystemNumber))
 	"""
 
-class TriggerDetectionPoint:
+class TriggerDetectionPoint(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	TriggerDetectionPoint ::= ENUMERATED
 	(originatingCallAttemptAuthorized                     (1),
@@ -3203,7 +3478,36 @@ class TriggerDetectionPoint:
 	originatingCallAttemptAlerting                     (255))
 	"""
 
-class TypeOfCalledSubscriber:
+	VALUES = {
+		1: 'originatingCallAttemptAuthorized',
+		2: 'collectedInformation',
+		3: 'analyzedInformation',
+		4: 'originatingCallAttemptRouteSelectFailure',
+		5: 'originatingCallAttemptCalledPartyBusy',
+		6: 'originatingCallAttemptCalledPartyNotAnswer',
+		7: 'originatingCallAttemptCalledPartyAnswer',
+		8: 'originatingCallAttemptMid-CallEventDetected',
+		9: 'originatingCallAttemptCallDisconnecting',
+		10: 'originatingCallAttemptCallAbandon',
+		12: 'terminatingCallAttemptAuthorized',
+		13: 'terminatingCallAttemptCalledPartyBusy',
+		14: 'terminatingCallAttemptNoAnswer',
+		15: 'terminatingCallAttemptAnswer',
+		16: 'terminatingCallAttemptMid-CallEventDetected',
+		17: 'terminatingCallAttemptCallDisconnect',
+		18: 'terminatingCallAttemptCallAbandon',
+		247: 'terminatingCallAttemptCallReAnswer',
+		248: 'terminatingCallAttemptCallSuspended',
+		249: 'terminatingCallAttemptCalledPartyNotReachable',
+		250: 'terminatingCallAttemptAlerting',
+		251: 'terminatingCallAttemptRouteSelectFailure',
+		252: 'originatingCallAttemptCalledPartyReAnswer',
+		253: 'originatingCallAttemptCallSuspended',
+		254: 'originatingCallAttemptCalledPartyNotReachable',
+		255: 'originatingCallAttemptAlerting',
+	}
+
+class TypeOfCalledSubscriber(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	TypeOfCalledSubscriber ::= ENUMERATED
 	(pSTNSubscriber       (0),
@@ -3211,7 +3515,13 @@ class TypeOfCalledSubscriber:
 	unknownSubscriber    (2))
 	"""
 
-class TypeOfLocationRequest:
+	VALUES = {
+		0: 'pSTNSubscriber',
+		1: 'iSDNSubscriber',
+		2: 'unknownSubscriber',
+	}
+
+class TypeOfLocationRequest(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	TypeOfLocationRequest ::= ENUMERATED
 	(mT_LocationRequestCurrentLocation              (0),
@@ -3224,7 +3534,17 @@ class TypeOfLocationRequest:
 	Note: nI_LocationRequest is not valid for WCDMA.
 	"""
 
-class TypeOfSignalling:
+	VALUES = {
+		0: 'mT_LocationRequestCurrentLocation',
+		1: 'mT_LocationRequestCurrentOrLastKnownLocation',
+		2: 'mO_LocationRequestLocEstimateToMS',
+		3: 'mO_LocationRequestLocEstimateToThirdParty',
+		4: 'mO_LocationRequestAssistData',
+		5: 'mO_LocationRequestDeciphKeys',
+		6: 'nI_LocationRequest',
+	}
+
+class TypeOfSignalling(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	TypeOfSignalling ::= ENUMERATED
 	(iSUPIsNotAppliedAllTheWay       (0),
@@ -3232,7 +3552,13 @@ class TypeOfSignalling:
 	unknownSignalling               (2))
 	"""
 
-class UILayer1Protocol:
+	VALUES = {
+		0: 'iSUPIsNotAppliedAllTheWay',
+		1: 'iSUPIsAppliedAllTheWay',
+		2: 'unknownSignalling',
+	}
+
+class UILayer1Protocol(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	UILayer1Protocol ::= ENUMERATED
 	(V110_X30                     (1),
@@ -3247,14 +3573,32 @@ class UILayer1Protocol:
 	vSELP_Speech                (10))
 	"""
 
-class UnsuccessfulPositioningDataReason:
+	VALUES = {
+		1: 'V110_X30',
+		2: 'G711mulaw',
+		3: 'G711Alaw',
+		4: 'G721_32000bps_I460',
+		5: 'H221_H242',
+		6: 'H223_H245',
+		7: 'nonITU_T',
+		8: 'V120',
+		9: 'X31',
+		10: 'vSELP_Speech',
+	}
+
+class UnsuccessfulPositioningDataReason(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	UnsuccessfulPositioningDataReason ::= ENUMERATED
 	(systemError                           (0),
 	userDeniedDueToPrivacyVerification    (1))
 	"""
 
-class UserClass:
+	VALUES = {
+		0: 'systemError',
+		1: 'userDeniedDueToPrivacyVerification',
+	}
+
+class UserClass(primitives.AddressString):
 	"""ASN.1 Formal Description
 	UserClass ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -3272,7 +3616,7 @@ class UserClass:
 	11 Spare
 	"""
 
-class UserRate:
+class UserRate(primitives.ByteEnum):
 	"""ASN.1 Formal Description
 	UserRate ::= ENUMERATED
 	(uRIndNeg          (0),
@@ -3314,7 +3658,41 @@ class UserRate:
 	Value 17 is an additional user rate for the French network.
 	"""
 
-class UserTerminalPosition:
+	VALUES = {
+		0: 'uRIndNeg',
+		1: 'uR600bps',
+		2: 'uR1200bps',
+		3: 'uR2400bps',
+		4: 'uR3600bps',
+		5: 'uR4800bps',
+		6: 'uR7200bps',
+		7: 'uR8000bps',
+		8: 'uR9600bps',
+		9: 'uR14400bps',
+		10: 'uR16000bps',
+		11: 'uR19200bps',
+		12: 'uR32000bps',
+		13: 'uR38400bps',
+		14: 'uR48000bps',
+		15: 'uR56000bps',
+		16: 'uR64000bps',
+		17: 'uR38400bps1',
+		18: 'uR57600bps',
+		19: 'uR28800bps',
+		21: 'uR134-5bps',
+		22: 'uR100bps',
+		23: 'uR75bps_1200bps',
+		24: 'uR1200bps_75bps',
+		25: 'uR50bps',
+		26: 'uR75bps',
+		27: 'uR110bps',
+		28: 'uR150bps',
+		29: 'uR200bps',
+		30: 'uR300bps',
+		31: 'uR12000bps',
+	}
+
+class UserTerminalPosition(primitives.AddressString):
 	"""ASN.1 Formal Description
 	UserTerminalPosition ::= OCTET STRING (SIZE(7))
 	|    |    |    |    |    |    |    |    |
@@ -3407,7 +3785,7 @@ class UserTerminalPosition:
 	Value range: H'0-H'9
 	"""
 
-class UserToUserService1Information:
+class UserToUserService1Information(primitives.AddressString):
 	"""ASN.1 Formal Description
 	UserToUserService1Information ::= OCTET STRING (SIZE(1))
 	|    |    |    |    |    |    |    |    |
@@ -3442,4 +3820,3 @@ class UserToUserService1Information:
 	1 = was successful
 	Bit 7 - 8 Spare (set to 0)
 	"""
-
