@@ -11,9 +11,10 @@ class TlvVozEricsson:
         value: bytes,
         schema: Mapping = None,
     ):
+        self.length = len(value)
         if schema is None:  # root
             tag_mapping = modules.CallDataRecord[tag_number]
-        elif schema:  # non-empty dict, i.e. not a primitive
+        else:
             tag_mapping = schema[tag_number]
         if isinstance(tag_mapping["type"], dict):
             self.name = tag_mapping["tag"]
@@ -23,4 +24,3 @@ class TlvVozEricsson:
             self.name = tag_mapping["name"]
             self.value = getattr(tag_mapping["type"](value), "value")
             self.schema = {}
-        self.length = len(value)
