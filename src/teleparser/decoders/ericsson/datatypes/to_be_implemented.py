@@ -3237,25 +3237,6 @@ class UnsuccessfulPositioningDataReason(primitives.ByteEnum):
     }
 
 
-class UserClass(primitives.AddressString):
-    """ASN.1 Formal Description
-    UserClass ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                         |     LSB |
-    /---------------------------------------/
-    -- Bit 8-3 Spare
-    -- Bit 2-1 Additional Fixed User Information,
-    --         supplementary user type information
-    00 Spare
-    01 Train Payphone
-    10 Pink (non-NTT Payphone)
-    11 Spare
-    """
-
-
 class UserRate(primitives.ByteEnum):
     """ASN.1 Formal Description
     UserRate ::= ENUMERATED

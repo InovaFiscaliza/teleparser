@@ -1484,6 +1484,58 @@ class TranslatedNumber(primitives.AddressString):
     as the called party number."""
 
 
+class UserClass(primitives.ByteEnum):
+    """User Class
+
+      This parameter is mapped from the Additional Fixed
+      User Information in Additional User Category (AUC)
+      parameter in ISUP message IAM received from
+      the originating network.
+
+      User class specifies the type of phone used on
+      the originating side of the call from the fixed
+      network. Values can be set to for example
+      'train pay phone' or 'pink' (non-NTT payphone).
+
+      This parameter is used in connection with Type of
+      Calling Subscriber for the Flexible Charging function.
+
+      The parameter is only applicable for WCDMA Japan.
+
+    ASN.1 Formal Description
+        UserClass ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB                         |     LSB |
+        /---------------------------------------/
+        -- Bit 8-3 Spare
+        -- Bit 2-1 Additional Fixed User Information,
+        --         supplementary user type information
+        00 Spare
+        01 Train Payphone
+        10 Pink (non-NTT Payphone)
+        11 Spare
+    """
+
+    VALUES = {
+        0: "Spare",
+        1: "Train Payphone",
+        2: "Pink (non-NTT Payphone)",
+        3: "Spare",
+    }
+
+    @property
+    def value(self):
+        self.additional_info = self.VALUES[self.octets[0] & 3]
+        self.spare = self.octets[0] >> 2
+        return self.spare, self.additional_info
+
+    def __str__(self):
+        return f"Spare: {self.spare}, Additional Info: {self.additional_info}"
+
+
 class UserProvidedCallingPartyNumber(primitives.AddressString):
     """User Provided Calling Party Number
 
