@@ -608,24 +608,6 @@ class ChargingCase(primitives.AddressString):
     """
 
 
-class ChargingIndicator(primitives.AddressString):
-    """ASN.1 Formal Description
-    ChargingIndicator ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                               LSB |
-    /---------------------------------------/
-    - Bit 8-3: Unused, set always to 00000
-    - Bit 2-1: Charging indicator
-    00   No Indication
-    01   No Charge
-    10   Charge
-    11   Spare
-    """
-
-
 class ChargingUnitsAddition(primitives.AddressString):
     """ASN.1 Formal Description
     ChargingUnitsAddition ::= OCTET STRING (SIZE(2))
@@ -1168,26 +1150,6 @@ class EventCRIToMS:
     Technical Specification '3GPP 22.024.
     Values are represented as binary coded decimal
     digits in TBCDString.
-    """
-
-
-class ExchangeIdentity:
-    """ASN.1 Formal Description
-    ExchangeIdentity ::= IA5STRING (SIZE(1..15))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |  1st character                        | octet 1
-    /---------------------------------------/
-    .
-    .
-    .
-    /---------------------------------------/
-    |  14th character                       | octet 14
-    +---------------------------------------+
-    |  15th character                       | octet 15
-    /---------------------------------------/
     """
 
 
@@ -2367,26 +2329,6 @@ class ResponseTimeCategory(primitives.ByteEnum):
         0: "lowdelay",
         1: "delaytolerant",
     }
-
-
-class Route:
-    """ASN.1 Formal Description
-    Route ::= IA5STRING (SIZE(1..7))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |            1st character              | octet 1
-    /---------------------------------------/
-    .
-    .
-    .
-    /---------------------------------------/
-    |            6th character              | octet 6
-    +---------------------------------------+
-    |            7th character              | octet 7
-    /---------------------------------------/
-    """
 
 
 class SelectedCodec(primitives.ByteEnum):
