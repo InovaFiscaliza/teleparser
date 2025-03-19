@@ -566,6 +566,35 @@ class EosInfo(primitives.ByteEnum):
     }
 
 
+@fixed_size_unsigned_int(2)
+class FaultCode(primitives.UnsignedInt):
+    """Fault Code
+
+      This parameter contains the internal End-of-Selection
+      code (EOS), which defines the event that lead to
+      disconnection of the call component.
+
+      Fault codes are also present for successful calls. It
+      can be determined from the EOS code if a fault occurred
+      or not.
+
+    ASN.1 Formal Description
+        FaultCode ::= OCTET STRING (SIZE(2))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        |MSB                                    |  octet 1
+        +---------------------------------------+
+        |                                    LSB|  octet 2
+        /---------------------------------------/
+        Note: OCTET STRING is coded as an unsigned integer.
+        Note: Detailed information on fault code values is
+        available in the Application Information "List
+        Of End-Of-Selection Codes".
+    """
+
+
 class GSMCallReferenceNumber(primitives.DigitString):
     """GSM Call Reference Number
 

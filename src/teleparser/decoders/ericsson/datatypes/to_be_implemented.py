@@ -1206,24 +1206,6 @@ class ExchangeIdentity:
     """
 
 
-class FaultCode(primitives.AddressString):
-    """ASN.1 Formal Description
-    FaultCode ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |MSB                                    |  octet 1
-    +---------------------------------------+
-    |                                    LSB|  octet 2
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Note: Detailed information on fault code values is
-    available in the Application Information "List
-    Of End-Of-Selection Codes".
-    """
-
-
 class FirstRadioChannelUsed(primitives.ByteEnum):
     """ASN.1 Formal Description
     FirstRadioChannelUsed ::= ENUMERATED
