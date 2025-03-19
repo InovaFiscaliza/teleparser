@@ -227,34 +227,6 @@ class CarrierIdentificationCode:
     """
 
 
-class CarrierInfo(primitives.AddressString):
-    """ASN.1 Formal Description
-    CarrierInfo ::= OCTET STRING (SIZE(2..3))
-    The digits for ID Code are encoded as a TBCD-STRING.
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | 2nd ID Code digit | 1st ID Code digit | octet 1 of TBCD
-    +-------------------+-------------------+
-    | 4th ID Code digit | 3rd ID Code digit | octet 2 of TBCD
-    +-------------------+-------------------+
-    |Entry POI-Hierarchy| Exit POI-Hierarchy| octet 3 (Note 2)
-    /---------------------------------------/
-    Acceptable digits are between 0 and 9.
-    Note 1: OLEC and TLEC information contains always Carrier
-    identification code.
-    Note 2: POI-Hierarchy information is optional.
-    Exit/Entry POI Hierarchy
-    0000  No Indication
-    0001  Hierarchy level 1
-    0010  Hierarchy level 2
-    0011
-    to    Spare
-    1111
-    """
-
-
 class CarrierInformation(primitives.AddressString):
     """ASN.1 Formal Description
     CarrierInformation ::= OCTET STRING (SIZE(1))

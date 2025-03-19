@@ -1,7 +1,6 @@
 """This module implements primitive datatypes as described in the ASN.1 Especification"""
 
 from functools import cached_property, wraps
-from dataclasses import dataclass
 from . import exceptions
 
 
