@@ -72,6 +72,16 @@ class CallAttemptState(primitives.ByteEnum):
     }
 
 
+class CallPosition(primitives.ByteEnum):
+    octets: bytes
+    VALUES = {
+        0: "valueUsedForAllCallsToDetermineIfOutputToTakePlace",
+        1: "callHasReachedCongestionOrBusyState",
+        2: "callHasOnlyReachedThroughConnection",
+        3: "answerHasBeenReceived",
+    }
+
+
 class ChangeInitiatingParty(primitives.ByteEnum):
     """ASN.1 Formal Description
     ChangeInitiatingParty ::= ENUMERATED

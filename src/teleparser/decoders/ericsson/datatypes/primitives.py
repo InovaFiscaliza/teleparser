@@ -107,6 +107,14 @@ class DigitString(OctetString):
         return "".join(str(d) for d in self.digits)
 
 
+class Bool:
+    """Flag type for presence of optional NULL values"""
+
+    @property
+    def value(self):
+        return True
+
+
 @fixed_size_digit_string(1)
 class ByteEnum(DigitString):
     def __init__(self, *args, **kwargs):
@@ -165,21 +173,6 @@ class AddressString(OctetString):
     def __str__(self) -> str:
         """String representation including TON/NPI and number"""
         return f"TON={self.ton}, NPI={self.npi}, Number={self.digits}"
-
-
-@dataclass
-class CallPosition:
-    octets: bytes
-    VALUES = {
-        0: "valueUsedForAllCallsToDetermineIfOutputToTakePlace",
-        1: "callHasReachedCongestionOrBusyState",
-        2: "callHasOnlyReachedThroughConnection",
-        3: "answerHasBeenReceived",
-    }
-
-    @property
-    def value(self):
-        return self.VALUES[int.from_bytes(self.octets, "big")]
 
 
 class Ia5String(OctetString):
@@ -264,11 +257,3 @@ class UnsignedInt:
         it convert 3 bytes to integer (big endian)"
         """
         return int.from_bytes(self.octets, byteorder="big")
-
-
-class Bool:
-    """Flag type for presence of optional NULL values"""
-
-    @property
-    def value(self):
-        return True
