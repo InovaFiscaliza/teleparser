@@ -2189,35 +2189,6 @@ class OptimalRoutingType(primitives.ByteEnum):
     }
 
 
-class OriginatedCode(primitives.ByteEnum):
-    """ASN.1 Formal Description
-    OriginatedCode ::= ENUMERATED
-    (callOriginatingFromOwnSubscriberInSSN             (0),
-    callOriginatingFromOwnSubscriberInGSN             (1),
-    callOriginatingFromIncomingTrunk                  (2),
-    callOriginatingFromSUSblock                       (3),
-    callOriginatingFromOMSblock                       (4),
-    testCallTowardsIL-OL-BL                           (5),
-    testCallWithIndividualSelectionOfB-Subscriber     (6),
-    testCallWithIndividualSelectionExceptB-Subscriber (7),
-    testCallWithSelectionInSpecifiedRoute             (8),
-    operator                                          (9))
-    """
-
-    VALUES = {
-        0: "callOriginatingFromOwnSubscriberInSSN",
-        1: "callOriginatingFromOwnSubscriberInGSN",
-        2: "callOriginatingFromIncomingTrunk",
-        3: "callOriginatingFromSUSblock",
-        4: "callOriginatingFromOMSblock",
-        5: "testCallTowardsIL-OL-BL",
-        6: "testCallWithIndividualSelectionOfB-Subscriber",
-        7: "testCallWithIndividualSelectionExceptB-Subscriber",
-        8: "testCallWithSelectionInSpecifiedRoute",
-        9: "operator",
-    }
-
-
 class OriginatingLineInformation(primitives.AddressString):
     """ASN.1 Formal Description
     OriginatingLineInformation ::= OCTET STRING (SIZE(1))

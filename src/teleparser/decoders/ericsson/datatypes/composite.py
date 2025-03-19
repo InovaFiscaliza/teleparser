@@ -955,6 +955,43 @@ class OriginalCalledNumber(primitives.AddressString):
     may be modified by the SCF/gsmSCF."""
 
 
+class OriginatedCode(primitives.ByteEnum):
+    """Originated Code
+
+      This parameter indicates from where the call is originated.
+      This field is output only for ISOCODE or PACKED
+      postprocessing purposes.
+
+      The parameter is not applicable for WCDMA Japan.
+
+    ASN.1 Formal Description
+        OriginatedCode ::= ENUMERATED
+        (callOriginatingFromOwnSubscriberInSSN             (0),
+        callOriginatingFromOwnSubscriberInGSN             (1),
+        callOriginatingFromIncomingTrunk                  (2),
+        callOriginatingFromSUSblock                       (3),
+        callOriginatingFromOMSblock                       (4),
+        testCallTowardsIL-OL-BL                           (5),
+        testCallWithIndividualSelectionOfB-Subscriber     (6),
+        testCallWithIndividualSelectionExceptB-Subscriber (7),
+        testCallWithSelectionInSpecifiedRoute             (8),
+        operator                                          (9))
+    """
+
+    VALUES = {
+        0: "callOriginatingFromOwnSubscriberInSSN",
+        1: "callOriginatingFromOwnSubscriberInGSN",
+        2: "callOriginatingFromIncomingTrunk",
+        3: "callOriginatingFromSUSblock",
+        4: "callOriginatingFromOMSblock",
+        5: "testCallTowardsIL-OL-BL",
+        6: "testCallWithIndividualSelectionOfB-Subscriber",
+        7: "testCallWithIndividualSelectionExceptB-Subscriber",
+        8: "testCallWithSelectionInSpecifiedRoute",
+        9: "operator",
+    }
+
+
 class OriginatingLocationNumber(primitives.AddressString):
     """Originating Location Number
 
@@ -1099,6 +1136,17 @@ class RedirectingSPN(primitives.AddressString):
     """Redirecting Single Personal Number
 
     This parameter contains the called-party number which
+    """
+
+
+class RerountingIndicator(primitives.Bool):
+    """Rerouting Indicator
+
+    This parameter indicates if the call has been rerouted
+    (for example a new B-number analysis has been performed)
+    by the exchange where the charging data is output. This
+    field is output only for ISOCODE or PACKED postprocessing
+    purposes.
     """
 
 
