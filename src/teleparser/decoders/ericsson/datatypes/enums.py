@@ -1,6 +1,39 @@
 from . import primitives
 
 
+class AirInterfaceUserRate(primitives.ByteEnum):
+    """ASN.1 Formal Description
+    AirInterfaceUserRate ::= ENUMERATED
+    (aIUR9600bps                  (1),
+    aIUR14400bps                 (2),
+    aIUR19200bps                 (3),
+    aIUR28800bps                 (5),
+    aIUR38400bps                 (6),
+    aIUR43200bps                 (7),
+    aIUR57600bps                 (8),
+    aIUR38400bps1                (9),
+    aIUR38400bps2                (10),
+    aIUR38400bps3                (11),
+    aIUR38400bps4                (12))
+    Note: Values 9 - 12 mean that the network has interpreted
+    AirInterfaceUserRate as 38400 bits/s.
+    """
+
+    VALUES = {
+        1: "aIUR9600bps",
+        2: "aIUR14400bps",
+        3: "aIUR19200bps",
+        5: "aIUR28800bps",
+        6: "aIUR38400bps",
+        7: "aIUR43200bps",
+        8: "aIUR57600bps",
+        9: "aIUR38400bps1",
+        10: "aIUR38400bps2",
+        11: "aIUR38400bps3",
+        12: "aIUR38400bps4",
+    }
+
+
 class AsyncSyncIndicator(primitives.ByteEnum):
     """ASN.1 Formal Description
     AsyncSyncIndicator ::= ENUMERATED
@@ -49,6 +82,21 @@ class ChangeInitiatingParty(primitives.ByteEnum):
     VALUES = {
         0: "userInitiated",
         1: "networkInitiated",
+    }
+
+
+class ChargedParty(primitives.ByteEnum):
+    """ASN.1 Formal Description
+    ChargedParty ::= ENUMERATED
+    (chargingOfCallingSubscriber  (0),
+    chargingOfCalledSubscriber   (1),
+    noCharging                   (2))
+    """
+
+    VALUES = {
+        0: "chargingOfCallingSubscriber",
+        1: "chargingOfCalledSubscriber",
+        2: "noCharging",
     }
 
 
@@ -106,6 +154,142 @@ class DeliveryOfErroneousSDU(primitives.ByteEnum):
     }
 
 
+class DisconnectingParty(primitives.ByteEnum):
+    """Disconnecting Party
+
+      This parameter indicates whether the call was disconnected
+      due to calling party termination, called party termination
+      or 'Network termination'. 'Network termination' covers
+      everything that is not covered by calling party termination
+      or called party termination.
+
+      This parameter is not output in case of partial output.
+
+    ASN.1 Formal Description
+        DisconnectingParty ::= ENUMERATED
+        (callingPartyRelease          (0),
+        calledPartyRelease           (1),
+        networkRelease               (2))
+    """
+
+    VALUES = {
+        0: "callingPartyRelease",
+        1: "calledPartyRelease",
+        2: "networkRelease",
+    }
+
+
+class EosInfo(primitives.ByteEnum):
+    """ASN.1 Formal Description
+    EosInfo ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                               LSB |
+    /---------------------------------------/
+    Note: OCTET STRING is coded as an unsigned integer.
+    Value range:  H'0 - H'3F
+    End-of-Selection Information
+    Value        Meaning
+    _____        _______
+    00         Free subscriber.
+    01         Free subscriber. No time supervision.
+    02         Free subscriber. No charging.
+    03         Free subscriber. No time supervision.
+    No charging.
+    04         Free subscriber. Last party release.
+    05         Free subscriber. No time supervision.
+    Last party release.
+    06         Free subscriber. No charging. Last
+    party release.
+    07         Free subscriber. No time supervision.
+    No charging. Last party release.
+    10         Set up speech condition.
+    11         Set up speech condition.
+    No time supervision.
+    12         Set up speech condition.
+    No charging.
+    21         Access barred
+    22         Transferred subscriber.
+    23         Busy subscriber.
+    24         Busy subscriber with callback protection.
+    25         Unallocated number.
+    26         Address incomplete.
+    27         Call transfer protection, that is
+    "follow me" not allowed to this subscriber.
+    28         Subscriber line out of order.
+    29         Intercepted subscriber.
+    2A         Supervised by an operator.
+    Trunk offering marked.
+    2B         Rerouting to service centre.
+    2C         Line lock out.
+    2D         Send acceptance tone.
+    2E         No answer/incompatible destination
+    (used for ISDN).
+    2F         Send refusal tone. Only used
+    at subscriber services.
+    33         Digital path not provided.
+    34         Congestion without differentiation.
+    35         Time release.
+    36         Technical fault.
+    37         Congestion in group selection
+    network.
+    38         Lack of devices.
+    39         Congestion in subscriber
+    selection network.
+    3A         Congestion in international
+    network.
+    3B         Congestion in national network.
+    3C         Conditional congestion (Region option).
+    3D         Route congestion.
+    3E         Unpermitted traffic case.
+    3F         No acknowledgement from mobile subscriber.
+    """
+
+    VALUES = {
+        0: "Free subscriber.",
+        1: "Free subscriber. No time supervision.",
+        2: "Free subscriber. No charging.",
+        3: "Free subscriber. No time supervision. No charging.",
+        4: "Free subscriber. Last party release.",
+        5: "Free subscriber. No time supervision. Last party release.",
+        6: "Free subscriber. No charging. Last party release.",
+        7: "Free subscriber. No time supervision. No charging. Last party release.",
+        16: "Set up speech condition.",
+        17: "Set up speech condition. No time supervision.",
+        18: "Set up speech condition. No charging.",
+        33: "Access barred",
+        34: "Transferred subscriber.",
+        35: "Busy subscriber.",
+        36: "Busy subscriber with callback protection.",
+        37: "Unallocated number.",
+        38: "Address incomplete.",
+        39: 'Call transfer protection, that is "follow me" not allowed to this subscriber.',
+        40: "Subscriber line out of order.",
+        41: "Intercepted subscriber.",
+        42: "Supervised by an operator. Trunk offering marked.",
+        43: "Rerouting to service centre.",
+        44: "Line lock out.",
+        45: "Send acceptance tone.",
+        46: "No answer/incompatible destination (used for ISDN).",
+        47: "Send refusal tone. Only used at subscriber services.",
+        51: "Digital path not provided.",
+        52: "Congestion without differentiation.",
+        53: "Time release.",
+        54: "Technical fault.",
+        55: "Congestion in group selection network.",
+        56: "Lack of devices.",
+        57: "Congestion in subscriber selection network.",
+        58: "Congestion in international network.",
+        59: "Congestion in national network.",
+        60: "Conditional congestion (Region option).",
+        61: "Route congestion.",
+        62: "Unpermitted traffic case.",
+        63: "No acknowledgement from mobile subscriber.",
+    }
+
+
 class FirstRadioChannelUsed(primitives.ByteEnum):
     """ASN.1 Formal Description
     FirstRadioChannelUsed ::= ENUMERATED
@@ -144,6 +328,46 @@ class FixedNetworkUserRate(primitives.ByteEnum):
         7: "fNUR56000bps",
         8: "fNUR64000bps",
         9: "fNURautobauding",
+    }
+
+
+class INMarkingOfMS(primitives.ByteEnum):
+    """ASN.1 Formal Description
+    INMarkingOfMS ::= ENUMERATED
+    (originatingINService                                 (1),
+    terminatingINService                                 (2),
+    originatingINCategoryKeyService                      (3),
+    terminatingINCategoryKeyService                      (4),
+    originatingCAMELService                              (5),
+    terminatingCAMELService                              (6),
+    originatingExtendedCAMELServiceWithINCapabilityIndicator
+    (7),
+    terminatingExtendedCAMELServiceWithINCapabilityIndicator
+    (8),
+    originatingExtendedCAMELServiceWithOriginatingINCategoryKey
+    (9),
+    terminatingExtendedCAMELServiceWithTerminatingINCategoryKey
+    (10),
+    subscriberDialledCAMELService                       (11),
+    subscriberDialledCAMELServiceAndOriginatingCAMELService
+    (12),
+    visitedTerminatingCAMELService                      (13))
+    """
+
+    VALUES = {
+        1: "originatingINService",
+        2: "terminatingINService",
+        3: "originatingINCategoryKeyService",
+        4: "terminatingINCategoryKeyService",
+        5: "originatingCAMELService",
+        6: "terminatingCAMELService",
+        7: "originatingExtendedCAMELServiceWithINCapabilityIndicator ",
+        8: "terminatingExtendedCAMELServiceWithINCapabilityIndicator",
+        9: "originatingExtendedCAMELServiceWithOriginatingINCategoryKey",
+        10: "terminatingExtendedCAMELServiceWithTerminatingINCategoryKey",
+        11: "subscriberDialledCAMELService",
+        12: "subscriberDialledCAMELServiceAndOriginatingCAMELService",
+        13: "visitedTerminatingCAMELService",
     }
 
 
@@ -198,6 +422,55 @@ class MessageTypeIndicator(primitives.ByteEnum):
     }
 
 
+class MobileUserClass1(primitives.ByteEnum):
+    """Mobile User Class 1
+
+      This parameter contains Mobile system supplementary
+      user type 1, obtained from Additional User Category
+      (AUC) parameter in ISUP.
+
+      It is used to indicate service related information
+      in the originating side of the call, for example
+      cellular telephone service.
+
+      The parameter is only applicable for WCDMA Japan.
+
+    ASN.1 Formal Description
+        MobileUserClass1 ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB                               LSB |
+        /---------------------------------------/
+        Additional Mobile Service Information Type 1,
+        service related information
+        00000000 Spare
+        00000001 Cellular Telephone Service
+        00000010 Maritime Telephone Service
+        00000011 Airplane Telephone Service
+        00000100 Paging Service
+        00000101 PHS service
+        00000110
+        to       Spare
+        11111111
+    """
+
+    VALUES = {
+        0: "Spare",
+        1: "Cellular Telephone Service",
+        2: "Maritime Telephone Service",
+        3: "Airplane Telephone Service",
+        4: "Paging Service",
+        5: "PHS service",
+    }
+
+    @property
+    def value(self):
+        number = self.octets[0]
+        return "Spare" if 6 <= number <= 255 else self.VALUES[number]
+
+
 class NumberOfChannels(primitives.ByteEnum):
     """ASN.1 Formal Description
     NumberOfChannels ::= ENUMERATED
@@ -231,6 +504,162 @@ class OptimalRoutingType(primitives.ByteEnum):
 
     VALUES = {
         0: "optimalRoutingAtLateCallForwarding",
+    }
+
+
+class OriginatedCode(primitives.ByteEnum):
+    """Originated Code
+
+      This parameter indicates from where the call is originated.
+      This field is output only for ISOCODE or PACKED
+      postprocessing purposes.
+
+      The parameter is not applicable for WCDMA Japan.
+
+    ASN.1 Formal Description
+        OriginatedCode ::= ENUMERATED
+        (callOriginatingFromOwnSubscriberInSSN             (0),
+        callOriginatingFromOwnSubscriberInGSN             (1),
+        callOriginatingFromIncomingTrunk                  (2),
+        callOriginatingFromSUSblock                       (3),
+        callOriginatingFromOMSblock                       (4),
+        testCallTowardsIL-OL-BL                           (5),
+        testCallWithIndividualSelectionOfB-Subscriber     (6),
+        testCallWithIndividualSelectionExceptB-Subscriber (7),
+        testCallWithSelectionInSpecifiedRoute             (8),
+        operator                                          (9))
+    """
+
+    VALUES = {
+        0: "callOriginatingFromOwnSubscriberInSSN",
+        1: "callOriginatingFromOwnSubscriberInGSN",
+        2: "callOriginatingFromIncomingTrunk",
+        3: "callOriginatingFromSUSblock",
+        4: "callOriginatingFromOMSblock",
+        5: "testCallTowardsIL-OL-BL",
+        6: "testCallWithIndividualSelectionOfB-Subscriber",
+        7: "testCallWithIndividualSelectionExceptB-Subscriber",
+        8: "testCallWithSelectionInSpecifiedRoute",
+        9: "operator",
+    }
+
+
+class OriginatingLineInformation(primitives.ByteEnum):
+    """Originating Location Number
+
+      This parameter contains information, that is,
+      Type of Number(TON) and Numbering Plan Indicator(NPI)
+      and the number to identify the location of the calling
+      subscriber.
+
+      In the case of an originating-Call Component, the
+      parameter contains the location number assigned to
+      the calling subscriber's cell, location area or
+      MSC/VLR service area.
+
+      In the case of a call-forwarding component, the
+      parameter contains the location number assigned to
+      the cell, location area or the MSC/VLR service area
+      of the forwarding subscriber or the location number
+      assigned for the GMSC service area.
+
+    ASN.1 Formal Description
+        OriginatingLineInformation ::= OCTET STRING (SIZE(1))
+        |   |   |   |   |   |   |   |   |
+        | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
+        |   |   |   |   |   |   |   |   |
+        /-------------------------------/
+        |MSB                         LSB|
+        /-------------------------------/
+        Note: The OCTET STRING is coded as an unsigned INTEGER.
+        Value        Meaning
+        _____        _______
+        H'00         Identified Line - no special treatment
+        H'02         Automatic Number Identification (ANI) failure
+        H'3D         Traffic originating from cellular
+        carrier over Type 1 connection to
+        Inter-exchange Carrier (IXC) or
+        International Exchange Carrier (INC).
+        Charge Number is the switch identity.
+        H'3E         Traffic originating from cellular
+        carrier over Type 2 connection to
+        IXC or INC.
+        Charge Number is the subscriber number
+        (callingPartyNumber or last
+        redirectingNumber).
+        H'3F         Traffic originating from cellular
+        carrier over Type 2 connection to
+        IXC or INC, roaming forwarding call.
+        Charge Number is the subscriber number
+        of called mobile subscriber.
+    """
+
+    VALUES = {
+        0: "Identified Line - no special treatment",
+        2: "Automatic Number Identification (ANI) failure",
+        61: "Traffic originating from cellular carrier over Type 1 connection to Inter-exchange Carrier (IXC) or International Exchange Carrier (INC).",
+        62: """Traffic originating from cellular
+                    carrier over Type 2 connection to
+                    IXC or INC.
+                    Charge Number is the subscriber number
+                    (callingPartyNumber or last
+                    redirectingNumber).""",
+        63: """Traffic originating from cellular
+                    carrier over Type 2 connection to
+                    IXC or INC, roaming forwarding call.
+                    Charge Number is the subscriber number
+                    of called mobile subscriber.""",
+    }
+
+
+class OutputForSubscriber(primitives.ByteEnum):
+    """Output for Subscriber
+
+      This parameter indicates if the ICI output was made
+      for the calling subscriber or called subscriber.
+
+      This parameter is available only in ICI records.
+    ASN.1 Formal Description
+        OutputForSubscriber ::= ENUMERATED
+        (callingParty           (0),
+        calledParty            (1),
+        callingAndCalledParty  (2))
+    """
+
+    VALUES = {
+        0: "callingParty",
+        1: "calledParty",
+        2: "callingAndCalledParty",
+    }
+
+
+class OutputType(primitives.ByteEnum):
+    """Output Type
+
+      This field is used internally for Adjunc Processor(AP)
+      output.
+
+    ASN.1 Formal Description
+        OutputType ::= ENUMERATED
+        (noOutput                                (0),
+        iCIoutputForCallingSubscriber           (1),
+        iCIOutputForCalledSubscriber            (2),
+        iCIOutputForCallingAndCalledSubscribers (3),
+        tTOutputOnly                            (4),
+        tTAndICIForCallingSubscriber            (5),
+        tTAndICIForCalledSubscriber             (6),
+        tTAndICIForCallingAndCalledSubscribers  (7))
+    """
+
+    VALUES = {
+        0: "noOutput",
+        1: "iCIoutputForCallingSubscriber",
+        2: "iCIOutputForCalledSubscriber",
+        3: "iCIOutputForCallingAndCalledSubscribers",
+        4: "tTOutputOnly",
+        5: "tTAndICIForCallingSubscriber",
+        6: "tTAndICIForCalledSubscriber",
+        7: "tTAndICIForCallingAndCalledSubscribers",
     }
 
 
@@ -439,6 +868,43 @@ class SubscriberState(primitives.ByteEnum):
     }
 
 
+class TariffSwitchInd(primitives.ByteEnum):
+    """ASN.1 Formal Description
+    TariffSwitchInd ::= ENUMERATED
+    (noTariffSwitch                    (0),
+    tariffSwitchAfterStartOfCharging  (2))
+    """
+
+    VALUES = {
+        0: "noTariffSwitch",
+        2: "tariffSwitchAfterStartOfCharging",
+    }
+
+
+class TrafficClass(primitives.ByteEnum):
+    """ASN.1 Formal Description
+    TrafficClass ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |                                       | octet 1
+    /---------------------------------------/
+    TrafficClass             Bits 8 7 6 5 4 3 2 1
+    Conversational Class          0 0 0 0 0 0 0 0
+    Streaming Class               0 0 0 0 0 0 0 1
+    Interactive Class             0 0 0 0 0 0 1 0
+    Background Class              0 0 0 0 0 0 1 1
+    """
+
+    VALUES = {
+        0: "Conversational Class",
+        1: "Streaming Class",
+        2: "Interactive Class",
+        3: "Background Class",
+    }
+
+
 class TransparencyIndicator(primitives.ByteEnum):
     """ASN.1 Formal Description
     TransparencyIndicator ::= ENUMERATED
@@ -607,6 +1073,58 @@ class UnsuccessfulPositioningDataReason(primitives.ByteEnum):
         0: "systemError",
         1: "userDeniedDueToPrivacyVerification",
     }
+
+
+class UserClass(primitives.ByteEnum):
+    """User Class
+
+      This parameter is mapped from the Additional Fixed
+      User Information in Additional User Category (AUC)
+      parameter in ISUP message IAM received from
+      the originating network.
+
+      User class specifies the type of phone used on
+      the originating side of the call from the fixed
+      network. Values can be set to for example
+      'train pay phone' or 'pink' (non-NTT payphone).
+
+      This parameter is used in connection with Type of
+      Calling Subscriber for the Flexible Charging function.
+
+      The parameter is only applicable for WCDMA Japan.
+
+    ASN.1 Formal Description
+        UserClass ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB                         |     LSB |
+        /---------------------------------------/
+        -- Bit 8-3 Spare
+        -- Bit 2-1 Additional Fixed User Information,
+        --         supplementary user type information
+        00 Spare
+        01 Train Payphone
+        10 Pink (non-NTT Payphone)
+        11 Spare
+    """
+
+    VALUES = {
+        0: "Spare",
+        1: "Train Payphone",
+        2: "Pink (non-NTT Payphone)",
+        3: "Spare",
+    }
+
+    @property
+    def value(self):
+        self.additional_info = self.VALUES[self.octets[0] & 3]
+        self.spare = self.octets[0] >> 2
+        return self.spare, self.additional_info
+
+    def __str__(self):
+        return f"Spare: {self.spare}, Additional Info: {self.additional_info}"
 
 
 class UserRate(primitives.ByteEnum):
