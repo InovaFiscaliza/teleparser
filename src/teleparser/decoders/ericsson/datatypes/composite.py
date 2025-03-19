@@ -5,8 +5,7 @@ It's organized here because it's just the boilerplate of the type name and its d
 from collections import namedtuple
 from functools import cached_property
 from . import primitives
-from .decorators import fixed_size_unsigned_int, fixed_size_digit_string
-
+from . import decorators
 
 Carrier = namedtuple("Carrier", ["name", "mcc", "mnc"])
 
@@ -145,7 +144,7 @@ class CalledPartyMNPInfo(primitives.AddressString):
     """
 
 
-@fixed_size_unsigned_int(3)
+@decorators.fixed_size_unsigned_int(3)
 class CallIDNumber(primitives.UnsignedInt):
     """Call Identification Number  (M)
 
@@ -342,7 +341,7 @@ class ChargingIndicator(primitives.OctetString):
                 return f"Unknown ({self.indicator})"
 
 
-@fixed_size_unsigned_int(1)
+@decorators.fixed_size_unsigned_int(1)
 class ChargingOrigin(primitives.UnsignedInt):
     """ASN.1 Formal Description
     ChargingOrigin ::= OCTET STRING (SIZE(1))
@@ -591,7 +590,33 @@ class EosInfo(primitives.ByteEnum):
     }
 
 
-@fixed_size_unsigned_int(2)
+@decorators.fixed_size_ia5_string(15)
+class ExchangeIdentity(primitives.Ia5String):
+    """Exchange Identity
+
+      This parameter contains the identity (name) of the
+      exchange where the output is initiated.
+
+    ASN.1 Formal Description
+        ExchangeIdentity ::= IA5STRING (SIZE(1..15))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        |  1st character                        | octet 1
+        /---------------------------------------/
+        .
+        .
+        .
+        /---------------------------------------/
+        |  14th character                       | octet 14
+        +---------------------------------------+
+        |  15th character                       | octet 15
+        /---------------------------------------/
+    """
+
+
+@decorators.fixed_size_unsigned_int(2)
 class FaultCode(primitives.UnsignedInt):
     """Fault Code
 
@@ -742,7 +767,7 @@ class INMarkingOfMS(primitives.ByteEnum):
     }
 
 
-@fixed_size_digit_string(2)
+@decorators.fixed_size_digit_string(2)
 class InternalCauseAndLoc(primitives.DigitString):
     """Internal Cause and Location
 
@@ -797,7 +822,7 @@ class LCSClientIdentity(primitives.AddressString):
     """
 
 
-@fixed_size_digit_string(1)
+@decorators.fixed_size_digit_string(1)
 class MiscellaneousInformation(primitives.DigitString):
     """ASN.1 Formal Description
     MiscellaneousInformation ::= OCTET STRING (SIZE(1))
@@ -938,7 +963,7 @@ class MSCNumber(primitives.AddressString):
     """
 
 
-@fixed_size_digit_string(5)
+@decorators.fixed_size_digit_string(5)
 class NetworkCallReference(primitives.DigitString):
     """Network Call Reference  (M)
 
@@ -994,7 +1019,7 @@ class NetworkProvidedCallingPartyNumber(primitives.AddressString):
     """
 
 
-@fixed_size_digit_string(3)
+@decorators.fixed_size_digit_string(3)
 class NumberOfMeterPulses(primitives.DigitString):
     """ASN.1 Formal Description
     NumberOfMeterPulses ::=  OCTET STRING (SIZE(3))
@@ -1205,7 +1230,7 @@ class OutputType(primitives.ByteEnum):
     }
 
 
-@fixed_size_unsigned_int(1)
+@decorators.fixed_size_unsigned_int(1)
 class PartialOutputRecNum(primitives.UnsignedInt):
     """Partial Output Record Number
 
@@ -1226,7 +1251,7 @@ class PartialOutputRecNum(primitives.UnsignedInt):
     """
 
 
-@fixed_size_unsigned_int(3)
+@decorators.fixed_size_unsigned_int(3)
 class RecordSequenceNumber(primitives.UnsignedInt):
     r"""Record Sequence Number  (M)
 
@@ -1252,7 +1277,7 @@ class RecordSequenceNumber(primitives.UnsignedInt):
     Value range: H'0 - H'FFFFFF"""
 
 
-@fixed_size_unsigned_int(1)
+@decorators.fixed_size_unsigned_int(1)
 class RedirectionCounter(primitives.UnsignedInt):
     """ASN.1 Formal Description
     RedirectionCounter ::= OCTET STRING (SIZE(1))
@@ -1322,6 +1347,27 @@ class RerountingIndicator(primitives.Bool):
     """
 
 
+@decorators.fixed_size_ia5_string(7)
+class Route(primitives.Ia5String):
+    """ASN.1 Formal Description
+    Route ::= IA5STRING (SIZE(1..7))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |            1st character              | octet 1
+    /---------------------------------------/
+    .
+    .
+    .
+    /---------------------------------------/
+    |            6th character              | octet 6
+    +---------------------------------------+
+    |            7th character              | octet 7
+    /---------------------------------------/
+    """
+
+
 class ServiceCentreAddress(primitives.AddressString):
     """Service Centre Address  (M)
 
@@ -1369,7 +1415,7 @@ class SubscriptionType(primitives.UnsignedInt):
     """
 
 
-@fixed_size_unsigned_int(2)
+@decorators.fixed_size_unsigned_int(2)
 class SwitchIdentity(primitives.UnsignedInt):
     """Switch Identity
 
@@ -1464,7 +1510,7 @@ class TAC(primitives.OctetString):
         return result
 
 
-@fixed_size_unsigned_int(1)
+@decorators.fixed_size_unsigned_int(1)
 class TypeOfCallingSubscriber(primitives.UnsignedInt):
     """Type of Calling Subscriber
 
@@ -1488,7 +1534,7 @@ class TargetMSISDN(primitives.AddressString):
     positioning is performed."""
 
 
-@fixed_size_digit_string(2)
+@decorators.fixed_size_digit_string(2)
 class TariffClass(primitives.DigitString):
     """ASN.1 Formal Description
     TariffClass ::= OCTET STRING (SIZE(2))
