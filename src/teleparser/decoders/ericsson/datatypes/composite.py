@@ -170,6 +170,66 @@ class CAMELSMSAddress(primitives.AddressString):
     """
 
 
+class CarrierInfo(primitives.OctetString):
+    """ASN.1 Formal Description
+    CarrierInfo ::= OCTET STRING (SIZE(2..3))
+    The digits for ID Code are encoded as a TBCD-STRING.
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | 2nd ID Code digit | 1st ID Code digit | octet 1 of TBCD
+    +-------------------+-------------------+
+    | 4th ID Code digit | 3rd ID Code digit | octet 2 of TBCD
+    +-------------------+-------------------+
+    |Entry POI-Hierarchy| Exit POI-Hierarchy| octet 3 (Note 2)
+    /---------------------------------------/
+    Acceptable digits are between 0 and 9.
+    Note 1: OLEC and TLEC information contains always Carrier
+    identification code.
+    Note 2: POI-Hierarchy information is optional.
+    Exit/Entry POI Hierarchy
+    0000  No Indication
+    0001  Hierarchy level 1
+    0010  Hierarchy level 2
+    0011
+    to    Spare
+    1111
+    """
+
+    def __init__(self, octets):
+        super().__init__(octets, lower=2, upper=3)
+        self._parse_carrier_identification_code()
+        self._parse_entry_poi_hierarchy()
+        self._parse_exit_poi_hierarchy()
+
+    VALUES = {
+        0: "No Indication",
+        1: "Hierarchy level 1",
+        2: "Hierarchy level 2",
+    }
+
+    def _parse_carrier_identification_code(self):
+        """Parse Carrier Identification Code from octets 2 and 3"""
+        self.carrier_identification_code = primitives.TBCDString(self.digits[:2]).value
+
+    def _parse_entry_poi_hierarchy(self):
+        """Parse Entry POI Hierarchy from option octet 3"""
+        entry_poi_hierarchy = None
+        if self.size == 3:
+            digit = self.digits[2] >> 4
+            entry_poi_hierarchy = "Spare" if digit > 2 else self.VALUES[digit]
+        self.entry_poi_hierarchy = entry_poi_hierarchy
+
+    def _parse_exit_poi_hierarchy(self):
+        """Parse Exit POI Hierarchy from optional octets 3"""
+        exit_poi_hierarchy = None
+        if self.size == 3:
+            digit = self.digits[2] & 0x0F
+            exit_poi_hierarchy = "Spare" if digit > 2 else self.VALUES[digit]
+        self.exit_poi_hierarchy = exit_poi_hierarchy
+
+
 class ChargeAreaCode(primitives.DigitString):
     r"""ChargeAreaCode ::= OCTET STRING (SIZE(3))
  
