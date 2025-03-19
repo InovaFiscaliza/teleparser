@@ -920,6 +920,27 @@ class OutputForSubscriber(primitives.ByteEnum):
     }
 
 
+@fixed_size_unsigned_int(1)
+class PartialOutputRecNum(primitives.UnsignedInt):
+    """Partial Output Record Number
+
+      This parameter contains a consecutive number which is
+      incremented at every partial output for a call.
+
+      It appears only if partial output has taken place.
+    ASN.1 Formal Description
+        PartialOutputRecNum ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB                              LSB  |
+        /---------------------------------------/
+        Note: OCTET STRING is coded as an unsigned integer.
+        Value range: H'1 - H'FF
+    """
+
+
 @fixed_size_unsigned_int(3)
 class RecordSequenceNumber(primitives.UnsignedInt):
     r"""Record Sequence Number  (M)

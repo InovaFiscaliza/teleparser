@@ -2295,21 +2295,6 @@ class OriginatingLineInformation(primitives.AddressString):
     """
 
 
-class OutputForSubscriber(primitives.ByteEnum):
-    """ASN.1 Formal Description
-    OutputForSubscriber ::= ENUMERATED
-    (callingParty           (0),
-    calledParty            (1),
-    callingAndCalledParty  (2))
-    """
-
-    VALUES = {
-        0: "callingParty",
-        1: "calledParty",
-        2: "callingAndCalledParty",
-    }
-
-
 class OutputType(primitives.ByteEnum):
     """ASN.1 Formal Description
     OutputType ::= ENUMERATED
@@ -2333,20 +2318,6 @@ class OutputType(primitives.ByteEnum):
         6: "tTAndICIForCalledSubscriber",
         7: "tTAndICIForCallingAndCalledSubscribers",
     }
-
-
-class PartialOutputRecNum(primitives.AddressString):
-    """ASN.1 Formal Description
-    PartialOutputRecNum ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                              LSB  |
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value range: H'1 - H'FF
-    """
 
 
 class PositioningDelivery(primitives.AddressString):
@@ -2535,23 +2506,6 @@ class RANAPCauseCode(primitives.AddressString):
     Radio Access Network Application Part,
     RANAP, Message Formats And Coding" in chapter
     "Information Elements".
-    """
-
-
-class RedirectionCounter(primitives.AddressString):
-    """ASN.1 Formal Description
-    RedirectionCounter ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                              LSB  |
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Values     Meaning
-    0 - 10     Number of redirections
-    Note: The maximum value is set by an
-    Exchange Parameter.
     """
 
 
