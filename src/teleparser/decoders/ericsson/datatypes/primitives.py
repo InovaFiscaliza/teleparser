@@ -120,6 +120,17 @@ class CallPosition:
         return self.VALUES[int.from_bytes(self.octets, "big")]
 
 
+class Ia5String(OctetString):
+    """ASN.1 IA5String implementation for OCTET STRING (SIZE(1..n))"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @property
+    def value(self):
+        return "".join(chr(byte) for byte in self.octets)
+
+
 class TBCDString(OctetString):
     """TBCDString ::= OCTET STRING (SIZE(1..n))
 
