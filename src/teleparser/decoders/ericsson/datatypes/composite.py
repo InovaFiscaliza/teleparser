@@ -899,6 +899,27 @@ class OriginatingLocationNumber(primitives.AddressString):
     assigned for the GMSC service area."""
 
 
+class OutputForSubscriber(primitives.ByteEnum):
+    """Output for Subscriber
+
+      This parameter indicates if the ICI output was made
+      for the calling subscriber or called subscriber.
+
+      This parameter is available only in ICI records.
+    ASN.1 Formal Description
+        OutputForSubscriber ::= ENUMERATED
+        (callingParty           (0),
+        calledParty            (1),
+        callingAndCalledParty  (2))
+    """
+
+    VALUES = {
+        0: "callingParty",
+        1: "calledParty",
+        2: "callingAndCalledParty",
+    }
+
+
 @fixed_size_unsigned_int(3)
 class RecordSequenceNumber(primitives.UnsignedInt):
     r"""Record Sequence Number  (M)
