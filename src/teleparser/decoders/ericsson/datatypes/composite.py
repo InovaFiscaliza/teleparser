@@ -1077,6 +1077,31 @@ class ServiceKey(primitives.DigitString):
         super().__init__(octets, size=4)
 
 
+class SubscriptionType(primitives.UnsignedInt):
+    """Subscription Type
+
+      This parameter indicates the subscription type used for
+      mobile subscriber. This parameter enables grouping
+      of mobile subscribers independent of their numbers.
+
+      The parameter values are defined by operator. The value
+      '0' is output if the feature 'Support for Subscription
+      Type Dependent Analysis' is not active in the (G)MSC.
+
+    ASN.1 Formal Description
+        SubscriptionType ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        |                                       |
+        /---------------------------------------/
+        Value range: H'0 - H'7F
+        Value H'0 : No subscription type
+        Value H'1 - H'7F : Subscription type 1 - 127
+    """
+
+
 class TAC(primitives.OctetString):
     """Traffic Activity Code (TAC)  (M)
 

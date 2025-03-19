@@ -2826,21 +2826,6 @@ class SubscriberState(primitives.ByteEnum):
     }
 
 
-class SubscriptionType(primitives.AddressString):
-    """ASN.1 Formal Description
-    SubscriptionType ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                                       |
-    /---------------------------------------/
-    Value range: H'0 - H'7F
-    Value H'0 : No subscription type
-    Value H'1 - H'7F : Subscription type 1 - 127
-    """
-
-
 class SwitchIdentity(primitives.AddressString):
     """ASN.1 Formal Description
     SwitchIdentity ::= OCTET STRING (SIZE(2))
