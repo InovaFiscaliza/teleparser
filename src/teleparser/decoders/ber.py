@@ -100,12 +100,15 @@ class BerDecoder:
             tlv.children = []
             value_stream = BytesIO(value)
             while value_stream.tell() < length:
-                if child := self.decode_tlv(
-                    value_stream, offset, depth + 1, tlv.schema
-                ):
-                    tlv.children.append(child)
-                    offset += child.length
-
+                try:
+                    if child := self.decode_tlv(
+                        value_stream, offset, depth + 1, tlv.schema
+                    ):
+                        tlv.children.append(child)
+                        offset += child.length
+                except KeyError as e:
+                    print(e)
+                    break
         return tlv
 
     @staticmethod

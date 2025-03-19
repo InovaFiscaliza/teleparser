@@ -35,22 +35,22 @@ Transit = {
     28: {"name": "internalCauseAndLoc", "type": dt.InternalCauseAndLoc},
     29: {"name": "originalCalledNumber", "type": dt.AddressString},
     30: {"name": "redirectingNumber", "type": dt.AddressString},
-    # 31: {"name": "redirectionCounter", "type": RedirectionCounter},
+    31: {"name": "redirectionCounter", "type": dt.RedirectionCounter},
     32: {"name": "redirectingDropBackNumber", "type": dt.AddressString},
     33: {"name": "redirectingDropBack", "type": dt.Bool},  # NULL type
     34: {"name": "restartDuringCall", "type": dt.Bool},  # NULL type
     35: {"name": "restartDuringOutputIndicator", "type": dt.Bool},  # NULL type
     36: {"name": "iCIOrdered", "type": dt.Bool},  # NULL type
-    # 37: {"name": "outputForSubscriber", "type": OutputForSubscriber},
+    37: {"name": "outputForSubscriber", "type": dt.OutputForSubscriber},
     38: {"name": "lastPartialOutput", "type": dt.Bool},  # NULL type
-    # 39: {"name": "partialOutputRecNum", "type": PartialOutputRecNum},
+    39: {"name": "partialOutputRecNum", "type": dt.PartialOutputRecNum},
     40: {"name": "relatedCallNumber", "type": dt.CallIDNumber},
-    # 41: {"name": "faultCode", "type": FaultCode},
-    # 42: {"name": "subscriptionType", "type": SubscriptionType},
+    41: {"name": "faultCode", "type": dt.FaultCode},
+    42: {"name": "subscriptionType", "type": dt.SubscriptionType},
     43: {"name": "incompleteCallDataIndicator", "type": dt.Bool},  # NULL type
     44: {"name": "incompleteCompositeCDRIndicator", "type": dt.Bool},  # NULL type
-    # 45: {"name": "switchIdentity", "type": SwitchIdentity},
-    # 46: {"name": "networkCallReference", "type": NetworkCallReference},
+    45: {"name": "switchIdentity", "type": dt.SwitchIdentity},
+    46: {"name": "networkCallReference", "type": dt.NetworkCallReference},
     47: {"name": "disconnectionDueToSystemRecovery", "type": dt.Bool},  # NULL type
     48: {"name": "forloppDuringOutputIndicator", "type": dt.Bool},  # NULL type
     49: {"name": "forloppReleaseDuringCall", "type": dt.Bool},  # NULL type
@@ -75,7 +75,7 @@ Transit = {
     # 68: {"name": "carrierInformationBackward", "type": TransitCarrierInfo},
     # 69: {"name": "carrierInformationForward", "type": TransitCarrierInfo},
     # 70: {"name": "chargeInformation", "type": ChargeInformation},
-    # 71: {"name": "disconnectionDate", "type": dt.Date},
+    71: {"name": "disconnectionDate", "type": dt.Date},
     72: {"name": "disconnectionTime", "type": dt.Time},
     73: {"name": "entryPOICA", "type": dt.ChargeAreaCode},
     74: {"name": "exitPOICA", "type": dt.ChargeAreaCode},
@@ -99,8 +99,8 @@ Transit = {
     # 92: {"name": "originatingLineInformation", "type": OriginatingLineInformation},
     # 93: {"name": "multimediaInformation", "type": MultimediaInformation},
     # 102: {"name": "outputType", "type": OutputType},
-    # 24: {"name": "originatedCode", "type": OriginatedCode},
-    # 121: {"name": "reroutingIndicator", "type": ReroutingIndicator},
+    24: {"name": "originatedCode", "type": dt.OriginatedCode},
+    121: {"name": "reroutingIndicator", "type": dt.RerountingIndicator},
 }
 
 MSOriginating = {}
