@@ -1244,7 +1244,6 @@ class FixedNetworkUserRate(primitives.ByteEnum):
         7: "fNUR56000bps",
         8: "fNUR64000bps",
         9: "fNURautobauding",
-        9: "fNURautobauding",
     }
 
 
@@ -2037,29 +2036,6 @@ class MessageTypeIndicator(primitives.ByteEnum):
     }
 
 
-class MobileUserClass1(primitives.AddressString):
-    """ASN.1 Formal Description
-    MobileUserClass1 ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                               LSB |
-    /---------------------------------------/
-    Additional Mobile Service Information Type 1,
-    service related information
-    00000000 Spare
-    00000001 Cellular Telephone Service
-    00000010 Maritime Telephone Service
-    00000011 Airplane Telephone Service
-    00000100 Paging Service
-    00000101 PHS service
-    00000110
-    to       Spare
-    11111111
-    """
-
-
 class MobileUserClass2(primitives.AddressString):
     """ASN.1 Formal Description
     MobileUserClass2 ::= OCTET STRING (SIZE(1))
@@ -2187,39 +2163,6 @@ class OptimalRoutingType(primitives.ByteEnum):
     VALUES = {
         0: "optimalRoutingAtLateCallForwarding",
     }
-
-
-class OriginatingLineInformation(primitives.AddressString):
-    """ASN.1 Formal Description
-    OriginatingLineInformation ::= OCTET STRING (SIZE(1))
-    |   |   |   |   |   |   |   |   |
-    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
-    |   |   |   |   |   |   |   |   |
-    /-------------------------------/
-    |MSB                         LSB|
-    /-------------------------------/
-    Note: The OCTET STRING is coded as an unsigned INTEGER.
-    Value        Meaning
-    _____        _______
-    H'00         Identified Line - no special treatment
-    H'02         Automatic Number Identification (ANI) failure
-    H'3D         Traffic originating from cellular
-    carrier over Type 1 connection to
-    Inter-exchange Carrier (IXC) or
-    International Exchange Carrier (INC).
-    Charge Number is the switch identity.
-    H'3E         Traffic originating from cellular
-    carrier over Type 2 connection to
-    IXC or INC.
-    Charge Number is the subscriber number
-    (callingPartyNumber or last
-    redirectingNumber).
-    H'3F         Traffic originating from cellular
-    carrier over Type 2 connection to
-    IXC or INC, roaming forwarding call.
-    Charge Number is the subscriber number
-    of called mobile subscriber.
-    """
 
 
 class PositioningDelivery(primitives.AddressString):

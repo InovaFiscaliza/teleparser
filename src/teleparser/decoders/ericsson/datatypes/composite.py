@@ -802,6 +802,55 @@ class MobileStationRoamingNumber(primitives.AddressString):
     """
 
 
+class MobileUserClass1(primitives.ByteEnum):
+    """Mobile User Class 1
+
+      This parameter contains Mobile system supplementary
+      user type 1, obtained from Additional User Category
+      (AUC) parameter in ISUP.
+
+      It is used to indicate service related information
+      in the originating side of the call, for example
+      cellular telephone service.
+
+      The parameter is only applicable for WCDMA Japan.
+
+    ASN.1 Formal Description
+        MobileUserClass1 ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB                               LSB |
+        /---------------------------------------/
+        Additional Mobile Service Information Type 1,
+        service related information
+        00000000 Spare
+        00000001 Cellular Telephone Service
+        00000010 Maritime Telephone Service
+        00000011 Airplane Telephone Service
+        00000100 Paging Service
+        00000101 PHS service
+        00000110
+        to       Spare
+        11111111
+    """
+
+    VALUES = {
+        0: "Spare",
+        1: "Cellular Telephone Service",
+        2: "Maritime Telephone Service",
+        3: "Airplane Telephone Service",
+        4: "Paging Service",
+        5: "PHS service",
+    }
+
+    @property
+    def value(self):
+        number = self.octets[0]
+        return "Spare" if 6 <= number <= 255 else self.VALUES[number]
+
+
 class MSCAddress(primitives.AddressString):
     """MSC Address
 
@@ -989,6 +1038,74 @@ class OriginatedCode(primitives.ByteEnum):
         7: "testCallWithIndividualSelectionExceptB-Subscriber",
         8: "testCallWithSelectionInSpecifiedRoute",
         9: "operator",
+    }
+
+
+class OriginatingLineInformation(primitives.ByteEnum):
+    """Originating Location Number
+
+      This parameter contains information, that is,
+      Type of Number(TON) and Numbering Plan Indicator(NPI)
+      and the number to identify the location of the calling
+      subscriber.
+
+      In the case of an originating-Call Component, the
+      parameter contains the location number assigned to
+      the calling subscriber's cell, location area or
+      MSC/VLR service area.
+
+      In the case of a call-forwarding component, the
+      parameter contains the location number assigned to
+      the cell, location area or the MSC/VLR service area
+      of the forwarding subscriber or the location number
+      assigned for the GMSC service area.
+
+    ASN.1 Formal Description
+        OriginatingLineInformation ::= OCTET STRING (SIZE(1))
+        |   |   |   |   |   |   |   |   |
+        | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
+        |   |   |   |   |   |   |   |   |
+        /-------------------------------/
+        |MSB                         LSB|
+        /-------------------------------/
+        Note: The OCTET STRING is coded as an unsigned INTEGER.
+        Value        Meaning
+        _____        _______
+        H'00         Identified Line - no special treatment
+        H'02         Automatic Number Identification (ANI) failure
+        H'3D         Traffic originating from cellular
+        carrier over Type 1 connection to
+        Inter-exchange Carrier (IXC) or
+        International Exchange Carrier (INC).
+        Charge Number is the switch identity.
+        H'3E         Traffic originating from cellular
+        carrier over Type 2 connection to
+        IXC or INC.
+        Charge Number is the subscriber number
+        (callingPartyNumber or last
+        redirectingNumber).
+        H'3F         Traffic originating from cellular
+        carrier over Type 2 connection to
+        IXC or INC, roaming forwarding call.
+        Charge Number is the subscriber number
+        of called mobile subscriber.
+    """
+
+    VALUES = {
+        0: "Identified Line - no special treatment",
+        2: "Automatic Number Identification (ANI) failure",
+        61: "Traffic originating from cellular carrier over Type 1 connection to Inter-exchange Carrier (IXC) or International Exchange Carrier (INC).",
+        62: """Traffic originating from cellular
+                    carrier over Type 2 connection to
+                    IXC or INC.
+                    Charge Number is the subscriber number
+                    (callingPartyNumber or last
+                    redirectingNumber).""",
+        63: """Traffic originating from cellular
+                    carrier over Type 2 connection to
+                    IXC or INC, roaming forwarding call.
+                    Charge Number is the subscriber number
+                    of called mobile subscriber.""",
     }
 
 
