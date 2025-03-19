@@ -864,6 +864,53 @@ class MSCNumber(primitives.AddressString):
     """
 
 
+@fixed_size_digit_string(5)
+class NetworkCallReference(primitives.DigitString):
+    """Network Call Reference  (M)
+
+      This parameter provides a mechanism for the post-
+      processing system to link together different call
+      data records produced for a call or, when Multi Party
+      Supplementary Service is invoked, several related calls
+      within a node. As an option, Call Data Records produced
+      in different nodes for the same call can contain the same
+      Network Call Reference (NCR), if the signalling transfers
+      the values between different nodes.
+
+    ASN.1 Formal Description
+        NetworkCallReference ::= OCTET STRING (SIZE(5))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB       SEQUENCE NUMBER             |  octet 1
+        +---------------------------------------+
+        |           SEQUENCE NUMBER             |  octet 2
+        +---------------------------------------+
+        |           SEQUENCE NUMBER         LSB |  octet 3
+        +---------------------------------------+
+        | MSB       SWITCH IDENTITY             |  octet 4
+        +---------------------------------------+
+        |           SWITCH IDENTITY         LSB |  octet 5
+        /---------------------------------------/
+        Note: OCTET STRING is coded internally as an
+        unsigned integer.
+        -   Octet 1-3 Sequence number
+        -   Octet 4-5 Switch identity
+        Value range of Sequence number: H'0 - H'FFFFFF
+        Value range of Switch identity: H'1 - H'FFFF
+    """
+
+    @property
+    def value(self):
+        self.sequence_number = int.from_bytes(self.octets[:3], "big")
+        self.switch_identity = int.from_bytes(self.octets[3:], "big")
+        return self.sequence_number, self.switch_identity
+
+    def __str__(self):
+        return f"{self.sequence_number:06d}-{self.switch_identity:04d}"
+
+
 class NetworkProvidedCallingPartyNumber(primitives.AddressString):
     """Network Provided Calling Party Number
 

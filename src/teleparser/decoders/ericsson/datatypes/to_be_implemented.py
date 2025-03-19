@@ -2104,32 +2104,6 @@ class MSNB:
     """
 
 
-class NetworkCallReference(primitives.AddressString):
-    """ASN.1 Formal Description
-    NetworkCallReference ::= OCTET STRING (SIZE(5))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB       SEQUENCE NUMBER             |  octet 1
-    +---------------------------------------+
-    |           SEQUENCE NUMBER             |  octet 2
-    +---------------------------------------+
-    |           SEQUENCE NUMBER         LSB |  octet 3
-    +---------------------------------------+
-    | MSB       SWITCH IDENTITY             |  octet 4
-    +---------------------------------------+
-    |           SWITCH IDENTITY         LSB |  octet 5
-    /---------------------------------------/
-    Note: OCTET STRING is coded internally as an
-    unsigned integer.
-    -   Octet 1-3 Sequence number
-    -   Octet 4-5 Switch identity
-    Value range of Sequence number: H'0 - H'FFFFFF
-    Value range of Switch identity: H'1 - H'FFFF
-    """
-
-
 class NumberOfChannels(primitives.ByteEnum):
     """ASN.1 Formal Description
     NumberOfChannels ::= ENUMERATED
