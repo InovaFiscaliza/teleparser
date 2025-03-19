@@ -3,15 +3,7 @@
 from functools import cached_property
 from dataclasses import dataclass
 from . import exceptions
-
-
-class ByteEnum:
-    def __init__(self, byte):
-        self.byte = byte
-
-    @property
-    def value(self):
-        return self.VALUES[int.from_bytes(self.byte, "big")]
+from .decorators import fixed_size_digit_string
 
 
 class OctetString:
@@ -51,6 +43,16 @@ class DigitString(OctetString):
     def value(self) -> str:
         """Returns the n digits as a string"""
         return "".join(str(d) for d in self.digits)
+
+
+@fixed_size_digit_string(1)
+class ByteEnum(DigitString):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @property
+    def value(self):
+        return self.VALUES[int.from_bytes(self.octets, "big")]
 
 
 class AddressString(OctetString):
