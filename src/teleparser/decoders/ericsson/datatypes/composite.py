@@ -901,10 +901,45 @@ class OriginatingLocationNumber(primitives.AddressString):
 
 @fixed_size_unsigned_int(3)
 class RecordSequenceNumber(primitives.UnsignedInt):
-    """Record Sequence Number  (M)
+    r"""Record Sequence Number  (M)
 
     This parameter contains a consecutive number for each
     Call Data Record generated and output.
+    ASN.1 Formal Description
+
+    RecordSequenceNumber ::= OCTET STRING (SIZE(3))
+
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------\
+    | MSB                                   | octet 1
+    +---------------------------------------+
+    |                                       | octet 2
+    +---------------------------------------+
+    |                                  LSB  | octet 3
+    \---------------------------------------/
+
+    Note: OCTET STRING is coded as an unsigned integer.
+
+    Value range: H'0 - H'FFFFFF"""
+
+
+@fixed_size_unsigned_int(1)
+class RedirectionCounter(primitives.UnsignedInt):
+    """ASN.1 Formal Description
+    RedirectionCounter ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                              LSB  |
+    /---------------------------------------/
+    Note: OCTET STRING is coded as an unsigned integer.
+    Values     Meaning
+    0 - 10     Number of redirections
+    Note: The maximum value is set by an
+    Exchange Parameter.
     """
 
 
