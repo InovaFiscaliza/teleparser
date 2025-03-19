@@ -1043,21 +1043,6 @@ class DeliveryOfErroneousSDU(primitives.ByteEnum):
     }
 
 
-class DisconnectingParty(primitives.ByteEnum):
-    """ASN.1 Formal Description
-    DisconnectingParty ::= ENUMERATED
-    (callingPartyRelease          (0),
-    calledPartyRelease           (1),
-    networkRelease               (2))
-    """
-
-    VALUES = {
-        0: "callingPartyRelease",
-        1: "calledPartyRelease",
-        2: "networkRelease",
-    }
-
-
 class Distributed(primitives.AddressString):
     """ASN.1 Formal Description
     Distributed ::=  OCTET STRING (SIZE(4))

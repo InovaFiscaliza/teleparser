@@ -77,7 +77,6 @@ class BerDecoder:
         depth: int = 0,
         schema: dict = None,
     ) -> Optional[TlvVozEricsson]:
-        start_offset = offset
         if (tag_bytes := self._read_tag(stream)) is None:
             return None
 

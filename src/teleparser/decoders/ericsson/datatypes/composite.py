@@ -455,6 +455,31 @@ class Date(primitives.OctetString):
             return f"{self.year:02d}-{self.month:02d}-{self.day:02d}"
 
 
+class DisconnectingParty(primitives.ByteEnum):
+    """Disconnecting Party
+
+      This parameter indicates whether the call was disconnected
+      due to calling party termination, called party termination
+      or 'Network termination'. 'Network termination' covers
+      everything that is not covered by calling party termination
+      or called party termination.
+
+      This parameter is not output in case of partial output.
+
+    ASN.1 Formal Description
+        DisconnectingParty ::= ENUMERATED
+        (callingPartyRelease          (0),
+        calledPartyRelease           (1),
+        networkRelease               (2))
+    """
+
+    VALUES = {
+        0: "callingPartyRelease",
+        1: "calledPartyRelease",
+        2: "networkRelease",
+    }
+
+
 class EosInfo(primitives.ByteEnum):
     """ASN.1 Formal Description
     EosInfo ::= OCTET STRING (SIZE(1))
