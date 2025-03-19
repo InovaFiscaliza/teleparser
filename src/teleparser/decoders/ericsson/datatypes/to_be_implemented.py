@@ -2826,23 +2826,6 @@ class SubscriberState(primitives.ByteEnum):
     }
 
 
-class SwitchIdentity(primitives.AddressString):
-    """ASN.1 Formal Description
-    SwitchIdentity ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   |   octet 1
-    +---------------------------------------|
-    |                                   LSB |   octet 2
-    /---------------------------------------/
-    Note: OCTET STRING is coded internally as
-    an unsigned integer.
-    Value range: H'1 - H'FFFF
-    """
-
-
 class TargetRNCid(primitives.AddressString):
     """ASN.1 Formal Description
     TargetRNCid ::= OCTET STRING (SIZE(7))

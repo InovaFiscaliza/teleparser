@@ -1102,6 +1102,36 @@ class SubscriptionType(primitives.UnsignedInt):
     """
 
 
+@fixed_size_unsigned_int(2)
+class SwitchIdentity(primitives.UnsignedInt):
+    """Switch Identity
+
+      This parameter contains the identification
+      number of the exchange where the output originated.
+
+      This parameter is part of the Network Call Reference
+      (NCR). Switch Identity in NCR identifies the exchange
+      where the NCR has been generated. Thus, this parameter
+      can be used to determine whether the own exchange
+      generated the NCR or the NCR was received from the
+      incoming network.
+
+    ASN.1 Formal Description
+        SwitchIdentity ::= OCTET STRING (SIZE(2))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB                                   |   octet 1
+        +---------------------------------------|
+        |                                   LSB |   octet 2
+        /---------------------------------------/
+        Note: OCTET STRING is coded internally as
+        an unsigned integer.
+        Value range: H'1 - H'FFFF
+    """
+
+
 class TAC(primitives.OctetString):
     """Traffic Activity Code (TAC)  (M)
 
