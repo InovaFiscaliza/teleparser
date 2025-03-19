@@ -2222,31 +2222,6 @@ class OriginatingLineInformation(primitives.AddressString):
     """
 
 
-class OutputType(primitives.ByteEnum):
-    """ASN.1 Formal Description
-    OutputType ::= ENUMERATED
-    (noOutput                                (0),
-    iCIoutputForCallingSubscriber           (1),
-    iCIOutputForCalledSubscriber            (2),
-    iCIOutputForCallingAndCalledSubscribers (3),
-    tTOutputOnly                            (4),
-    tTAndICIForCallingSubscriber            (5),
-    tTAndICIForCalledSubscriber             (6),
-    tTAndICIForCallingAndCalledSubscribers  (7))
-    """
-
-    VALUES = {
-        0: "noOutput",
-        1: "iCIoutputForCallingSubscriber",
-        2: "iCIOutputForCalledSubscriber",
-        3: "iCIOutputForCallingAndCalledSubscribers",
-        4: "tTOutputOnly",
-        5: "tTAndICIForCallingSubscriber",
-        6: "tTAndICIForCalledSubscriber",
-        7: "tTAndICIForCallingAndCalledSubscribers",
-    }
-
-
 class PositioningDelivery(primitives.AddressString):
     """ASN.1 Formal Description
     PositioningDelivery ::= OCTET STRING (SIZE(1))

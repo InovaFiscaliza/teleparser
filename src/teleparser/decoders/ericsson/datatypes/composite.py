@@ -1033,6 +1033,36 @@ class OutputForSubscriber(primitives.ByteEnum):
     }
 
 
+class OutputType(primitives.ByteEnum):
+    """Output Type
+
+      This field is used internally for Adjunc Processor(AP)
+      output.
+
+    ASN.1 Formal Description
+        OutputType ::= ENUMERATED
+        (noOutput                                (0),
+        iCIoutputForCallingSubscriber           (1),
+        iCIOutputForCalledSubscriber            (2),
+        iCIOutputForCallingAndCalledSubscribers (3),
+        tTOutputOnly                            (4),
+        tTAndICIForCallingSubscriber            (5),
+        tTAndICIForCalledSubscriber             (6),
+        tTAndICIForCallingAndCalledSubscribers  (7))
+    """
+
+    VALUES = {
+        0: "noOutput",
+        1: "iCIoutputForCallingSubscriber",
+        2: "iCIOutputForCalledSubscriber",
+        3: "iCIOutputForCallingAndCalledSubscribers",
+        4: "tTOutputOnly",
+        5: "tTAndICIForCallingSubscriber",
+        6: "tTAndICIForCalledSubscriber",
+        7: "tTAndICIForCallingAndCalledSubscribers",
+    }
+
+
 @fixed_size_unsigned_int(1)
 class PartialOutputRecNum(primitives.UnsignedInt):
     """Partial Output Record Number
