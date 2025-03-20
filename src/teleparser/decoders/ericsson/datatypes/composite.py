@@ -297,6 +297,30 @@ class ChargedCallingPartyNumber(primitives.AddressString):
     The parameter is not applicable for WCDMA Japan."""
 
 
+@primitives.fixed_size_digit_string(2)
+class ChargingCase(primitives.DigitString):
+    """Charging Case  (M)
+
+      This parameter contains the charging case which is
+      defined for the call and is used in charging analysis
+      for this call.
+
+    ASN.1 Formal Description
+        ChargingCase ::= OCTET STRING (SIZE(2))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB                                   |  octet 1
+        +---------------------------------------+
+        |                                    LSB|  octet 2
+        /---------------------------------------/
+        Note: The OCTET STRING is coded as an unsigned integer.
+        Values vary according to operator's definition.
+        Value range: H'0 - H'0FFF or value H'FFFF
+    """
+
+
 class ChargingIndicator(primitives.OctetString):
     r"""Charging Indicator
     
