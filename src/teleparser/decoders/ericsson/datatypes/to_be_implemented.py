@@ -184,12 +184,6 @@ class CAMELTDPData:
     """
 
 
-class CarrierIdentificationCode:
-    """ASN.1 Formal Description
-    CarrierIdentificationCode ::= TBCDString (SIZE(1..3))
-    """
-
-
 class CarrierInformation(primitives.AddressString):
     """ASN.1 Formal Description
     CarrierInformation ::= OCTET STRING (SIZE(1))

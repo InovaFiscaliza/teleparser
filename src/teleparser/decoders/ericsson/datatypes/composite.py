@@ -170,6 +170,23 @@ class CAMELSMSAddress(primitives.AddressString):
     """
 
 
+class CarrierIdentificationCode(primitives.TBCDString):
+    """Carrier Identification Code
+
+    This parameter identifies which interexchange carrier
+    was used for the Call Component.
+
+    This parameter is present only when an interexchange
+    carrier was used.
+
+      ASN.1 Formal Description
+      CarrierIdentificationCode ::= TBCDString (SIZE(1..3))
+    """
+
+    def __init__(self, octets):
+        super().__init__(octets, lower=1, upper=3)
+
+
 class CarrierInfo(primitives.OctetString):
     """ASN.1 Formal Description
     CarrierInfo ::= OCTET STRING (SIZE(2..3))

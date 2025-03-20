@@ -11,6 +11,7 @@ from .primitives import (  # noqa: F401
 from .enums import (  # noqa: F401
     AirInterfaceUserRate,
     AsyncSyncIndicator,
+    BearerServiceCode,
     CallAttemptState,
     CallPosition,
     ChangeInitiatingParty,
@@ -45,6 +46,7 @@ from .enums import (  # noqa: F401
     SSRequest,
     SubscriberState,
     TariffSwitchInd,
+    TeleServiceCode,
     TrafficClass,
     TransparencyIndicator,
     TriggerDetectionPoint,
