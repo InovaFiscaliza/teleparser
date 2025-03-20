@@ -130,43 +130,6 @@ class ApplicationIdentifier(primitives.AddressString):
     """
 
 
-class BearerServiceCode(primitives.AddressString):
-    """ASN.1 Formal Description
-    BearerServiceCode ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                                       |
-    /---------------------------------------/
-    -  PLMN-specific bearer services:
-    Bits 87654321 are defined by the Home Public Land
-    Mobile Network (HPLMN) operator.
-    -  Rest of  bearer services:
-    bit 8: 0 (unused)
-    BearerService                 Bits  8 7 6 5 4 3 2 1
-    All data Circuit Data
-    Asynchronous (CDA) Services         0 0 0 1 0 0 0 0
-    Data CDA - 300bps                   0 0 0 1 0 0 0 1
-    Data CDA - 1200bps                  0 0 0 1 0 0 1 0
-    Data CDA - 1200-75bps               0 0 0 1 0 0 1 1
-    Data CDA - 2400bps                  0 0 0 1 0 1 0 0
-    Data CDA - 4800bps                  0 0 0 1 0 1 0 1
-    Data CDA - 9600bps                  0 0 0 1 0 1 1 0
-    General - data CDA                  0 0 0 1 0 1 1 1
-    All data Circuit Data
-    Synchronous (CDS) Services          0 0 0 1 1 0 0 0
-    Data CDS - 1200bps                  0 0 0 1 1 0 1 0
-    Data CDS - 2400bps                  0 0 0 1 1 1 0 0
-    Data CDS - 4800bps                  0 0 0 1 1 1 0 1
-    Data CDS - 9600bps                  0 0 0 1 1 1 1 0
-    General - data CDS                  0 0 0 1 1 1 1 1
-    Note: Only the values for 'General - data CDA'
-    and  'General - data CDS' are output in
-    case of an WCDMA call
-    """
-
-
 class BitRate(primitives.AddressString):
     """ASN.1 Formal Description
     BitRate ::= OCTET STRING (SIZE(1))
@@ -2071,45 +2034,6 @@ class TargetRNCid(primitives.AddressString):
     LAC, Location area code (octet 4 and 5).
     RNC-id, Radio Network Control id (octet 6 and 7),
     value range: H'0 - H'FFF.
-    """
-
-
-class TeleServiceCode(primitives.AddressString):
-    """ASN.1 Formal Description
-    TeleServiceCode ::= OCTET STRING (SIZE (1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                                       |
-    /---------------------------------------/
-    Tele Service (TS)                Bits  8 7 6 5 4 3 2 1
-    Telephony                              0 0 0 1 0 0 0 1
-    Emergency calls                        0 0 0 1 0 0 1 0
-    Short Message MT-PP                    0 0 1 0 0 0 0 1
-    Short Message MO-PP                    0 0 1 0 0 0 1 0
-    Facsimile group3 and alter speech      0 1 1 0 0 0 0 1
-    Automatic facsimile group3             0 1 1 0 0 0 1 0
-    All PLMN specific TS                   1 1 0 1 0 0 0 0
-    PLMN specific TS - 1                   1 1 0 1 0 0 0 1
-    PLMN specific TS - 2                   1 1 0 1 0 0 1 0
-    PLMN specific TS - 3                   1 1 0 1 0 0 1 1
-    PLMN specific TS - 4                   1 1 0 1 0 1 0 0
-    PLMN specific TS - 5                   1 1 0 1 0 1 0 1
-    PLMN specific TS - 6                   1 1 0 1 0 1 1 0
-    PLMN specific TS - 7                   1 1 0 1 0 1 1 1
-    PLMN specific TS - 8                   1 1 0 1 1 0 0 0
-    PLMN specific TS - 9                   1 1 0 1 1 0 0 1
-    PLMN specific TS - A                   1 1 0 1 1 0 1 0
-    PLMN specific TS - B                   1 1 0 1 1 0 1 1
-    PLMN specific TS - C                   1 1 0 1 1 1 0 0
-    PLMN specific TS - D                   1 1 0 1 1 1 0 1
-    PLMN specific TS - E                   1 1 0 1 1 1 1 0
-    PLMN specific TS - F                   1 1 0 1 1 1 1 1
-    Note: Short Message MT-PP is Short Message Mobile-Terminated
-    Point-to-Point.
-    Short Message MO-PP is Short Message Mobile-Originated
-    Point-to-Point.
     """
 
 

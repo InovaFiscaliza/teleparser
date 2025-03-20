@@ -47,6 +47,60 @@ class AsyncSyncIndicator(primitives.ByteEnum):
     }
 
 
+class BearerServiceCode(primitives.ByteEnum):
+    """ASN.1 Formal Description
+    BearerServiceCode ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |                                       |
+    /---------------------------------------/
+    -  PLMN-specific bearer services:
+    Bits 87654321 are defined by the Home Public Land
+    Mobile Network (HPLMN) operator.
+    -  Rest of  bearer services:
+    bit 8: 0 (unused)
+    BearerService                 Bits  8 7 6 5 4 3 2 1
+    All data Circuit Data
+    Asynchronous (CDA) Services         0 0 0 1 0 0 0 0
+    Data CDA - 300bps                   0 0 0 1 0 0 0 1
+    Data CDA - 1200bps                  0 0 0 1 0 0 1 0
+    Data CDA - 1200-75bps               0 0 0 1 0 0 1 1
+    Data CDA - 2400bps                  0 0 0 1 0 1 0 0
+    Data CDA - 4800bps                  0 0 0 1 0 1 0 1
+    Data CDA - 9600bps                  0 0 0 1 0 1 1 0
+    General - data CDA                  0 0 0 1 0 1 1 1
+    All data Circuit Data
+    Synchronous (CDS) Services          0 0 0 1 1 0 0 0
+    Data CDS - 1200bps                  0 0 0 1 1 0 1 0
+    Data CDS - 2400bps                  0 0 0 1 1 1 0 0
+    Data CDS - 4800bps                  0 0 0 1 1 1 0 1
+    Data CDS - 9600bps                  0 0 0 1 1 1 1 0
+    General - data CDS                  0 0 0 1 1 1 1 1
+    Note: Only the values for 'General - data CDA'
+    and  'General - data CDS' are output in
+    case of an WCDMA call
+    """
+
+    VALUES = {
+        16: "All data Circuit Data Asynchronous (CDA) Services",
+        17: "Data CDA - 300bps",
+        18: "Data CDA - 1200bps",
+        19: "Data CDA - 1200-75bps",
+        20: "Data CDA - 2400bps",
+        21: "Data CDA - 4800bps",
+        22: "Data CDA - 9600bps",
+        23: "General - data CDA",
+        24: "All data Circuit Data Synchronous (CDS) Services",
+        26: "Data CDS - 1200bps",
+        28: "Data CDS - 2400bps",
+        29: "Data CDS - 4800bps",
+        30: "Data CDS - 9600bps",
+        31: "General - data CDS",
+    }
+
+
 class CallAttemptState(primitives.ByteEnum):
     """ASN.1 Formal Description
     CallAttemptState ::= ENUMERATED
@@ -888,6 +942,70 @@ class TariffSwitchInd(primitives.ByteEnum):
     VALUES = {
         0: "noTariffSwitch",
         2: "tariffSwitchAfterStartOfCharging",
+    }
+
+
+class TeleServiceCode(primitives.ByteEnum):
+    """ASN.1 Formal Description
+    TeleServiceCode ::= OCTET STRING (SIZE (1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |                                       |
+    /---------------------------------------/
+    Tele Service (TS)                Bits  8 7 6 5 4 3 2 1
+    Telephony                              0 0 0 1 0 0 0 1
+    Emergency calls                        0 0 0 1 0 0 1 0
+    Short Message MT-PP                    0 0 1 0 0 0 0 1
+    Short Message MO-PP                    0 0 1 0 0 0 1 0
+    Facsimile group3 and alter speech      0 1 1 0 0 0 0 1
+    Automatic facsimile group3             0 1 1 0 0 0 1 0
+    All PLMN specific TS                   1 1 0 1 0 0 0 0
+    PLMN specific TS - 1                   1 1 0 1 0 0 0 1
+    PLMN specific TS - 2                   1 1 0 1 0 0 1 0
+    PLMN specific TS - 3                   1 1 0 1 0 0 1 1
+    PLMN specific TS - 4                   1 1 0 1 0 1 0 0
+    PLMN specific TS - 5                   1 1 0 1 0 1 0 1
+    PLMN specific TS - 6                   1 1 0 1 0 1 1 0
+    PLMN specific TS - 7                   1 1 0 1 0 1 1 1
+    PLMN specific TS - 8                   1 1 0 1 1 0 0 0
+    PLMN specific TS - 9                   1 1 0 1 1 0 0 1
+    PLMN specific TS - A                   1 1 0 1 1 0 1 0
+    PLMN specific TS - B                   1 1 0 1 1 0 1 1
+    PLMN specific TS - C                   1 1 0 1 1 1 0 0
+    PLMN specific TS - D                   1 1 0 1 1 1 0 1
+    PLMN specific TS - E                   1 1 0 1 1 1 1 0
+    PLMN specific TS - F                   1 1 0 1 1 1 1 1
+    Note: Short Message MT-PP is Short Message Mobile-Terminated
+    Point-to-Point.
+    Short Message MO-PP is Short Message Mobile-Originated
+    Point-to-Point.
+    """
+
+    VALUES = {
+        17: "Telephony",
+        18: "Emergency calls",
+        33: "Short Message MT-PP",
+        34: "Short Message MO-PP",
+        97: "Facsimile group3 and alter speech",
+        98: "Automatic facsimile group3",
+        208: "All PLMN specific TS",
+        209: "PLMN specific TS - 1",
+        210: "PLMN specific TS - 2",
+        211: "PLMN specific TS - 3",
+        212: "PLMN specific TS - 4",
+        213: "PLMN specific TS - 5",
+        214: "PLMN specific TS - 6",
+        215: "PLMN specific TS - 7",
+        216: "PLMN specific TS - 8",
+        217: "PLMN specific TS - 9",
+        218: "PLMN specific TS - A",
+        219: "PLMN specific TS - B",
+        220: "PLMN specific TS - C",
+        221: "PLMN specific TS - D",
+        222: "PLMN specific TS - E",
+        223: "PLMN specific TS - F",
     }
 
 
