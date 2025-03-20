@@ -1636,48 +1636,6 @@ class LocationEstimate(primitives.AddressString):
     """
 
 
-class LocationInformation(primitives.AddressString):
-    """ASN.1 Formal Description
-    LocationInformation ::= OCTET STRING (SIZE(7))
-    |   |   |   |   |   |   |   |   |
-    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
-    |   |   |   |   |   |   |   |   |
-    /-------------------------------/
-    |  MCC digit 2  |  MCC digit 1  | octet 1
-    +---------------+---------------+
-    |  MNC digit 3  |  MCC digit 3  | octet 2
-    +---------------+---------------+
-    |  MNC digit 2  |  MNC digit 1  | octet 3
-    +-------------------------------+
-    | MSB          LAC              | octet 4
-    +-------------------------------+
-    |              LAC, cont.   LSB | octet 5
-    +-------------------------------+
-    | MSB   CI/SAC value            | octet 6
-    +-------------------------------+
-    |       CI/SAC value, cont. LSB | octet 7
-    /-------------------------------/
-    MCC, Mobile country code (octet 1 and octet 2)
-    MNC, Mobile network code (octet 2 and octet 3).
-    Note: If MNC uses only 2 digits, then 3rd
-    is coded with filler H'F.
-    LAC Location area code (octet 4 and 5)
-    CI  Cell Identity, value (octets 6 and 7) (GSM)
-    SAC Service Area Code, value (octets 6 and 7) (WCDMA)
-    In the CI/SAC value field bit 8 of octet 6 is the most
-    significant bit.  Bit 1 of octet 7 is the least
-    significant bit.  Coding using full hexadecimal
-    representation is used.
-    In the LAC field, bit 8 of octet 4 is the most
-    significant bit.Bit 1 of octet 5 is the least
-    significant bit.Coding using full hexadecimal
-    representation is used.
-    In the case of a deleted or non-existent Location
-    Area Identity (LAI), both octets of the location
-    area code are coded with zeros.
-    """
-
-
 class MessageReference(primitives.AddressString):
     """ASN.1 Formal Description
     MessageReference ::= OCTET STRING (SIZE(1))
