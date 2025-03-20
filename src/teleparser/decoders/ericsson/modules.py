@@ -145,7 +145,7 @@ MSOriginating = {
     31: {"name": "transparencyIndicator", "type": dt.TransparencyIndicator},
     32: {"name": "firstRadioChannelUsed", "type": dt.FirstRadioChannelUsed},
     33: {"name": "callPosition", "type": dt.CallPosition},
-    34: {"name": "eosInfo", "type": dt.Eosinfo},
+    34: {"name": "eosInfo", "type": dt.EosInfo},
     35: {"name": "internalCauseAndLoc", "type": dt.InternalCauseAndLoc},
     36: {"name": "restartDuringCall", "type": dt.Bool},  # NULL type
     37: {"name": "restartDuringOutputIndicator", "type": dt.Bool},  # NULL type

@@ -602,27 +602,6 @@ class CUGIndex(primitives.AddressString):
     """
 
 
-class CUGInterlockCode(primitives.AddressString):
-    """ASN.1 Formal Description
-    CUGInterlockCode ::= OCTET STRING (SIZE (4))
-    |   |   |   |   |   |   |   |   |
-    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
-    |   |   |   |   |   |   |   |   |
-    /-------------------------------/
-    |  2nd NI digit | 1st NI digit  |  octet 1
-    +---------------+---------------+
-    |  4th NI digit | 3rd NI digit  |  octet 2
-    +-------------------------------+
-    | MSB       binary code         |  octet 3
-    +-------------------------------+
-    |                            LSB|  octet 4
-    /-------------------------------/
-    The first digit of Network Indicator (NI) is 0 or 9,
-    which means that the telephony Country Code follows in
-    the 2nd to 4th NI digits.
-    """
-
-
 class C7ChargingMessage(primitives.AddressString):
     """CCITT No.7 Charging Message
 

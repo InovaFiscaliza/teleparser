@@ -562,6 +562,62 @@ class C7CHTMessage(primitives.OctetString):
         )
 
 
+class CUGInterlockCode(primitives.OctetString):
+    """Closed User Group Interlock Code
+
+      The Closed User Group (CUG) Interlock Code identifies
+      a Closed User Group within the networks.
+
+      In the originating Call Component, the CUG Interlock Code
+      indicates that the subscriber has made a CUG call.
+
+      In the terminating Call Component, the CUG Interlock Code
+      indicates that the subscriber has received a CUG call from
+      another member of the subscriber's closed user group.
+
+      In the call-forwarding component, the CUG Interlock Code
+      indicates that the subscriber has forwarded a CUG call.
+
+      In the roaming call forwarding component, the CUG
+      Interlock Code indicates that the calling subscriber has
+      made a CUG call.
+
+    ASN.1 Formal Description
+        CUGInterlockCode ::= OCTET STRING (SIZE (4))
+        |   |   |   |   |   |   |   |   |
+        | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
+        |   |   |   |   |   |   |   |   |
+        /-------------------------------/
+        |  2nd NI digit | 1st NI digit  |  octet 1
+        +---------------+---------------+
+        |  4th NI digit | 3rd NI digit  |  octet 2
+        +-------------------------------+
+        | MSB       binary code         |  octet 3
+        +-------------------------------+
+        |                            LSB|  octet 4
+        /-------------------------------/
+        The first digit of Network Indicator (NI) is 0 or 9,
+        which means that the telephony Country Code follows in
+        the 2nd to 4th NI digits.
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, size=4)
+        self._parse_network_indicator()
+
+    def _parse_network_indicator(self):
+        """Parse Network Indicator from octets 1 and 2"""
+        self.network_indicator = primitives.TBCDString(self.octets[:2]).value
+        self.code = int.from_bytes(self.octets[2:], byteorder="big")
+
+    @property
+    def value(self):
+        return self.network_indicator, self.code
+
+    def __str__(self):
+        return f"NI: {self.network_indicator}, CODE:{self.code}"
+
+
 class Date(primitives.OctetString):
     r"""Date ::= OCTET STRING (SIZE(3..4))
 
