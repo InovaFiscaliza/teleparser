@@ -689,6 +689,71 @@ class GsmSCFAddress(primitives.AddressString):
         super().__init__(octets, lower=1, upper=9)
 
 
+class IMEI(primitives.OctetString):
+    """Calling Subscriber IMEI
+
+      This parameter contains the calling-subscriber
+      International Mobile Station Equipment Identity (IMEI).
+
+      The parameter is output, if the exchange data is
+      set so that IMEI is fetched from user equipment at call
+      setup.
+
+      In case of a network-initiated USSD service, this
+      parameter contains the IMEI for the served subscriber
+      in Subscriber Service Procedure Call Module.
+
+      In case of ineffective call the parameter is not
+      available for mobile originating Call Component.
+
+    ASN.1 Formal Description
+        IMEI ::= TBCDString (SIZE(8))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        |  TAC digit 2      |  TAC digit 1      | octet 1
+        +-------------------+-------------------+
+        |  TAC digit 4      |  TAC digit 3      | octet 2
+        +-------------------+-------------------+
+        |  TAC digit 6      |  TAC digit 5      | octet 3
+        +-------------------+-------------------+
+        |  TAC digit 8      |  TAC digit 7      | octet 4
+        +-------------------+-------------------+
+        |  SNR digit 2      |  SNR digit 1      | octet 5
+        +-------------------+-------------------+
+        |  SNR digit 4      |  SNR digit 3      | octet 6
+        +-------------------+-------------------+
+        |  SNR digit 6      |  SNR digit 5      | octet 7
+        +-------------------+-------------------+
+        |  See note         |  See note         | octet 8
+        /---------------------------------------/
+        TAC Type Allocation Code (octet 1, 2, 3 and 4).
+        SNR Serial Number (octet 5, 6 and 7).
+        Digits 0 to 9, two digits per octet,
+        each digit encoded 0000 to 1001
+        Note:
+        Bits 1-4 of octet 8: Spare
+        Bits 5-8 of octet 8: 1111 used as a filler.
+    """
+
+    def __init__(self, octets):
+        super().__init__(octets, size=8)
+        self._parse_tac_snr()
+
+    def _parse_tac_snr(self):
+        self.tac = primitives.TBCDString(self.octets[:4]).value
+        self.snr = primitives.TBCDString(self.octets[4:]).value
+        self.spare = self.octets[7] & 0x0F
+
+    @property
+    def value(self):
+        return self.tac, self.snr, self.spare
+
+    def __str__(self):
+        return f"TAC: {self.tac}, SNR: {self.snr}, Spare: {self.spare}"
+
+
 class IMSI(primitives.TBCDString):
     """ASN.1 Formal Description
     IMSI ::= TBCDString (SIZE(3..8))
