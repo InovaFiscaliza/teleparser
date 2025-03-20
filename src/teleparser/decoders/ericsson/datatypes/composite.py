@@ -562,6 +562,31 @@ class C7CHTMessage(primitives.OctetString):
         )
 
 
+@primitives.fixed_size_unsigned_int(2)
+class CUGIndex(primitives.UnsignedInt):
+    """CUG Index
+
+    The Closed User Group (CUG) Index contains the code that
+    indicates a closed user group for the subscriber. The CUG
+    Index has significance only between the subscriber and
+    network. The value of the parameter corresponds to the
+    same CUG as parameter CUG Interlock Code.
+
+    ASN.1 Formal Description
+      CUGIndex ::= OCTET STRING (SIZE(2))
+      |    |    |    |    |    |    |    |    |
+      |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+      |    |    |    |    |    |    |    |    |
+      /---------------------------------------/
+      | MSB                                   |  octet 1
+      +---------------------------------------+
+      |                                    LSB|  octet 2
+      /---------------------------------------/
+      Note: The OCTET STRING is coded as an unsigned integer.
+      Value range:  H'0 - H'7FFF
+    """
+
+
 class CUGInterlockCode(primitives.OctetString):
     """Closed User Group Interlock Code
 

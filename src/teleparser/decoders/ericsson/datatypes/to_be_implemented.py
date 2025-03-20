@@ -586,22 +586,6 @@ class CRIToMS:
     """
 
 
-class CUGIndex(primitives.AddressString):
-    """ASN.1 Formal Description
-    CUGIndex ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   |  octet 1
-    +---------------------------------------+
-    |                                    LSB|  octet 2
-    /---------------------------------------/
-    Note: The OCTET STRING is coded as an unsigned integer.
-    Value range:  H'0 - H'7FFF
-    """
-
-
 class C7ChargingMessage(primitives.AddressString):
     """CCITT No.7 Charging Message
 
