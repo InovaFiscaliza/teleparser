@@ -978,14 +978,15 @@ class IMSI(primitives.TBCDString):
         self.mcc = self.digits[0]
         mnc = self.digits[1]
         msin = self.digits[2:]
+        assert len(msin) <= 15, "The total number of msin digits should not exceed 15."
         self.carrier = PRESTADORAS[mnc]
-        self.msin = msin
+        self.msin = "".join(str(d) for d in msin)
 
     @property
     def value(self):
-        return self.carrier._replace(
-            _asdict=lambda: {**self.carrier._asdict(), "msin": self.msin}
-        )
+        return {f"imsi_{k}": v for k, v in self.carrier._asdict().items()} | {
+            "imsi_msin": self.msin
+        }
 
     def __str__(self) -> str:
         return f"{self.carrier.nome} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"
@@ -1258,7 +1259,10 @@ class NetworkCallReference(primitives.DigitString):
     def value(self):
         self.sequence_number = int.from_bytes(self.octets[:3], "big")
         self.switch_identity = int.from_bytes(self.octets[3:], "big")
-        return self.sequence_number, self.switch_identity
+        return {
+            "networkCallReference_sequenceNumber": self.sequence_number,
+            "networkCallReference_switchIdentity": self.switch_identity,
+        }
 
     def __str__(self):
         return f"{self.sequence_number:06d}-{self.switch_identity:04d}"

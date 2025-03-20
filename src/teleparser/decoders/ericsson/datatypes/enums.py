@@ -807,17 +807,8 @@ class OriginatingLineInformation(primitives.ByteEnum):
         0: "Identified Line - no special treatment",
         2: "Automatic Number Identification (ANI) failure",
         61: "Traffic originating from cellular carrier over Type 1 connection to Inter-exchange Carrier (IXC) or International Exchange Carrier (INC).",
-        62: """Traffic originating from cellular
-                    carrier over Type 2 connection to
-                    IXC or INC.
-                    Charge Number is the subscriber number
-                    (callingPartyNumber or last
-                    redirectingNumber).""",
-        63: """Traffic originating from cellular
-                    carrier over Type 2 connection to
-                    IXC or INC, roaming forwarding call.
-                    Charge Number is the subscriber number
-                    of called mobile subscriber.""",
+        62: "Traffic originating from cellular carrier over Type 2 connection to IXC or INC. Charge Number is the subscriber number (callingPartyNumber or last redirectingNumber).",
+        63: "Traffic originating from cellular carrier over Type 2 connection to IXC or INC, roaming forwarding call. Charge Number is the subscriber number of called mobile subscriber.",
     }
 
 
