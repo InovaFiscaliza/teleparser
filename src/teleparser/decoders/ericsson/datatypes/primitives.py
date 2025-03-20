@@ -163,7 +163,7 @@ class AddressString(OctetString):
 
     def _parse_digits(self):
         """Parse TBCD-encoded digits from remaining octets"""
-        self.digits = TBCDString(self.octets[1:], size=19).value
+        self.digits = TBCDString(self.octets[1:]).value
 
     @property
     def value(self):
@@ -229,14 +229,14 @@ class TBCDString(OctetString):
             digit1 = octet & 0x0F
             digit2 = (octet >> 4) & 0x0F
             digits.extend([digit1, digit2])
-        if self.size % 2 != 0:
-            digits.append(15)  # Filler
+        if digits[-1] == 15:  # Filler
+            digits.pop()
         self.digits = digits
 
     @property
     def value(self):
         "Returns the 2n digits as a string"
-        return "".join(self.digits)
+        return "".join(str(d) for d in self.digits)
 
 
 class UnsignedInt:

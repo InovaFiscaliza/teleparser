@@ -1,13 +1,6 @@
 from teleparser.decoders.ericsson.datatypes import primitives
 
 
-class AccountCode:
-    """ASN.1 Formal Description
-    AccountCode ::= TBCDString (SIZE(1..5))
-    Note: Only decimal digits are used.
-    """
-
-
 class AddressStringExtended(primitives.AddressString):
     """ASN.1 Formal Description
     AddressStringExtended ::= OCTET STRING (SIZE(1..20))
@@ -777,30 +770,6 @@ class Distributed(primitives.AddressString):
     """
 
 
-class EMLPPPriorityLevel(primitives.AddressString):
-    """ASN.1 Formal Description
-    EMLPPPriorityLevel ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |MSB                                 LSB|  Octet 1
-    /---------------------------------------/
-    Bits 8-4:   Not used
-    Bits 3-1:   Priority Level
-    000  Spare
-    001  Priority level 4 = lowest priority for
-    subscription
-    010  Priority level 3 = sixth highest priority
-    011  Priority level 2 = fifth highest priority
-    100  Priority level 1 = fourth highest priority
-    101  Priority level 0 = third highest priority
-    110  Priority level B = second highest priority
-    111  Priority level A = highest priority for
-    subscription
-    """
-
-
 class EndToEndAccessDataMap(primitives.AddressString):
     """ASN.1 Formal Description
     EndToEndAccessDataMap ::= OCTET STRING (SIZE(1))
@@ -900,27 +869,6 @@ class FreeFormatData(primitives.AddressString):
     /---------------------------------------/
     |                                    LSB|  octet 160
     /---------------------------------------/
-    """
-
-
-class FrequencyBandSupported(primitives.AddressString):
-    """ASN.1 Formal Description
-    FrequencyBandSupported ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                                       |
-    /---------------------------------------/
-    Value range: H'0 - H'07
-    Bit assignment:
-    Bit 1: Frequency Band 1 (P-GSM)
-    Bit 2: Frequency Band 2 (E-GSM)
-    Bit 3: Frequency Band 3 (GSM 1800)
-    Bits 4-8: Spare
-    Bit values:
-    0: Frequency Band not supported
-    1: Frequency Band supported
     """
 
 
@@ -1704,47 +1652,6 @@ class PointCodeAndSubSystemNumber(primitives.AddressString):
     """
 
 
-class PositionAccuracy(primitives.AddressString):
-    """ASN.1 Formal Description
-    PositionAccuracy ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | Es |    Error area definition         | octet 1
-    +---------------------------------------+
-    |     Error area definition, continued  | octet 2
-    /---------------------------------------/
-    Es (octet 1 bit 8):
-    Value    Meaning
-    -----    -------
-    0        Shape of defined error area, rectangular
-    1        Shape of defined error area, circular
-    When Es=0
-    Error area definition (octet 1, bits 7-1):
-    Angle: Value range 0-127
-    The angle defines the orientation of
-    the error region with respect to User
-    Terminal's (UT's) longitude. The range
-    is 0-180 degrees with a 1.4 degree
-    resolution.
-    For example, value 2 = 2.8 degrees.
-    Error area definition, continued (octet 2):
-    Bits 8-6: Error region half width
-    Bits 5-1: Error region half length
-    Error region half width:  Value range 0-7
-    Error region half length: Value range 0-31
-    The error region length and error region width
-    are presented in kilometers.
-    When Es=1
-    Octets 1 bits 7-1 are coded as zero.
-    Error area definition, continued (octet 2):
-    Error region radius: Value range 0-255
-    The error region radius is presented in
-    kilometers.
-    """
-
-
 class PresentationAndScreeningIndicator(primitives.AddressString):
     """ASN.1 Formal Description
     PresentationAndScreeningIndicator ::= OCTET STRING (SIZE(1))
@@ -1826,28 +1733,6 @@ class ServiceKey(primitives.AddressString):
     |                                 LSB   | octet 4
     /---------------------------------------/
     Value Range H'0 - H'7FFFFFFF
-    """
-
-
-class SpeechCoderPreferenceList(primitives.AddressString):
-    """ASN.1 Formal Description
-    SpeechCoderPreferenceList ::= OCTET STRING (SIZE (1..6))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |  1st preference                       | octet 1
-    +---------------------------------------+
-    |  2nd preference                       | octet 2
-    /---------------------------------------/
-    .
-    .
-    .
-    /---------------------------------------/
-    |  6th preference                       | octet 6
-    /---------------------------------------/
-    Value range for all octets: 0 - 5, encoded as
-    enumerated SpeechCoderVersion value.
     """
 
 
@@ -2151,96 +2036,104 @@ class TriggerData:
 
 
 class UserTerminalPosition(primitives.AddressString):
-    """ASN.1 Formal Description
-    UserTerminalPosition ::= OCTET STRING (SIZE(7))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                   |F/S |N/S |E/W | D  |  Octet 1
-    +-------------------+-------------------+
-    |Longitude degrees  |Longitude degrees  |  Octet 2
-    +-------------------+-------------------+
-    |Longitude minutes  |Longitude minutes  |  Octet 3
-    +-------------------+-------------------+
-    |Longitude seconds  |Longitude seconds  |  Octet 4
-    +-------------------+-------------------+
-    |Latitude degrees   |Latitude degrees   |  Octet 5
-    +-------------------+-------------------+
-    |Latitude minutes   |Latitude minutes   |  Octet 6
-    +-------------------+-------------------+
-    |Latitude seconds   |Latitude seconds   |  Octet 7
-    /---------------------------------------/
-    Octet 1 bits 8-5 are coded as zero.
-    F/S (octet 1 bit 4):
-    0: Full representation
-    (latitude/longitude down to seconds)
-    1: Short representation
-    (latitude/longitude down to minutes)
-    N/S (octet 1 bit 3):
-    0: Latitude value is to the SOUTH of the equator
-    1: Latitude value is to the NORTH of the equator
-    E/W (octet 1 bit 2):
-    0: Longitude value is to the EAST of
-    the prime meridian
-    1: Longitude value is to the WEST of
-    the prime meridian
-    D (octet 1 bit 1):
-    0: Longitude value less than 100 degrees
-    (Actual Longitude value is the value in
-    Octets 2-4)
-    1: Longitude value is greater than or equal to
-    100 degrees
-    (Actual Longitude value is 100 added to
-    the value in Octet 2-4)
-    Octet 2:  Bits 8-5 Longitude degrees
-    (most significant digit),
-    BCD coded
-    Value range: H'0-H'9
-    Bits 4-1 Longitude degrees
-    (least significant digit),
-    BCD coded
-    Value range: H'0-H'9
-    Octet 3:  Bits 8-5 Longitude minutes
-    (most significant digit),
-    BCD coded
-    Value range: H'0-H'5
-    Bits 4-1 Longitude minutes
-    (least significant digit),
-    BCD coded
-    Value range: H'0-H'9
-    Octet 4:  Bits 8-5 Longitude seconds
-    (most significant digit),
-    BCD coded
-    Value range: H'0-H'5
-    Bits 4-1 Longitude seconds
-    (least significant digit),
-    BCD coded
-    Value range: H'0-H'9
-    Octet 5:  Bits 8-5 Latitude degrees
-    (most significant digit),
-    BCD coded
-    Value range: H'0-H'9
-    Bits 4-1 Latitude degrees
-    (least significant digit),
-    BCD coded
-    Value range: H'0-H'9
-    Octet 6:  Bits 8-5 Latitude minutes
-    (most significant digit),
-    BCD coded
-    Value range: H'0-H'5
-    Bits 4-1 Latitude minutes
-    (least significant digit),
-    BCD coded
-    Value range: H'0-H'9
-    Octet 7:  Bits 8-5 Latitude seconds
-    (most significant digit),
-    BCD coded
-    Value range: H'0-H'5
-    Bits 4-1 Latitude seconds
-    (least significant digit),
-    BCD coded
-    Value range: H'0-H'9
+    """User Terminal Position
+
+      This parameter contains data related to global satellite
+      systems call. This parameter gives the user terminal
+      position in longitude and latitude at call set up.
+
+      The parameter is not applicable for WCDMA Japan.
+
+    ASN.1 Formal Description
+        UserTerminalPosition ::= OCTET STRING (SIZE(7))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        |                   |F/S |N/S |E/W | D  |  Octet 1
+        +-------------------+-------------------+
+        |Longitude degrees  |Longitude degrees  |  Octet 2
+        +-------------------+-------------------+
+        |Longitude minutes  |Longitude minutes  |  Octet 3
+        +-------------------+-------------------+
+        |Longitude seconds  |Longitude seconds  |  Octet 4
+        +-------------------+-------------------+
+        |Latitude degrees   |Latitude degrees   |  Octet 5
+        +-------------------+-------------------+
+        |Latitude minutes   |Latitude minutes   |  Octet 6
+        +-------------------+-------------------+
+        |Latitude seconds   |Latitude seconds   |  Octet 7
+        /---------------------------------------/
+        Octet 1 bits 8-5 are coded as zero.
+        F/S (octet 1 bit 4):
+        0: Full representation
+        (latitude/longitude down to seconds)
+        1: Short representation
+        (latitude/longitude down to minutes)
+        N/S (octet 1 bit 3):
+        0: Latitude value is to the SOUTH of the equator
+        1: Latitude value is to the NORTH of the equator
+        E/W (octet 1 bit 2):
+        0: Longitude value is to the EAST of
+        the prime meridian
+        1: Longitude value is to the WEST of
+        the prime meridian
+        D (octet 1 bit 1):
+        0: Longitude value less than 100 degrees
+        (Actual Longitude value is the value in
+        Octets 2-4)
+        1: Longitude value is greater than or equal to
+        100 degrees
+        (Actual Longitude value is 100 added to
+        the value in Octet 2-4)
+        Octet 2:  Bits 8-5 Longitude degrees
+        (most significant digit),
+        BCD coded
+        Value range: H'0-H'9
+        Bits 4-1 Longitude degrees
+        (least significant digit),
+        BCD coded
+        Value range: H'0-H'9
+        Octet 3:  Bits 8-5 Longitude minutes
+        (most significant digit),
+        BCD coded
+        Value range: H'0-H'5
+        Bits 4-1 Longitude minutes
+        (least significant digit),
+        BCD coded
+        Value range: H'0-H'9
+        Octet 4:  Bits 8-5 Longitude seconds
+        (most significant digit),
+        BCD coded
+        Value range: H'0-H'5
+        Bits 4-1 Longitude seconds
+        (least significant digit),
+        BCD coded
+        Value range: H'0-H'9
+        Octet 5:  Bits 8-5 Latitude degrees
+        (most significant digit),
+        BCD coded
+        Value range: H'0-H'9
+        Bits 4-1 Latitude degrees
+        (least significant digit),
+        BCD coded
+        Value range: H'0-H'9
+        Octet 6:  Bits 8-5 Latitude minutes
+        (most significant digit),
+        BCD coded
+        Value range: H'0-H'5
+        Bits 4-1 Latitude minutes
+        (least significant digit),
+        BCD coded
+        Value range: H'0-H'9
+        Octet 7:  Bits 8-5 Latitude seconds
+        (most significant digit),
+        BCD coded
+        Value range: H'0-H'5
+        Bits 4-1 Latitude seconds
+        (least significant digit),
+        BCD coded
+        Value range: H'0-H'9
     """
 
 
