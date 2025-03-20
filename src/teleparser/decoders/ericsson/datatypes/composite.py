@@ -6,39 +6,97 @@ from collections import namedtuple
 from functools import cached_property
 from . import primitives
 
-Carrier = namedtuple("Carrier", ["name", "mcc", "mnc"])
-
-CARRIERS = (
-    Carrier("ALGAR_TELECOM", 724, 33),
-    Carrier("ALGAR_TELECOM", 724, 34),
-    Carrier("ALGAR_TELECOM", 724, 32),
-    Carrier("AMERICANET", 724, 26),
-    Carrier("ARQIA", 724, 299),
-    Carrier("BBS_OPTIONS", 724, 299),
-    Carrier("CINCO", 724, 299),
-    Carrier("CLARO", 724, 38),
-    Carrier("CLARO", 724, 5),
-    Carrier("FAILED_CALLS", 724, 299),
-    Carrier("FIX_LINE", 724, 999),
-    Carrier("LIGUE", 724, 21),
-    Carrier("CLARO_NXT_NEXTEL", 724, 0),
-    Carrier("CLARO_NXT_NEXTEL", 724, 39),
-    Carrier("NLT", 724, 299),
-    Carrier("OI_MOVEL", 724, 31),
-    Carrier("OI_MOVEL", 724, 16),
-    Carrier("SERCOMTEL", 724, 15),
-    Carrier("SURF", 724, 17),
-    Carrier("TELECALL", 724, 299),
-    Carrier("TIM", 724, 4),
-    Carrier("TIM", 724, 3),
-    Carrier("TIM", 724, 54),
-    Carrier("TIM", 724, 2),
-    Carrier("VECTO_MOBILE", 724, 299),
-    Carrier("VIVO", 724, 23),
-    Carrier("VIVO", 724, 6),
-    Carrier("VIVO", 724, 10),
-    Carrier("VIVO", 724, 11),
+Prestadora = namedtuple(
+    "Prestadora", ["nome", "cnpj", "mnc", "mcc"], defaults=(None, None, None, "724")
 )
+PRESTADORAS = {
+    0: Prestadora(nome="CLARO S.A.", cnpj="40432544000147", mnc="00"),
+    1: Prestadora(
+        nome="Sisteer Do Brasil Telecomunicações Ltda", cnpj="13420027000185", mnc="01"
+    ),
+    2: Prestadora(nome="TIM S/A", cnpj="02421421000111", mnc="02"),
+    3: Prestadora(nome="TIM S/A", cnpj="02421421000111", mnc="03"),
+    4: Prestadora(nome="TIM S/A", cnpj="02421421000111", mnc="04"),
+    5: Prestadora(nome="CLARO S.A.", cnpj="40432544000147", mnc="05"),
+    6: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="06"),
+    7: Prestadora(
+        nome="TERAPAR TELECOMUNICAÇÕES LTDA", cnpj="14840419000166", mnc="07"
+    ),
+    8: Prestadora(nome="Transatel Brasil Ltda.", cnpj="51042993000103", mnc="08"),
+    9: Prestadora(
+        nome="Virgin Mobile Telecomunicaçoes Ltda", cnpj="13892589000121", mnc="09"
+    ),
+    10: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="10"),
+    11: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="11"),
+    12: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="12"),
+    13: Prestadora(nome="NEXT LEVEL TELECOM LTDA.", cnpj="20877748000184", mnc="13"),
+    14: Prestadora(nome="CLARO S.A.", cnpj="40432544000147", mnc="14"),
+    15: Prestadora(nome="SERCOMTEL CELULAR S.A.", cnpj="02494988000118", mnc="15"),
+    16: Prestadora(
+        nome="OI MÓVEL S.A. - EM RECUPERAÇÃO JUDICIAL", cnpj="05423963000111", mnc="16"
+    ),
+    17: Prestadora(nome="SURF TELECOM SA", cnpj="10455746000143", mnc="17"),
+    18: Prestadora(
+        nome="DATORA MOBILE TELECOMUNICACOES S.A", cnpj="18384930000151", mnc="18"
+    ),
+    19: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="19"),
+    21: Prestadora(nome="LIGUE TELECOMUNICAÇÕES LTDA", cnpj="10442435000140", mnc="21"),
+    23: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="23"),
+    26: Prestadora(nome="AMERICA NET LTDA", cnpj="01778972000174", mnc="26"),
+    27: Prestadora(
+        nome="VMNO COMUNICAÇÕES DO BRASIL S.A.", cnpj="13481715000155", mnc="27"
+    ),
+    28: Prestadora(nome="CLARO S.A.", cnpj="40432544000147", mnc="28"),
+    29: Prestadora(
+        nome="UNIFIQUE TELECOMUNICACOES S/A", cnpj="02255187000108", mnc="29"
+    ),
+    30: Prestadora(
+        nome="OI MÓVEL S.A. - EM RECUPERAÇÃO JUDICIAL", cnpj="05423963000111", mnc="30"
+    ),
+    31: Prestadora(nome="TIM S/A", cnpj="02421421000111", mnc="31"),
+    32: Prestadora(nome="ALGAR TELECOM S/A", cnpj="71208516000174", mnc="32"),
+    33: Prestadora(nome="ALGAR TELECOM S/A", cnpj="71208516000174", mnc="33"),
+    34: Prestadora(nome="ALGAR TELECOM S/A", cnpj="71208516000174", mnc="34"),
+    36: Prestadora(nome="Options Comp & Elet Ltda", cnpj="00063329000100", mnc="36"),
+    38: Prestadora(nome="CLARO S.A.", cnpj="40432544000147", mnc="38"),
+    39: Prestadora(
+        nome="Claro NXT Telecomunicações LTDA", cnpj="66970229000167", mnc="39"
+    ),
+    40: Prestadora(
+        nome="TELEXPERTS TELECOMUNICAÇÕES LTDA", cnpj="07625852000113", mnc="40"
+    ),
+    41: Prestadora(nome="Digaa Telecom Ltda", cnpj="24331791000109", mnc="41"),
+    42: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="42"),
+    46: Prestadora(nome="CUBIC TELECOM BRASIL LTDA", cnpj="31904804000149", mnc="46"),
+    51: Prestadora(nome="EMNIFY BRASIL LTDA", cnpj="45953596000182", mnc="51"),
+    54: Prestadora(nome="TIM S/A", cnpj="02421421000111", mnc="54"),
+    70: Prestadora(nome="IEZ! TELECOM LTDA.", cnpj="37278419000110", mnc="70"),
+    72: Prestadora(
+        nome="AIRNITY BRASIL TELECOMUNICAÇÕES LTDA", cnpj="50667694000193", mnc="72"
+    ),
+    77: Prestadora(
+        nome="Brisanet Serviços de Telecomunicações SA", cnpj="04601397000128", mnc="77"
+    ),
+    88: Prestadora(nome="CONNECT IOT SOLUTIONS LTDA", cnpj="52842561000131", mnc="88"),
+}
+
+
+class AccountCode(primitives.TBCDString):
+    """Account Code
+
+    This parameter indicates which account is to be charged
+    for the call.
+
+    The Account Code contains the account code entered by
+    the calling or called subscriber.
+
+      ASN.1 Formal Description
+      AccountCode ::= TBCDString (SIZE(1..5))
+      Note: Only decimal digits are used.
+    """
+
+    def __init__(self, octets):
+        super().__init__(octets, lower=1, upper=5)
 
 
 class CalledPartyNumber(primitives.AddressString):
@@ -917,18 +975,20 @@ class IMSI(primitives.TBCDString):
         self._parse_mcc_mnc_msin()
 
     def _parse_mcc_mnc_msin(self):
-        mcc = self.digits[0]
+        self.mcc = self.digits[0]
         mnc = self.digits[1]
         msin = self.digits[2:]
-        self.carrier = CARRIERS[(mcc, mnc)]
+        self.carrier = PRESTADORAS[mnc]
         self.msin = msin
 
     @property
     def value(self):
-        return self.carrier.name, self.carrier.mcc, self.carrier.mnc, self.msin
+        return self.carrier._replace(
+            _asdict=lambda: {**self.carrier._asdict(), "msin": self.msin}
+        )
 
     def __str__(self) -> str:
-        return f"{self.carrier.name} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"
+        return f"{self.carrier.nome} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"
 
 
 @primitives.fixed_size_digit_string(2)
@@ -1042,7 +1102,7 @@ class LocationInformation(primitives.OctetString):
         mnc2 = self.octets[2] >> 4  # MNC digit 2
         mnc1 = self.octets[2] & 0x0F  # MNC digit 1
         mnc = mnc1 * 100 + mnc2 * 10 + mnc3
-        self.carrier = CARRIERS[(mcc, mnc)]
+        self.carrier = PRESTADORAS[(mcc, mnc)]
 
     def _parse_lac(self):
         self.lac = int.from_bytes(self.octets[3:5], "big")
@@ -1289,6 +1349,95 @@ class PartialOutputRecNum(primitives.UnsignedInt):
     """
 
 
+class PositionAccuracy(primitives.OctetString):
+    """Position Accuracy
+
+      This parameter contains data related to global
+      satellite systems call. When user terminal is providing
+      user terminal position it also includes the position
+      accuracy.
+
+      The parameter is not applicable for WCDMA Japan.
+
+    ASN.1 Formal Description
+        PositionAccuracy ::= OCTET STRING (SIZE(2))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | Es |    Error area definition         | octet 1
+        +---------------------------------------+
+        |     Error area definition, continued  | octet 2
+        /---------------------------------------/
+        Es (octet 1 bit 8):
+        Value    Meaning
+        -----    -------
+        0        Shape of defined error area, rectangular
+        1        Shape of defined error area, circular
+        When Es=0
+        Error area definition (octet 1, bits 7-1):
+        Angle: Value range 0-127
+        The angle defines the orientation of
+        the error region with respect to User
+        Terminal's (UT's) longitude. The range
+        is 0-180 degrees with a 1.4 degree
+        resolution.
+        For example, value 2 = 2.8 degrees.
+        Error area definition, continued (octet 2):
+        Bits 8-6: Error region half width
+        Bits 5-1: Error region half length
+        Error region half width:  Value range 0-7
+        Error region half length: Value range 0-31
+        The error region length and error region width
+        are presented in kilometers.
+        When Es=1
+        Octets 1 bits 7-1 are coded as zero.
+        Error area definition, continued (octet 2):
+        Error region radius: Value range 0-255
+        The error region radius is presented in
+        kilometers.
+    """
+
+    def __init__(self, octets):
+        super().__init__(octets, size=2)
+        self._parse_error_area_definition()
+
+    def _parse_error_shape(self):
+        """Parse Error Area Definition from octets 1, bit 8"""
+        if self.octets[0] >> 7 == 1:
+            self.error_shape == "circular"
+            self._parse_area_circular()
+        else:
+            self.error_shape == "rectangular"
+            self._parse_angle_rectangular()
+
+    def _parse_area_rectangular(self):
+        """Parse Angle from octets 1, bits 7-1"""
+        self.angle = (self.octets[0] & 0x7F) * 1.4
+        self.half_width = self.octets[1] >> 6
+        self.half_length = self.octets[1] & 0x3F
+        self.area = (self.half_width * self.half_length) * 2
+
+    def _parse_area_circular(self):
+        """Parse Radius from octets 1, bits 7-1"""
+        from math import pi
+
+        self.angle = (self.octets[0] & 0x7F) * 1.4
+        self.radius = self.octets[1]
+        self.area = self.radius * self.radius * pi
+
+    @property
+    def value(self):
+        return namedtuple("PositionAccuracy", ["error_shape", "angle", "area"])(
+            self.error_shape, self.angle, self.area
+        )
+
+    def __str__(self):
+        return (
+            f"Error Shape: {self.error_shape}, Angle: {self.angle}, Area: {self.area}"
+        )
+
+
 @primitives.fixed_size_unsigned_int(3)
 class RecordSequenceNumber(primitives.UnsignedInt):
     r"""Record Sequence Number  (M)
@@ -1426,6 +1575,44 @@ class ServedSubscriberNumber(primitives.AddressString):
 class ServiceKey(primitives.DigitString):
     def __init__(self, octets: bytes):
         super().__init__(octets, size=4)
+
+
+@primitives.fixed_size_digit_string(6)
+class SpeechCoderPreferenceList(primitives.DigitString):
+    """Speech Coder Preference List
+
+    This parameter contains speech coder versions received
+    from the UE, listed from most to least preferred.
+
+    The SpeechCoderPreferenceList that is sent to charging is
+    actually the selected Speech Coder Preference list which
+    is the result from the Telecommunication Service Analysis.
+    With this it is possible to charge for what the subscriber
+    will get after the operator's preferences have been taken
+    into account. This gives the operator full control of the
+    use of certain speech coders for certain call cases.
+
+    The parameter is only applicable for GSM.
+
+    ASN.1 Formal Description
+      SpeechCoderPreferenceList ::= OCTET STRING (SIZE (1..6))
+      |    |    |    |    |    |    |    |    |
+      |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+      |    |    |    |    |    |    |    |    |
+      /---------------------------------------/
+      |  1st preference                       | octet 1
+      +---------------------------------------+
+      |  2nd preference                       | octet 2
+      /---------------------------------------/
+      .
+      .
+      .
+      /---------------------------------------/
+      |  6th preference                       | octet 6
+      /---------------------------------------/
+      Value range for all octets: 0 - 5, encoded as
+      enumerated SpeechCoderVersion value.
+    """
 
 
 class SubscriptionType(primitives.UnsignedInt):
