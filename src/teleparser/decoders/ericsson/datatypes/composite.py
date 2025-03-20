@@ -888,6 +888,85 @@ class LCSClientIdentity(primitives.AddressString):
     """
 
 
+class LocationInformation(primitives.OctetString):
+    """ASN.1 Formal Description
+    LocationInformation ::= OCTET STRING (SIZE(7))
+    |   |   |   |   |   |   |   |   |
+    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
+    |   |   |   |   |   |   |   |   |
+    /-------------------------------/
+    |  MCC digit 2  |  MCC digit 1  | octet 1
+    +---------------+---------------+
+    |  MNC digit 3  |  MCC digit 3  | octet 2
+    +---------------+---------------+
+    |  MNC digit 2  |  MNC digit 1  | octet 3
+    +-------------------------------+
+    | MSB          LAC              | octet 4
+    +-------------------------------+
+    |              LAC, cont.   LSB | octet 5
+    +-------------------------------+
+    | MSB   CI/SAC value            | octet 6
+    +-------------------------------+
+    |       CI/SAC value, cont. LSB | octet 7
+    /-------------------------------/
+    MCC, Mobile country code (octet 1 and octet 2)
+    MNC, Mobile network code (octet 2 and octet 3).
+    Note: If MNC uses only 2 digits, then 3rd
+    is coded with filler H'F.
+    LAC Location area code (octet 4 and 5)
+    CI  Cell Identity, value (octets 6 and 7) (GSM)
+    SAC Service Area Code, value (octets 6 and 7) (WCDMA)
+    In the CI/SAC value field bit 8 of octet 6 is the most
+    significant bit.  Bit 1 of octet 7 is the least
+    significant bit.  Coding using full hexadecimal
+    representation is used.
+    In the LAC field, bit 8 of octet 4 is the most
+    significant bit.Bit 1 of octet 5 is the least
+    significant bit.Coding using full hexadecimal
+    representation is used.
+    In the case of a deleted or non-existent Location
+    Area Identity (LAI), both octets of the location
+    area code are coded with zeros.
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, size=7)
+        self._parse_mcc_mnc()
+        self._parse_lac()
+        self._parse_ci_sac()
+
+    def _parse_mcc_mnc(self):
+        mcc1 = self.octets[0] & 0x0F  # MCC digit 1
+        mcc2 = self.octets[0] >> 4  # MCC digit 2
+        mcc3 = self.octets[1] & 0x0F  # MCC digit 3
+        mcc = mcc1 * 100 + mcc2 * 10 + mcc3
+        mnc3 = self.octets[1] >> 4  # MNC digit 3
+        mnc2 = self.octets[2] >> 4  # MNC digit 2
+        mnc1 = self.octets[2] & 0x0F  # MNC digit 1
+        mnc = mnc1 * 100 + mnc2 * 10 + mnc3
+        self.carrier = CARRIERS[(mcc, mnc)]
+
+    def _parse_lac(self):
+        self.lac = int.from_bytes(self.octets[3:5], "big")
+
+    def _parse_ci_sac(self):
+        ci_sac = int.from_bytes(self.octets[5:], "big")
+        self.ci_sac = ci_sac
+
+    @property
+    def value(self):
+        return (
+            self.carrier.name,
+            self.carrier.mcc,
+            self.carrier.mnc,
+            self.lac,
+            self.ci_sac,
+        )
+
+    def __str__(self):
+        return f"{self.carrier.name} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) LAC: {self.lac}, CI/SAC: {self.ci_sac}"
+
+
 @primitives.fixed_size_digit_string(1)
 class MiscellaneousInformation(primitives.DigitString):
     """ASN.1 Formal Description
