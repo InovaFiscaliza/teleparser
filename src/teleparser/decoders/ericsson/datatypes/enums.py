@@ -289,6 +289,60 @@ class DisconnectingParty(primitives.ByteEnum):
     }
 
 
+class EMLPPPriorityLevel(primitives.ByteEnum):
+    """Enhanced Multi-Level Precedence and Pre-Emption Service
+    Priority Level
+
+      This parameter indicates the granted priority level used
+      for call.
+
+      For the mobile originated call, the granted eMLPP
+      is the eMLPP priority level that is assigned by the
+      originating MSC/VLR at call set-up.
+
+      For the mobile terminated call, the granted eMLPP will
+      be either the calling subscriber's eMLPP/MLPP
+      (if available) or a default value from called
+      subscriber's own MSC/VLR.
+
+    ASN.1 Formal Description
+        EMLPPPriorityLevel ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        |MSB                                 LSB|  Octet 1
+        /---------------------------------------/
+        Bits 8-4:   Not used
+        Bits 3-1:   Priority Level
+        000  Spare
+        001  Priority level 4 = lowest priority for
+        subscription
+        010  Priority level 3 = sixth highest priority
+        011  Priority level 2 = fifth highest priority
+        100  Priority level 1 = fourth highest priority
+        101  Priority level 0 = third highest priority
+        110  Priority level B = second highest priority
+        111  Priority level A = highest priority for
+        subscription
+    """
+
+    VALUES = {
+        0: "Spare",
+        1: "Priority level 4 = lowest priority for subscription",
+        2: "Priority level 3 = sixth highest priority",
+        3: "Priority level 2 = fifth highest priority",
+        4: "Priority level 1 = fourth highest priority",
+        5: "Priority level 0 = third highest priority",
+        6: "Priority level B = second highest priority",
+        7: "Priority level A = highest priority for subscription",
+    }
+
+    @property
+    def value(self):
+        return self.VALUES[self.octets[0] & 7]
+
+
 class EosInfo(primitives.ByteEnum):
     """ASN.1 Formal Description
     EosInfo ::= OCTET STRING (SIZE(1))
@@ -439,6 +493,51 @@ class FixedNetworkUserRate(primitives.ByteEnum):
         8: "fNUR64000bps",
         9: "fNURautobauding",
     }
+
+
+class FrequencyBandSupported(primitives.ByteEnum):
+    """Frequency Band Supported
+
+      This parameter provides information about different
+      frequency bands that mobile station can support.
+
+      This parameter is available only if the function
+      'Multiband Routing and Charging' is supported.
+      If the Classmark 3 information element is received
+      from the mobile station without errors this parameter
+      is output. If a single band mobile station sends
+      the Mobile Station Classmark 3 information element,
+      all the frequency bits are set to zero.
+
+      The parameter is only applicable for GSM.
+    ASN.1 Formal Description
+        FrequencyBandSupported ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        |                                       |
+        /---------------------------------------/
+        Value range: H'0 - H'07
+        Bit assignment:
+        Bit 1: Frequency Band 1 (P-GSM)
+        Bit 2: Frequency Band 2 (E-GSM)
+        Bit 3: Frequency Band 3 (GSM 1800)
+        Bits 4-8: Spare
+        Bit values:
+        0: Frequency Band not supported
+        1: Frequency Band supported
+    """
+
+    def _parse_frequency_band(self):
+        """Parse Frequency Band from octets 1 and 2"""
+        self.pgsm = self.octets[0] & 1 == 1
+        self.egsm = self.octets[0] & 2 == 2
+        self.gsm1800 = self.octets[0] & 3 == 3
+
+    @property
+    def value(self):
+        return self.pgsm, self.egsm, self.gsm1800
 
 
 class INMarkingOfMS(primitives.ByteEnum):
