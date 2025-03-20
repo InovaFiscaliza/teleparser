@@ -261,30 +261,6 @@ class CauseCode(primitives.AddressString):
     """
 
 
-class ChannelAllocationPriorityLevel(primitives.AddressString):
-    """ASN.1 Formal Description
-    ChannelAllocationPriorityLevel ::= OCTET STRING (SIZE(1))
-    |   |   |   |   |   |   |   |   |
-    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
-    |   |   |   |   |   |   |   |   |
-    /-------------------------------/
-    |MSB                         LSB| Octet 1
-    /-------------------------------/
-    - Bits 8-7:  Spare
-    - Bits 6-3:  Priority Level
-    0000  Spare
-    0001  Priority level 1 = highest priority
-    0010  Priority level 2 = second-highest priority
-    0011  Priority level 3 = third-highest priority
-    .
-    .
-    .
-    1110  Priority level 14 = lowest priority
-    1111  Priority level not used
-    - Bits 2-1:  Spare
-    """
-
-
 class ChannelCodings(primitives.AddressString):
     """ASN.1 Formal Description
     ChannelCodings ::= OCTET STRING (SIZE(1))
@@ -1872,76 +1848,6 @@ class SpeechCoderPreferenceList(primitives.AddressString):
     /---------------------------------------/
     Value range for all octets: 0 - 5, encoded as
     enumerated SpeechCoderVersion value.
-    """
-
-
-class SSCode(primitives.AddressString):
-    """ASN.1 Formal Description
-    SSCode ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                                       |
-    /---------------------------------------/
-    SSCode                                Bits  8 7 6 5 4 3 2 1
-    All Supplementary Services (SS)             0 0 0 0 0 0 0 0
-    All line identification SS                  0 0 0 1 0 0 0 0
-    Calling line identification presentation    0 0 0 1 0 0 0 1
-    Calling line identification restriction     0 0 0 1 0 0 1 0
-    Connected line identification presentation  0 0 0 1 0 0 1 1
-    Connected line identification restriction   0 0 0 1 0 1 0 0
-    Malicious call identification               0 0 0 1 0 1 0 1
-    All forwarding SS                           0 0 1 0 0 0 0 0
-    Call forwarding unconditional               0 0 1 0 0 0 0 1
-    All conditional forward. serv.              0 0 1 0 1 0 0 0
-    Call forwarding on mobile subscriber busy   0 0 1 0 1 0 0 1
-    Call forwarding on no reply                 0 0 1 0 1 0 1 0
-    Call forwarding on subscriber not reachable 0 0 1 0 1 0 1 1
-    All call offering SS                        0 0 1 1 0 0 0 0
-    Call transfer                               0 0 1 1 0 0 0 1
-    Mobile access hunting                       0 0 1 1 0 0 1 0
-    All call completion SS                      0 1 0 0 0 0 0 0
-    Call waiting                                0 1 0 0 0 0 0 1
-    Call hold                                   0 1 0 0 0 0 1 0
-    Completion of call to busy subscribers      0 1 0 0 0 0 1 1
-    All Multi-Party Services                    0 1 0 1 0 0 0 0
-    Multi-Party Services                        0 1 0 1 0 0 0 1
-    All community of interest SS                0 1 1 0 0 0 0 0
-    All charging SS                             0 1 1 1 0 0 0 0
-    Advice of charge information                0 1 1 1 0 0 0 1
-    Advice of charge charging                   0 1 1 1 0 0 1 0
-    All additional info transfer SS             1 0 0 0 0 0 0 0
-    User to user signalling                     1 0 0 0 0 0 0 1
-    All call restriction SS                     1 0 0 1 0 0 0 0
-    Barring of outgoing calls                   1 0 0 1 0 0 0 1
-    Barring of all outgoing calls               1 0 0 1 0 0 1 0
-    Barring of outgoing international calls     1 0 0 1 0 0 1 1
-    Barring of OG inter. calls except those
-    directed to the home PLMN country        1 0 0 1 0 1 0 0
-    Barring of incoming calls                   1 0 0 1 1 0 0 1
-    Barring of all inc. calls                   1 0 0 1 1 0 1 0
-    Barring of inc. calls when roaming outside
-    the home PLMN country                     1 0 0 1 1 0 1 1
-    All call priority SS                        1 0 1 0 0 0 0 0
-    Enhanced multi-level precedence and
-    pre-emption                                 1 0 1 0 0 0 0 1
-    All PLMN specific SS                        1 1 1 1 0 0 0 0
-    PLMN specific SS - 1                        1 1 1 1 0 0 0 1
-    PLMN specific SS - 2                        1 1 1 1 0 0 1 0
-    PLMN specific SS - 3                        1 1 1 1 0 0 1 1
-    PLMN specific SS - 4                        1 1 1 1 0 1 0 0
-    PLMN specific SS - 5                        1 1 1 1 0 1 0 1
-    PLMN specific SS - 6                        1 1 1 1 0 1 1 0
-    PLMN specific SS - 7                        1 1 1 1 0 1 1 1
-    PLMN specific SS - 8                        1 1 1 1 1 0 0 0
-    PLMN specific SS - 9                        1 1 1 1 1 0 0 1
-    PLMN specific SS - A                        1 1 1 1 1 0 1 0
-    PLMN specific SS - B                        1 1 1 1 1 0 1 1
-    PLMN specific SS - C                        1 1 1 1 1 1 0 0
-    PLMN specific SS - D                        1 1 1 1 1 1 0 1
-    PLMN specific SS - E                        1 1 1 1 1 1 1 0
-    PLMN specific SS - F                        1 1 1 1 1 1 1 1
     """
 
 

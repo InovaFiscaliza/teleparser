@@ -136,6 +136,52 @@ class CallPosition(primitives.ByteEnum):
     }
 
 
+class ChannelAllocationPriorityLevel(primitives.ByteEnum):
+    """ASN.1 Formal Description
+    ChannelAllocationPriorityLevel ::= OCTET STRING (SIZE(1))
+    |   |   |   |   |   |   |   |   |
+    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
+    |   |   |   |   |   |   |   |   |
+    /-------------------------------/
+    |MSB                         LSB| Octet 1
+    /-------------------------------/
+    - Bits 8-7:  Spare
+    - Bits 6-3:  Priority Level
+    0000  Spare
+    0001  Priority level 1 = highest priority
+    0010  Priority level 2 = second-highest priority
+    0011  Priority level 3 = third-highest priority
+    .
+    .
+    .
+    1110  Priority level 14 = lowest priority
+    1111  Priority level not used
+    - Bits 2-1:  Spare
+    """
+
+    VALUES = {
+        1: "Priority level 1 = highest priority",
+        2: "Priority level 2 = second-highest priority",
+        3: "Priority level 3 = third-highest priority",
+        4: "Priority level 4",
+        5: "Priority level 5",
+        6: "Priority level 6",
+        7: "Priority level 7",
+        8: "Priority level 8",
+        9: "Priority level 9",
+        10: "Priority level 10",
+        11: "Priority level 11",
+        12: "Priority level 12",
+        13: "Priority level 13",
+        14: "Priority level 14 = lowest priority",
+        15: "Priority level not used",
+    }
+
+    @property
+    def value(self):
+        return self.VALUES[(self.octets[0] >> 2) & 0x0F]
+
+
 class ChangeInitiatingParty(primitives.ByteEnum):
     """ASN.1 Formal Description
     ChangeInitiatingParty ::= ENUMERATED
@@ -889,6 +935,150 @@ class SpeechCoderVersion(primitives.ByteEnum):
         3: "halfRateVersion1",
         4: "halfRateVersion2",
         5: "halfRateVersion3",
+    }
+
+
+class SSCode(primitives.ByteEnum):
+    """Supplementary Service Code
+
+      This parameter identifies a Supplementary Service or a
+      group of Supplementary Services.
+
+      In the mobile originating and mobile terminating call
+      components, this field has a relevant value only in case
+      the supplementary service Advice of Charge, Information or
+      Advice of Charge, Charging has been used. The
+      Supplementary Service Code indicates which Advice of Charge
+      service was invoked for the call.
+
+      In the SSI Event Module the field indicates the
+      supplementary service that caused the creation of the
+      Event Module. The possible values are: Call Hold, Call
+      Waiting and Multi Party.
+
+    ASN.1 Formal Description
+        SSCode ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        |                                       |
+        /---------------------------------------/
+        SSCode                                Bits  8 7 6 5 4 3 2 1
+        All Supplementary Services (SS)             0 0 0 0 0 0 0 0
+        All line identification SS                  0 0 0 1 0 0 0 0
+        Calling line identification presentation    0 0 0 1 0 0 0 1
+        Calling line identification restriction     0 0 0 1 0 0 1 0
+        Connected line identification presentation  0 0 0 1 0 0 1 1
+        Connected line identification restriction   0 0 0 1 0 1 0 0
+        Malicious call identification               0 0 0 1 0 1 0 1
+        All forwarding SS                           0 0 1 0 0 0 0 0
+        Call forwarding unconditional               0 0 1 0 0 0 0 1
+        All conditional forward. serv.              0 0 1 0 1 0 0 0
+        Call forwarding on mobile subscriber busy   0 0 1 0 1 0 0 1
+        Call forwarding on no reply                 0 0 1 0 1 0 1 0
+        Call forwarding on subscriber not reachable 0 0 1 0 1 0 1 1
+        All call offering SS                        0 0 1 1 0 0 0 0
+        Call transfer                               0 0 1 1 0 0 0 1
+        Mobile access hunting                       0 0 1 1 0 0 1 0
+        All call completion SS                      0 1 0 0 0 0 0 0
+        Call waiting                                0 1 0 0 0 0 0 1
+        Call hold                                   0 1 0 0 0 0 1 0
+        Completion of call to busy subscribers      0 1 0 0 0 0 1 1
+        All Multi-Party Services                    0 1 0 1 0 0 0 0
+        Multi-Party Services                        0 1 0 1 0 0 0 1
+        All community of interest SS                0 1 1 0 0 0 0 0
+        All charging SS                             0 1 1 1 0 0 0 0
+        Advice of charge information                0 1 1 1 0 0 0 1
+        Advice of charge charging                   0 1 1 1 0 0 1 0
+        All additional info transfer SS             1 0 0 0 0 0 0 0
+        User to user signalling                     1 0 0 0 0 0 0 1
+        All call restriction SS                     1 0 0 1 0 0 0 0
+        Barring of outgoing calls                   1 0 0 1 0 0 0 1
+        Barring of all outgoing calls               1 0 0 1 0 0 1 0
+        Barring of outgoing international calls     1 0 0 1 0 0 1 1
+        Barring of OG inter. calls except those
+        directed to the home PLMN country        1 0 0 1 0 1 0 0
+        Barring of incoming calls                   1 0 0 1 1 0 0 1
+        Barring of all inc. calls                   1 0 0 1 1 0 1 0
+        Barring of inc. calls when roaming outside
+        the home PLMN country                     1 0 0 1 1 0 1 1
+        All call priority SS                        1 0 1 0 0 0 0 0
+        Enhanced multi-level precedence and
+        pre-emption                                 1 0 1 0 0 0 0 1
+        All PLMN specific SS                        1 1 1 1 0 0 0 0
+        PLMN specific SS - 1                        1 1 1 1 0 0 0 1
+        PLMN specific SS - 2                        1 1 1 1 0 0 1 0
+        PLMN specific SS - 3                        1 1 1 1 0 0 1 1
+        PLMN specific SS - 4                        1 1 1 1 0 1 0 0
+        PLMN specific SS - 5                        1 1 1 1 0 1 0 1
+        PLMN specific SS - 6                        1 1 1 1 0 1 1 0
+        PLMN specific SS - 7                        1 1 1 1 0 1 1 1
+        PLMN specific SS - 8                        1 1 1 1 1 0 0 0
+        PLMN specific SS - 9                        1 1 1 1 1 0 0 1
+        PLMN specific SS - A                        1 1 1 1 1 0 1 0
+        PLMN specific SS - B                        1 1 1 1 1 0 1 1
+        PLMN specific SS - C                        1 1 1 1 1 1 0 0
+        PLMN specific SS - D                        1 1 1 1 1 1 0 1
+        PLMN specific SS - E                        1 1 1 1 1 1 1 0
+        PLMN specific SS - F                        1 1 1 1 1 1 1 1
+    """
+
+    VALUES = {
+        0: "All Supplementary Services (SS)",
+        16: "All line identification SS",
+        17: "Calling line identification presentation",
+        18: "Calling line identification restriction",
+        19: "Connected line identification presentation",
+        20: "Connected line identification restriction",
+        21: "Malicious call identification",
+        32: "All forwarding SS",
+        33: "Call forwarding unconditional",
+        40: "All conditional forward. serv.",
+        41: "Call forwarding on mobile subscriber busy",
+        42: "Call forwarding on no reply",
+        43: "Call forwarding on subscriber not reachable",
+        48: "All call offering SS",
+        49: "Call transfer",
+        50: "Mobile access hunting",
+        64: "All call completion SS",
+        65: "Call waiting",
+        66: "Call hold",
+        67: "Completion of call to busy subscribers",
+        80: "All Multi-Party Services",
+        81: "Multi-Party Services",
+        96: "All community of interest SS",
+        112: "All charging SS",
+        113: "Advice of charge information",
+        114: "Advice of charge charging",
+        128: "All additional info transfer SS",
+        129: "User to user signalling",
+        144: "All call restriction SS",
+        145: "Barring of outgoing calls",
+        146: "Barring of all outgoing calls",
+        147: "Barring of outgoing international calls",
+        148: "Barring of OG inter. calls except those directed to the home PLMN country",
+        153: "Barring of incoming calls",
+        154: "Barring of all inc. calls",
+        155: "Barring of inc. calls when roaming outside the home PLMN country",
+        160: "All call priority SS",
+        161: "Enhanced multi-level precedence and preemption",
+        240: "All PLMN specific SS",
+        241: "PLMN specific SS - 1",
+        242: "PLMN specific SS - 2",
+        243: "PLMN specific SS - 3",
+        244: "PLMN specific SS - 4",
+        245: "PLMN specific SS - 5",
+        246: "PLMN specific SS - 6",
+        247: "PLMN specific SS - 7",
+        248: "PLMN specific SS - 8",
+        249: "PLMN specific SS - 9",
+        250: "PLMN specific SS - A",
+        251: "PLMN specific SS - B",
+        252: "PLMN specific SS - C",
+        253: "PLMN specific SS - D",
+        254: "PLMN specific SS - E",
+        255: "PLMN specific SS - F",
     }
 
 
