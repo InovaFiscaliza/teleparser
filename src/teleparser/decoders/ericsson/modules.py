@@ -4,6 +4,13 @@ CAMELTDPData = {
     0: {"name": "serviceKey", "type": dt.ServiceKey},
     1: {"name": "gsmSCFAddress", "type": dt.GsmSCFAddress},
 }
+
+MultimediaInformation = {
+    0: {"name": "userRate", "type": dt.UserRate},
+    1: {"name": "asyncSyncIndicator", "type": dt.AsyncSyncIndicator},
+    2: {"name": "uILayer1Protocol", "type": dt.UILayer1Protocol},
+}
+
 Transit = {
     0: {"name": "tAC", "type": dt.TAC},
     1: {"name": "callIdentificationNumber", "type": dt.CallIDNumber},
@@ -66,38 +73,38 @@ Transit = {
     59: {"name": "bCSMTDPData9", "type": CAMELTDPData},
     60: {"name": "bCSMTDPData10", "type": CAMELTDPData},
     61: {"name": "gSMCallReferenceNumber", "type": dt.GSMCallReferenceNumber},
-    # 62: {"name": "c7ChargingMessage", "type": C7ChargingMessage},
-    63: {"name": "c7FirstCHTMessage", "type": dt.C7CHTMessage},
-    64: {"name": "c7SecondCHTMessage", "type": dt.C7CHTMessage},
+    # 62: {"name": "c7ChargingMessage", "type": C7ChargingMessage}, # WCDMA Japan
+    # 63: {"name": "c7FirstCHTMessage", "type": dt.C7CHTMessage}, # WCDMA Japan
+    # 64: {"name": "c7SecondCHTMessage", "type": dt.C7CHTMessage}, # WCDMA Japan
     65: {"name": "aCMChargingIndicator", "type": dt.ChargingIndicator},
     66: {"name": "aNMChargingIndicator", "type": dt.ChargingIndicator},
     67: {"name": "mSCAddress", "type": dt.AddressString},
-    # 68: {"name": "carrierInformationBackward", "type": TransitCarrierInfo},
-    # 69: {"name": "carrierInformationForward", "type": TransitCarrierInfo},
-    # 70: {"name": "chargeInformation", "type": ChargeInformation},
+    # 68: {"name": "carrierInformationBackward", "type": TransitCarrierInfo}, # WCDMA Japan
+    # 69: {"name": "carrierInformationForward", "type": TransitCarrierInfo}, # WCDMA Japan
+    # 70: {"name": "chargeInformation", "type": ChargeInformation},  # WCDMA Japan
     71: {"name": "disconnectionDate", "type": dt.Date},
     72: {"name": "disconnectionTime", "type": dt.Time},
     73: {"name": "entryPOICA", "type": dt.ChargeAreaCode},
     74: {"name": "exitPOICA", "type": dt.ChargeAreaCode},
     75: {"name": "internationalCallIndicator", "type": dt.Bool},  # NULL type
     76: {"name": "mobileUserClass1", "type": dt.MobileUserClass1},
-    # 77: {"name": "mobileUserClass2", "type": MobileUserClass2},
+    # 77: {"name": "mobileUserClass2", "type": MobileUserClass2}, # WCDMA Japan
     78: {"name": "originatingAccessISDN", "type": dt.Bool},  # NULL type
     79: {"name": "originatingCarrier", "type": dt.CarrierInfo},
     80: {"name": "originatingChargeArea", "type": dt.ChargeAreaCode},
-    # 81: {"name": "tDSCounter", "type": Counter},
+    # 81: {"name": "tDSCounter", "type": Counter}, #WCDMA Japan
     82: {"name": "terminatingAccessISDN", "type": dt.Bool},  # NULL type
     83: {"name": "terminatingCarrier", "type": dt.CarrierInfo},
     84: {"name": "terminatingChargeArea", "type": dt.ChargeAreaCode},
     85: {"name": "terminatingMobileUserClass1", "type": dt.MobileUserClass1},
-    # 86: {"name": "terminatingMobileUserClass2", "type": MobileUserClass2},
+    # 86: {"name": "terminatingMobileUserClass2", "type": MobileUserClass2}, # WCDMA Japan
     87: {"name": "contractorNumber", "type": dt.AddressString},
     88: {"name": "terminatingUserClass", "type": dt.UserClass},
     89: {"name": "userClass", "type": dt.UserClass},
     90: {"name": "calledPartyMNPInfo", "type": dt.AddressString},
     91: {"name": "chargeNumber", "type": dt.AddressString},
     92: {"name": "originatingLineInformation", "type": dt.OriginatingLineInformation},
-    # 93: {"name": "multimediaInformation", "type": MultimediaInformation},
+    93: {"name": "multimediaInformation", "type": MultimediaInformation},
     102: {"name": "outputType", "type": dt.OutputType},
     24: {"name": "originatedCode", "type": dt.OriginatedCode},
     121: {"name": "reroutingIndicator", "type": dt.RerountingIndicator},
@@ -143,9 +150,9 @@ MSOriginating = {
     36: {"name": "restartDuringCall", "type": dt.Bool},  # NULL type
     37: {"name": "restartDuringOutputIndicator", "type": dt.Bool},  # NULL type
     38: {"name": "numberOfMeterPulses", "type": dt.NumberOfMeterPulses},
-    39: {"name": "c7ChargingMessage", "type": dt.C7ChargingMessage},
-    40: {"name": "c7FirstCHTMessage", "type": dt.C7CHTMessage},
-    41: {"name": "c7SecondCHTMessage", "type": dt.C7CHTMessage},
+    # 39: {"name": "c7ChargingMessage", "type": dt.C7ChargingMessage}, # WCDMA Japan
+    # 40: {"name": "c7FirstCHTMessage", "type": dt.C7CHTMessage}, # WCDMA Japan
+    # 41: {"name": "c7SecondCHTMessage", "type": dt.C7CHTMessage}, # WCDMA Japan
     42: {"name": "calledPartyMNPInfo", "type": dt.AddressString},
     43: {"name": "carrierIdentificationCode", "type": dt.CarrierIdentificationCode},
     44: {"name": "dTMFUsed", "type": dt.Bool},  # NULL type
@@ -224,8 +231,8 @@ MSOriginating = {
     115: {"name": "sDUErrorRatio3", "type": dt.ErrorRatio},
     116: {"name": "aCMChargingIndicator", "type": dt.ChargingIndicator},
     117: {"name": "aNMChargingIndicator", "type": dt.ChargingIndicator},
-    118: {"name": "carrierInformationBackward", "type": dt.TransitCarrierInfo},
-    119: {"name": "chargeInformation", "type": dt.ChargeInformation},
+    # 118: {"name": "carrierInformationBackward", "type": dt.TransitCarrierInfo}, # WCDMA Japan
+    # 119: {"name": "chargeInformation", "type": dt.ChargeInformation}, # WCDMA Japan
     120: {"name": "disconnectionDate", "type": dt.Date},
     124: {"name": "disconnectionTime", "type": dt.Time},
     125: {"name": "originatingCarrier", "type": dt.CarrierInfo},
@@ -235,7 +242,10 @@ MSOriginating = {
     129: {"name": "terminatingCarrier", "type": dt.CarrierInfo},
     130: {"name": "terminatingChargeArea", "type": dt.ChargeAreaCode},
     131: {"name": "terminatingMobileUserClass1", "type": dt.MobileUserClass1},
-    132: {"name": "terminatingMobileUserClass2", "type": dt.MobileUserClass2},
+    132: {
+        "name": "terminatingMobileUserClass2",
+        "type": dt.MobileUserClass2,
+    },  # WCDMA Japan
     133: {"name": "terminatingUserClass", "type": dt.UserClass},
     134: {"name": "contractorNumber", "type": dt.AddressString},
     135: {"name": "carrierInformation", "type": dt.CarrierInformation},
@@ -307,8 +317,7 @@ RoamingCallForwarding = {
     52: {"name": "forloppReleaseDuringCall", "type": dt.Bool},  # NULL type
     53: {"name": "gSMCallReferenceNumber", "type": dt.GSMCallReferenceNumber},
     54: {"name": "mSCAddress", "type": dt.AddressString},
-    # 55: {"name": "carrierInformationBackward", "type": dt.TransitCarrierInfo},
-    56: {"name": "originatingAccessISDN", "type": dt.Bool},  # NULL type
+    # 55: {"name": "carrierInformationBackward", "type": dt.TransitCarrierInfo}, # WCDMA Japan
     57: {"name": "originatingCarrier", "type": dt.CarrierInfo},
     58: {"name": "originatingChargeArea", "type": dt.ChargeAreaCode},
     59: {"name": "terminatingAccessISDN", "type": dt.Bool},  # NULL type
@@ -364,9 +373,9 @@ CallForwarding = {
     32: {"name": "restartDuringCall", "type": dt.Bool},  # NULL type
     33: {"name": "restartDuringOutputIndicator", "type": dt.Bool},  # NULL type
     34: {"name": "numberOfMeterPulses", "type": dt.NumberOfMeterPulses},
-    35: {"name": "c7ChargingMessage", "type": dt.C7ChargingMessage},
-    36: {"name": "c7FirstCHTMessage", "type": dt.C7CHTMessage},
-    37: {"name": "c7SecondCHTMessage", "type": dt.C7CHTMessage},
+    # 35: {"name": "c7ChargingMessage", "type": dt.C7ChargingMessage},
+    # 36: {"name": "c7FirstCHTMessage", "type": dt.C7CHTMessage}, # WCDMA Japan
+    # 37: {"name": "c7SecondCHTMessage", "type": dt.C7CHTMessage}, # WCDMA Japan
     38: {"name": "iCIOrdered", "type": dt.Bool},  # NULL type
     39: {"name": "outputForSubscriber", "type": dt.OutputForSubscriber},
     40: {"name": "iNMarkingOfMS", "type": dt.INMarkingOfMS},
@@ -408,8 +417,8 @@ CallForwarding = {
     74: {"name": "mSCAddress", "type": dt.AddressString},
     75: {"name": "aCMChargingIndicator", "type": dt.ChargingIndicator},
     76: {"name": "aNMChargingIndicator", "type": dt.ChargingIndicator},
-    77: {"name": "carrierInformationBackward", "type": dt.TransitCarrierInfo},
-    78: {"name": "chargeInformation", "type": dt.ChargeInformation},
+    # 77: {"name": "carrierInformationBackward", "type": dt.TransitCarrierInfo}, # WCDMA Japan
+    # 78: {"name": "chargeInformation", "type": dt.ChargeInformation}, # WCDMA Japan
     79: {"name": "disconnectionDate", "type": dt.Date},
     80: {"name": "disconnectionTime", "type": dt.Time},
     81: {"name": "exitPOICA", "type": dt.ChargeAreaCode},
@@ -419,7 +428,7 @@ CallForwarding = {
     85: {"name": "terminatingCarrier", "type": dt.CarrierInfo},
     86: {"name": "terminatingChargeArea", "type": dt.ChargeAreaCode},
     87: {"name": "terminatingMobileUserClass1", "type": dt.MobileUserClass1},
-    88: {"name": "terminatingMobileUserClass2", "type": dt.MobileUserClass2},
+    # 88: {"name": "terminatingMobileUserClass2", "type": dt.MobileUserClass2}, # WCDMA Japan
     89: {"name": "terminatingUserClass", "type": dt.UserClass},
     90: {"name": "originatingAccessISDN", "type": dt.Bool},  # NULL type
     91: {"name": "contractorNumber", "type": dt.AddressString},
@@ -549,12 +558,12 @@ MSTerminating = {
     102: {"name": "outputType", "type": dt.OutputType},
     103: {"name": "aCMChargingIndicator", "type": dt.ChargingIndicator},
     104: {"name": "aNMChargingIndicator", "type": dt.ChargingIndicator},
-    105: {"name": "chargeInformation", "type": dt.ChargeInformation},
+    # 105: {"name": "chargeInformation", "type": dt.ChargeInformation}, # WCDMA Japan
     106: {"name": "disconnectionDate", "type": dt.Date},
     107: {"name": "disconnectionTime", "type": dt.Time},
     108: {"name": "internationalCallIndicator", "type": dt.Bool},  # NULL type
     109: {"name": "mobileUserClass1", "type": dt.MobileUserClass1},
-    110: {"name": "mobileUserClass2", "type": dt.MobileUserClass2},
+    # 110: {"name": "mobileUserClass2", "type": dt.MobileUserClass2}, # WCDMA Japan
     111: {"name": "originatingCarrier", "type": dt.CarrierInfo},
     112: {"name": "originatingChargeArea", "type": dt.ChargeAreaCode},
     113: {"name": "terminatingCarrier", "type": dt.CarrierInfo},
@@ -757,9 +766,9 @@ TransitINOutgoingCall = {
     17: {"name": "forloppDuringOutputIndicator", "type": dt.Bool},  # NULL type
     18: {"name": "tariffClass", "type": dt.TariffClass},
     19: {"name": "forloppReleaseDuringCall", "type": dt.Bool},  # NULL type
-    20: {"name": "c7ChargingMessage", "type": dt.C7ChargingMessage},
-    21: {"name": "c7FirstCHTMessage", "type": dt.C7CHTMessage},
-    22: {"name": "c7SecondCHTMessage", "type": dt.C7CHTMessage},
+    # 20: {"name": "c7ChargingMessage", "type": dt.C7ChargingMessage}, # WCDMA Japan
+    # 21: {"name": "c7FirstCHTMessage", "type": dt.C7CHTMessage}, # WCDMA Japan
+    # 22: {"name": "c7SecondCHTMessage", "type": dt.C7CHTMessage}, # WCDMA Japan
     23: {"name": "contractorNumber", "type": dt.AddressString},
     24: {"name": "calledPartyMNPInfo", "type": dt.AddressString},
     102: {"name": "outputType", "type": dt.OutputType},

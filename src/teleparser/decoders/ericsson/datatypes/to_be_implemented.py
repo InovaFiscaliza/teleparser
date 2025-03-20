@@ -370,145 +370,168 @@ class ChargeAreaCode(primitives.AddressString):
 
 
 class ChargeInformation(primitives.AddressString):
-    """ASN.1 Formal Description
-    ChargeInformation ::= OCTET STRING (SIZE(2..33))
-    |     |     |     |     |     |     |     |     |
-    |  8  |  7  |  6  |  5  |  4  |  3  |  2  |  1  |
-    |     |     |     |     |     |     |     |     |
-    /-----------------------------------------------/
-    |       Units per time period (UTP)             |  octet 1
-    +-----------------------------------------------+
-    | ext | Charge rate information category (CRIC) |  octet 2
-    +-----------------------------------------------+
-    |       Length of charge rate information       |  octet 3
-    +-----------------------------------------------+
-    |       Initial units (IU)            (octet M) |  octet 4
-    +-----------------------------------------------+
-    |       Initial units (IU)            (octet N) |  octet 5
-    +-----------------------------------------------+
-    |       Daytime charge rate (DCR)     (octet A) |  octet 6
-    +-----------------------------------------------+
-    |       Daytime charge rate (DCR)     (octet B) |  octet 7
-    +-----------------------------------------------+
-    |       Daytime charge rate (DCR)     (octet C) |  octet 8
-    +-----------------------------------------------+
-    |       Evening time charge rate (ECR)(octet D) |  octet 9
-    +-----------------------------------------------+
-    |       Evening time charge rate (ECR)(octet E) |  octet 10
-    +-----------------------------------------------+
-    |       Evening time charge rate (ECR)(octet F) |  octet 11
-    +-----------------------------------------------+
-    |       Nighttime charge rate (NCR)   (octet G) |  octet 12
-    +-----------------------------------------------+
-    |       Nighttime charge rate (NCR)   (octet H) |  octet 13
-    +-----------------------------------------------+
-    |       Nighttime charge rate (NCR)   (octet I) |  octet 14
-    +-----------------------------------------------+
-    |       Spare charge rate (SCR)       (octet J) |  octet 15
-    +-----------------------------------------------+
-    |       Spare charge rate (SCR)       (octet K) |  octet 16
-    +-----------------------------------------------+
-    |       Spare charge rate (SCR)       (octet L) |  octet 17
-    +-----------------------------------------------+
-    | ext | Charge rate information category (CRIC) |  octet 18
-    +-----------------------------------------------+
-    |       Length of charge rate information       |  octet 19
-    +-----------------------------------------------+
-    |       Initial units (IU)            (octet M) |  octet 20
-    +-----------------------------------------------+
-    |       Initial units (IU)            (octet N) |  octet 21
-    +-----------------------------------------------+
-    |       Daytime charge rate (DCR)     (octet A) |  octet 22
-    +-----------------------------------------------+
-    |       Daytime charge rate (DCR)     (octet B) |  octet 23
-    +-----------------------------------------------+
-    |       Daytime charge rate (DCR)     (octet C) |  octet 24
-    +-----------------------------------------------+
-    |       Evening time charge rate (ECR)(octet D) |  octet 25
-    +-----------------------------------------------+
-    |       Evening time charge rate (ECR)(octet E) |  octet 26
-    +-----------------------------------------------+
-    |       Evening time charge rate (ECR)(octet F) |  octet 27
-    +-----------------------------------------------+
-    |       Nighttime charge rate (NCR)   (octet G) |  octet 28
-    +-----------------------------------------------+
-    |       Nighttime charge rate (NCR)   (octet H) |  octet 29
-    +-----------------------------------------------+
-    |       Nighttime charge rate (NCR)   (octet I) |  octet 30
-    +-----------------------------------------------+
-    |       Spare charge rate (SCR)       (octet J) |  octet 31
-    +-----------------------------------------------+
-    |       Spare charge rate (SCR)       (octet K) |  octet 32
-    +-----------------------------------------------+
-    |       Spare charge rate (SCR)       (octet L) |  octet 33
-    /-----------------------------------------------/
-    UNITS PER TIME PERIOD (UTP)
-    00000000  Spare
-    00000001
-    to        Reserved for network specific use
-    10000000
-    10000001
-    to        Spare
-    11111011
-    11111100  100 yen
-    11111101  10 yen
-    11111110  No indication
-    11111111  Spare
-    CHARGE RATE INFORMATION CATEGORY (CRIC)
-    0000000  Spare
-    0000001
-    to       Reserved for network specific use
-    1000000
-    1000001
-    to       Spare
-    1111011
-    1111100  Public (payphone)
-    1111101  Ordinary
-    1111110  No flexible charge rate information
-    1111111  Spare
-    EXTENSION INDICATOR (ext)
-    0   Octet continues through the next octets.
-    1   Last octet
-    LENGTH OF CHARGE RATE INFORMATION
-    Can assume only the value 14 if generated in WCDMA, but can
-    assume also other values (e.g. 5, 8, 11) when received
-    from other networks.
-    INITIAL UNITS (IU)
-    Value range '0 - 15' as IA5 coded in two octets (10M + N),
-    e.g. for IU value '1' octet M = '30H' and octet N = '31H'.
-    DAYTIME CHARGE RATE (DCR)
-    Consists of the Time Period (TP) field with the value
-    range '1 - 999' as IA5 coded in three octets
-    ((100A + 10B + C))/2) seconds/ unit charge, e.g. for
-    TP value '120' octet A = '31H', B = '32H' and C = '30H'.
-    The unit of the TP field is 0.5 s, and thus e.g. the value
-    '120' stands for 60 s meaning, that the call charge will be
-    incremented every minute with e.g. 10 yen.
-    EVENING TIME CHARGE RATE (ECR),
-    Same coding as for Daytime Charge Rate (DCR) with octets
-    D, E and F, ie. ((100D+10E+F)/2) seconds/unit charge
-    NIGHTTIME CHARGE RATE (NCR),
-    Same coding as for Daytime Charge Rate (DCR) with octets
-    G, H and I, ie. ((100G+10H+I)/2) seconds/unit charge
-    SPARE CHARGE RATE (SCR)
-    Same coding as for Daytime Charge Rate (DCR) with octets
-    J, K and L, ie. ((100J+10K+L)/2) seconds/unit charge
-    Note 1:  A certain Charge Rate Information Category
-    (CRIC) value can occur only once in the CI
-    parameter.
-    Note 2:  The maximum length (33 octets) of the CI
-    parameter occurs, when the charge rate
-    information is given for both the 'ordinary'
-    and 'public' category at the same time (for
-    two CRIC values).
-    Note 3:  The minimum length (2 octets) of the CI
-    parameter occurs, when the CRIC field holds
-    the value 'No flexible charge rate information'.
-    In this case the UTP field holds the value
-    'No Indication' and the Extension indicator is
-    coded '1'. This means in fact that the call is
-    free of charge (from flexible charging point of
-    view).
+    """Charge Information
+
+    This parameter Contains flexible charging tariff
+    information that is received or generated by
+    the mobile network. It is transmitted in eACM/ACM,
+    CHG or CPG message.
+
+    Charge Information consists of a unit rate indicator
+    (10 or 100 Yen), a charge rate information category
+    and the charge rate information (i.e. tariffs) itself.
+    Charge rate information is made up of initial units
+    and one to four (day, evening, night and spare) charge
+    rates.
+
+    Unit rate indicator can also be specified as 'No
+    indication' and in that case no charge rate information
+    is included.
+
+    Note: The last received Charge Information will be
+          stored in the CDR.
+
+    The parameter is only applicable for WCDMA Japan.
+
+      ASN.1 Formal Description
+      ChargeInformation ::= OCTET STRING (SIZE(2..33))
+      |     |     |     |     |     |     |     |     |
+      |  8  |  7  |  6  |  5  |  4  |  3  |  2  |  1  |
+      |     |     |     |     |     |     |     |     |
+      /-----------------------------------------------/
+      |       Units per time period (UTP)             |  octet 1
+      +-----------------------------------------------+
+      | ext | Charge rate information category (CRIC) |  octet 2
+      +-----------------------------------------------+
+      |       Length of charge rate information       |  octet 3
+      +-----------------------------------------------+
+      |       Initial units (IU)            (octet M) |  octet 4
+      +-----------------------------------------------+
+      |       Initial units (IU)            (octet N) |  octet 5
+      +-----------------------------------------------+
+      |       Daytime charge rate (DCR)     (octet A) |  octet 6
+      +-----------------------------------------------+
+      |       Daytime charge rate (DCR)     (octet B) |  octet 7
+      +-----------------------------------------------+
+      |       Daytime charge rate (DCR)     (octet C) |  octet 8
+      +-----------------------------------------------+
+      |       Evening time charge rate (ECR)(octet D) |  octet 9
+      +-----------------------------------------------+
+      |       Evening time charge rate (ECR)(octet E) |  octet 10
+      +-----------------------------------------------+
+      |       Evening time charge rate (ECR)(octet F) |  octet 11
+      +-----------------------------------------------+
+      |       Nighttime charge rate (NCR)   (octet G) |  octet 12
+      +-----------------------------------------------+
+      |       Nighttime charge rate (NCR)   (octet H) |  octet 13
+      +-----------------------------------------------+
+      |       Nighttime charge rate (NCR)   (octet I) |  octet 14
+      +-----------------------------------------------+
+      |       Spare charge rate (SCR)       (octet J) |  octet 15
+      +-----------------------------------------------+
+      |       Spare charge rate (SCR)       (octet K) |  octet 16
+      +-----------------------------------------------+
+      |       Spare charge rate (SCR)       (octet L) |  octet 17
+      +-----------------------------------------------+
+      | ext | Charge rate information category (CRIC) |  octet 18
+      +-----------------------------------------------+
+      |       Length of charge rate information       |  octet 19
+      +-----------------------------------------------+
+      |       Initial units (IU)            (octet M) |  octet 20
+      +-----------------------------------------------+
+      |       Initial units (IU)            (octet N) |  octet 21
+      +-----------------------------------------------+
+      |       Daytime charge rate (DCR)     (octet A) |  octet 22
+      +-----------------------------------------------+
+      |       Daytime charge rate (DCR)     (octet B) |  octet 23
+      +-----------------------------------------------+
+      |       Daytime charge rate (DCR)     (octet C) |  octet 24
+      +-----------------------------------------------+
+      |       Evening time charge rate (ECR)(octet D) |  octet 25
+      +-----------------------------------------------+
+      |       Evening time charge rate (ECR)(octet E) |  octet 26
+      +-----------------------------------------------+
+      |       Evening time charge rate (ECR)(octet F) |  octet 27
+      +-----------------------------------------------+
+      |       Nighttime charge rate (NCR)   (octet G) |  octet 28
+      +-----------------------------------------------+
+      |       Nighttime charge rate (NCR)   (octet H) |  octet 29
+      +-----------------------------------------------+
+      |       Nighttime charge rate (NCR)   (octet I) |  octet 30
+      +-----------------------------------------------+
+      |       Spare charge rate (SCR)       (octet J) |  octet 31
+      +-----------------------------------------------+
+      |       Spare charge rate (SCR)       (octet K) |  octet 32
+      +-----------------------------------------------+
+      |       Spare charge rate (SCR)       (octet L) |  octet 33
+      /-----------------------------------------------/
+      UNITS PER TIME PERIOD (UTP)
+      00000000  Spare
+      00000001
+      to        Reserved for network specific use
+      10000000
+      10000001
+      to        Spare
+      11111011
+      11111100  100 yen
+      11111101  10 yen
+      11111110  No indication
+      11111111  Spare
+      CHARGE RATE INFORMATION CATEGORY (CRIC)
+      0000000  Spare
+      0000001
+      to       Reserved for network specific use
+      1000000
+      1000001
+      to       Spare
+      1111011
+      1111100  Public (payphone)
+      1111101  Ordinary
+      1111110  No flexible charge rate information
+      1111111  Spare
+      EXTENSION INDICATOR (ext)
+      0   Octet continues through the next octets.
+      1   Last octet
+      LENGTH OF CHARGE RATE INFORMATION
+      Can assume only the value 14 if generated in WCDMA, but can
+      assume also other values (e.g. 5, 8, 11) when received
+      from other networks.
+      INITIAL UNITS (IU)
+      Value range '0 - 15' as IA5 coded in two octets (10M + N),
+      e.g. for IU value '1' octet M = '30H' and octet N = '31H'.
+      DAYTIME CHARGE RATE (DCR)
+      Consists of the Time Period (TP) field with the value
+      range '1 - 999' as IA5 coded in three octets
+      ((100A + 10B + C))/2) seconds/ unit charge, e.g. for
+      TP value '120' octet A = '31H', B = '32H' and C = '30H'.
+      The unit of the TP field is 0.5 s, and thus e.g. the value
+      '120' stands for 60 s meaning, that the call charge will be
+      incremented every minute with e.g. 10 yen.
+      EVENING TIME CHARGE RATE (ECR),
+      Same coding as for Daytime Charge Rate (DCR) with octets
+      D, E and F, ie. ((100D+10E+F)/2) seconds/unit charge
+      NIGHTTIME CHARGE RATE (NCR),
+      Same coding as for Daytime Charge Rate (DCR) with octets
+      G, H and I, ie. ((100G+10H+I)/2) seconds/unit charge
+      SPARE CHARGE RATE (SCR)
+      Same coding as for Daytime Charge Rate (DCR) with octets
+      J, K and L, ie. ((100J+10K+L)/2) seconds/unit charge
+      Note 1:  A certain Charge Rate Information Category
+      (CRIC) value can occur only once in the CI
+      parameter.
+      Note 2:  The maximum length (33 octets) of the CI
+      parameter occurs, when the charge rate
+      information is given for both the 'ordinary'
+      and 'public' category at the same time (for
+      two CRIC values).
+      Note 3:  The minimum length (2 octets) of the CI
+      parameter occurs, when the CRIC field holds
+      the value 'No flexible charge rate information'.
+      In this case the UTP field holds the value
+      'No Indication' and the Extension indicator is
+      coded '1'. This means in fact that the call is
+      free of charge (from flexible charging point of
+      view).
     """
 
 
@@ -545,27 +568,37 @@ class ChargingUnitsAddition(primitives.AddressString):
 
 
 class Counter(primitives.AddressString):
-    """ASN.1 Formal Description
-    Counter ::= OCTET STRING (SIZE(1..4))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   | octet 1
-    +---------------------------------------+
-    |                                       | octet 2
-    +---------------------------------------+
-    |                                       | octet 3
-    +---------------------------------------+
-    |                                    LSB| octet 4
-    /---------------------------------------/
-    Value range 0 - H'FFFFFFFF (4 Octets)
-    1 - H'F        (1 Octet )
-    Note : The OCTET STRING is internally coded as
-    an unsigned INTEGER.
-    For WCDMA ETSI and GSM the number of octets is
-    always 4 and for WCDMA Japan the number of octets
-    is always 1.
+    """TDS Counter
+
+      The TDS Counter contains the number of received TDS
+      related CHG messages, i.e. it reflects the number of
+      telephone numbers supplied by the service provider
+      when a mobile subscriber is using the telephone
+      directory service.
+
+      The parameter is only applicable for WCDMA Japan.
+
+    ASN.1 Formal Description
+        Counter ::= OCTET STRING (SIZE(1..4))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB                                   | octet 1
+        +---------------------------------------+
+        |                                       | octet 2
+        +---------------------------------------+
+        |                                       | octet 3
+        +---------------------------------------+
+        |                                    LSB| octet 4
+        /---------------------------------------/
+        Value range 0 - H'FFFFFFFF (4 Octets)
+        1 - H'F        (1 Octet )
+        Note : The OCTET STRING is internally coded as
+        an unsigned INTEGER.
+        For WCDMA ETSI and GSM the number of octets is
+        always 4 and for WCDMA Japan the number of octets
+        is always 1.
     """
 
 
@@ -651,101 +684,110 @@ class CUGInterlockCode(primitives.AddressString):
 
 
 class C7ChargingMessage(primitives.AddressString):
-    """ASN.1 Formal Description
-    C7ChargingMessage ::= OCTET STRING (SIZE(8))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                  Hours                | octet 1
-    +---------------------------------------+
-    |                 Minutes               | octet 2
-    +---------------------------------------+
-    |                MessageInd.            | octet 3
-    +---------------------------------------+
-    | Tax quantum  (A)  | Tariff Ind. (A)   | octet 4
-    +---------------------------------------+
-    |       Tariff factor (A)               | octet 5
-    +---------------------------------------+
-    |            Time Indicator  (B)        | octet 6
-    +---------------------------------------+
-    | Tax quantum  (B)  | Tariff Ind. (B)   | octet 7
-    +---------------------------------------+
-    |       Tariff factor (B)               | octet 8
-    /---------------------------------------/
-    The C7 Charging Message contains the
-    following information:
-    TIME OF RECEPTION OF THE MESSAGE (octets 1 and 2)
-    Octet 1 contains hours, value range 00-23
-    Octet 2 contains minutes, value range 00-59
-    MESSAGE INDICATORS (octet 3)
-    Bits 8-5  are always set to zero
-    Bits 4-1
-    B1 : Indicator of the current tariff
-    0= Tax quantum (A) and tariff
-    indicator (A) are not present.
-    1= Tax quantum (A) and tariff
-    indicator (A) are present.
-    B2 : Indicator of the current tariff
-    0= Tariff factor (A) is not present.
-    1= Tariff factor (A) is present.
-    B3 : Indicator of the next tariff
-    0= Tax quantum (B) and tariff
-    indicator (B) are not present.
-    1= Tax quantum (B) and tariff
-    indicator (B) are present.
-    B4 : Indicator of the next tariff
-    0= Tariff factor (B) is not present.
-    1= Tariff factor (B) is present.
-    TAX QUANTUM (A) (octet 4, bits 8-5)
-    Number of Charging Units 0-15 can be registered.
-    TARIFF INDICATOR (A) (octet 4, bits 4-1)
-    Value                Meaning
-    _____                _______
-    0                 Tariff scale 0
-    (no time-dependent Tariff)
-    1                 Tariff scale I (reserved)
-    2                 Tariff scale II (0.1 second)
-    3                 Tariff scale III (0.2 second)
-    4                 Tariff scale IV (0.5 second)
-    5                 Tariff scale V (1 second)
-    6                 Tariff scale VI (2 second)
-    7                 Tariff scale VII(4 second)
-    8-15              Tariff scale VIII to XV (reserved)
-    TARIFF FACTOR (A) (octet 5)
-    Number from 1 to 255.
-    TIME INDICATOR (B) (octet 6)
-    Bit 1 is coded as zero (reserved).
-    Bits 8 7 6 5 4 3 2 1      Meaning:
-    -------------
-    0 0 0 0 0 0 0 0      Immediate Change
-    0 0 0 0 0 0 1 0      00 Hours 15 Minutes
-    0 0 0 0 0 1 0 0      00 Hours 30 Minutes
-    0 0 0 0 0 1 1 0      00 Hours 45 Minutes
-    .
-    .
-    1 1 0 0 0 0 0 0      24 Hours 00 Minutes
-    1 1 0 0 0 0 1 0      Reserved
-    .
-    .
-    1 1 1 1 1 1 1 0
-    TAX QUANTUM (B) (octet 7, bits 8-5)
-    Number of Charging Units 0-15 can be registered.
-    TARIFF INDICATOR (B) (octet 7, bits 4-1)
-    Value                Meaning
-    _____                _______
-    0                 Tariff scale 0
-    (no time-dependent Tariff)
-    1                 Tariff scale I (reserved)
-    2                 Tariff scale II (0.1 second)
-    3                 Tariff scale III (0.2 second)
-    4                 Tariff scale IV (0.5 second)
-    5                 Tariff scale V (1 second)
-    6                 Tariff scale VI (2 second)
-    7                 Tariff scale VII(4 second)
-    8-15              Tariff scale VIII to XV (reserved)
-    TARIFF FACTOR (B) (octet 8)
-    Number from 1 to 255.
+    """CCITT No.7 Charging Message
+
+      This parameter contains the time of the reception of the
+      message and the data of the charging message.
+
+      This parameter is available if received and the national
+      signalling system supports the function.
+
+      The parameter is not applicable for WCDMA Japan.
+    ASN.1 Formal Description
+        C7ChargingMessage ::= OCTET STRING (SIZE(8))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        |                  Hours                | octet 1
+        +---------------------------------------+
+        |                 Minutes               | octet 2
+        +---------------------------------------+
+        |                MessageInd.            | octet 3
+        +---------------------------------------+
+        | Tax quantum  (A)  | Tariff Ind. (A)   | octet 4
+        +---------------------------------------+
+        |       Tariff factor (A)               | octet 5
+        +---------------------------------------+
+        |            Time Indicator  (B)        | octet 6
+        +---------------------------------------+
+        | Tax quantum  (B)  | Tariff Ind. (B)   | octet 7
+        +---------------------------------------+
+        |       Tariff factor (B)               | octet 8
+        /---------------------------------------/
+        The C7 Charging Message contains the
+        following information:
+        TIME OF RECEPTION OF THE MESSAGE (octets 1 and 2)
+        Octet 1 contains hours, value range 00-23
+        Octet 2 contains minutes, value range 00-59
+        MESSAGE INDICATORS (octet 3)
+        Bits 8-5  are always set to zero
+        Bits 4-1
+        B1 : Indicator of the current tariff
+        0= Tax quantum (A) and tariff
+        indicator (A) are not present.
+        1= Tax quantum (A) and tariff
+        indicator (A) are present.
+        B2 : Indicator of the current tariff
+        0= Tariff factor (A) is not present.
+        1= Tariff factor (A) is present.
+        B3 : Indicator of the next tariff
+        0= Tax quantum (B) and tariff
+        indicator (B) are not present.
+        1= Tax quantum (B) and tariff
+        indicator (B) are present.
+        B4 : Indicator of the next tariff
+        0= Tariff factor (B) is not present.
+        1= Tariff factor (B) is present.
+        TAX QUANTUM (A) (octet 4, bits 8-5)
+        Number of Charging Units 0-15 can be registered.
+        TARIFF INDICATOR (A) (octet 4, bits 4-1)
+        Value                Meaning
+        _____                _______
+        0                 Tariff scale 0
+        (no time-dependent Tariff)
+        1                 Tariff scale I (reserved)
+        2                 Tariff scale II (0.1 second)
+        3                 Tariff scale III (0.2 second)
+        4                 Tariff scale IV (0.5 second)
+        5                 Tariff scale V (1 second)
+        6                 Tariff scale VI (2 second)
+        7                 Tariff scale VII(4 second)
+        8-15              Tariff scale VIII to XV (reserved)
+        TARIFF FACTOR (A) (octet 5)
+        Number from 1 to 255.
+        TIME INDICATOR (B) (octet 6)
+        Bit 1 is coded as zero (reserved).
+        Bits 8 7 6 5 4 3 2 1      Meaning:
+        -------------
+        0 0 0 0 0 0 0 0      Immediate Change
+        0 0 0 0 0 0 1 0      00 Hours 15 Minutes
+        0 0 0 0 0 1 0 0      00 Hours 30 Minutes
+        0 0 0 0 0 1 1 0      00 Hours 45 Minutes
+        .
+        .
+        1 1 0 0 0 0 0 0      24 Hours 00 Minutes
+        1 1 0 0 0 0 1 0      Reserved
+        .
+        .
+        1 1 1 1 1 1 1 0
+        TAX QUANTUM (B) (octet 7, bits 8-5)
+        Number of Charging Units 0-15 can be registered.
+        TARIFF INDICATOR (B) (octet 7, bits 4-1)
+        Value                Meaning
+        _____                _______
+        0                 Tariff scale 0
+        (no time-dependent Tariff)
+        1                 Tariff scale I (reserved)
+        2                 Tariff scale II (0.1 second)
+        3                 Tariff scale III (0.2 second)
+        4                 Tariff scale IV (0.5 second)
+        5                 Tariff scale V (1 second)
+        6                 Tariff scale VI (2 second)
+        7                 Tariff scale VII(4 second)
+        8-15              Tariff scale VIII to XV (reserved)
+        TARIFF FACTOR (B) (octet 8)
+        Number from 1 to 255.
     """
 
 
@@ -1167,35 +1209,51 @@ class GSMCallReferenceNumber(primitives.AddressString):
 
 
 class IMEI:
-    """ASN.1 Formal Description
-    IMEI ::= TBCDString (SIZE(8))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |  TAC digit 2      |  TAC digit 1      | octet 1
-    +-------------------+-------------------+
-    |  TAC digit 4      |  TAC digit 3      | octet 2
-    +-------------------+-------------------+
-    |  TAC digit 6      |  TAC digit 5      | octet 3
-    +-------------------+-------------------+
-    |  TAC digit 8      |  TAC digit 7      | octet 4
-    +-------------------+-------------------+
-    |  SNR digit 2      |  SNR digit 1      | octet 5
-    +-------------------+-------------------+
-    |  SNR digit 4      |  SNR digit 3      | octet 6
-    +-------------------+-------------------+
-    |  SNR digit 6      |  SNR digit 5      | octet 7
-    +-------------------+-------------------+
-    |  See note         |  See note         | octet 8
-    /---------------------------------------/
-    TAC Type Allocation Code (octet 1, 2, 3 and 4).
-    SNR Serial Number (octet 5, 6 and 7).
-    Digits 0 to 9, two digits per octet,
-    each digit encoded 0000 to 1001
-    Note:
-    Bits 1-4 of octet 8: Spare
-    Bits 5-8 of octet 8: 1111 used as a filler.
+    """Calling Subscriber IMEI
+
+      This parameter contains the calling-subscriber
+      International Mobile Station Equipment Identity (IMEI).
+
+      The parameter is output, if the exchange data is
+      set so that IMEI is fetched from user equipment at call
+      setup.
+
+      In case of a network-initiated USSD service, this
+      parameter contains the IMEI for the served subscriber
+      in Subscriber Service Procedure Call Module.
+
+      In case of ineffective call the parameter is not
+      available for mobile originating Call Component.
+
+    ASN.1 Formal Description
+        IMEI ::= TBCDString (SIZE(8))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        |  TAC digit 2      |  TAC digit 1      | octet 1
+        +-------------------+-------------------+
+        |  TAC digit 4      |  TAC digit 3      | octet 2
+        +-------------------+-------------------+
+        |  TAC digit 6      |  TAC digit 5      | octet 3
+        +-------------------+-------------------+
+        |  TAC digit 8      |  TAC digit 7      | octet 4
+        +-------------------+-------------------+
+        |  SNR digit 2      |  SNR digit 1      | octet 5
+        +-------------------+-------------------+
+        |  SNR digit 4      |  SNR digit 3      | octet 6
+        +-------------------+-------------------+
+        |  SNR digit 6      |  SNR digit 5      | octet 7
+        +-------------------+-------------------+
+        |  See note         |  See note         | octet 8
+        /---------------------------------------/
+        TAC Type Allocation Code (octet 1, 2, 3 and 4).
+        SNR Serial Number (octet 5, 6 and 7).
+        Digits 0 to 9, two digits per octet,
+        each digit encoded 0000 to 1001
+        Note:
+        Bits 1-4 of octet 8: Spare
+        Bits 5-8 of octet 8: 1111 used as a filler.
     """
 
 
@@ -1701,40 +1759,40 @@ class MessageReference(primitives.AddressString):
 
 
 class MobileUserClass2(primitives.AddressString):
-    """ASN.1 Formal Description
-    MobileUserClass2 ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                               LSB |
-    /---------------------------------------/
-    Additional Mobile Service Information Type 2,
-    telecommunication method related information
-    00000000 Spare
-    00000001 HiCap method (analog)
-    00000010 N/J-TACS
-    00000011 PDC 800 MHz
-    00000100 PDC 1.5 GHz
-    00000101 N-STAR Satellite
-    00000110 cdmaOne 800MHz
-    00000111 Iridium Satellite
-    00001000 IMT-2000
-    00001001 PHS (fixed network dependent)
-    00001010
-    to       Spare
-    11111111
-    """
+    """Mobile User Class 2
 
+    This parameter contains Mobile system supplementary
+    user type 2, obtained from Additional User Category
+    (AUC) parameter in ISUP.
 
-class MultimediaInformation:
-    """ASN.1 Formal Description
-    MultimediaInformation ::= SEQUENCE(
-    userRate                  (0) IMPLICIT UserRate
-    OPTIONAL,
-    asyncSyncIndicator        (1) IMPLICIT AsyncSyncIndicator
-    OPTIONAL,
-    uILayer1Protocol          (2) IMPLICIT UILayer1Protocol)
+    It is used to indicate telecommunication method
+    related information in the originating side of the call.
+
+    The parameter is only applicable for WCDMA Japan.
+
+      ASN.1 Formal Description
+      MobileUserClass2 ::= OCTET STRING (SIZE(1))
+      |    |    |    |    |    |    |    |    |
+      |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+      |    |    |    |    |    |    |    |    |
+      /---------------------------------------/
+      | MSB                               LSB |
+      /---------------------------------------/
+      Additional Mobile Service Information Type 2,
+      telecommunication method related information
+      00000000 Spare
+      00000001 HiCap method (analog)
+      00000010 N/J-TACS
+      00000011 PDC 800 MHz
+      00000100 PDC 1.5 GHz
+      00000101 N-STAR Satellite
+      00000110 cdmaOne 800MHz
+      00000111 Iridium Satellite
+      00001000 IMT-2000
+      00001001 PHS (fixed network dependent)
+      00001010
+      to       Spare
+      11111111
     """
 
 
