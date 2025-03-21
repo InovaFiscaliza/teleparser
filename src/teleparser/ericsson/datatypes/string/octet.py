@@ -519,9 +519,11 @@ class LocationInformation(OctetString):
         mcc2 = self.octets[0] >> 4  # MCC digit 2
         mcc3 = self.octets[1] & 0x0F  # MCC digit 3
         self.mcc = mcc1 * 100 + mcc2 * 10 + mcc3
-        mnc3 = self.octets[1] >> 4  # MNC digit 3
-        mnc2 = self.octets[2] >> 4  # MNC digit 2
         mnc1 = self.octets[2] & 0x0F  # MNC digit 1
+        mnc2 = self.octets[2] >> 4  # MNC digit 2
+        if (mnc3 := self.octets[1] >> 4) == 15:  # MNC digit 3
+            mnc3 = 0
+
         mnc = mnc1 * 100 + mnc2 * 10 + mnc3
         self.carrier = PRESTADORAS[mnc]
 
@@ -534,13 +536,7 @@ class LocationInformation(OctetString):
 
     @property
     def value(self):
-        return (
-            self.carrier.name,
-            self.carrier.mcc,
-            self.carrier.mnc,
-            self.lac,
-            self.ci_sac,
-        )
+        return self.carrier._asdict() | {"lac": self.lac, "ci_sac": self.ci_sac}
 
     def __str__(self):
         return f"{self.carrier.name} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) LAC: {self.lac}, CI/SAC: {self.ci_sac}"
@@ -744,9 +740,8 @@ class TAC(OctetString):
         # Handle optional TOP octet
         top = self.string[6:8] if len(self.string) == 8 else ""
 
-        # Build result string
-        result = f"TSC={tsc} TOS={tos} TOI={toi}"
-        if top:
-            result += f" TOP={top}"
+        return {"tsc": tsc, "tos": tos, "toi": toi, "top": top}
 
-        return result
+    def __str__(self):
+        # Build result string
+        return f"{self.value}"
