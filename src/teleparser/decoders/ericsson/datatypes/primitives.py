@@ -229,7 +229,7 @@ class TBCDString(OctetString):
             digit1 = octet & 0x0F
             digit2 = (octet >> 4) & 0x0F
             digits.extend([digit1, digit2])
-        if digits[-1] == 15:  # Filler
+        if digits and digits[-1] == 15:  # Filler
             digits.pop()
         self.digits = digits
 

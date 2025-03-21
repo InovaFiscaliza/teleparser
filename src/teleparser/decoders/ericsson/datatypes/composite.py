@@ -1619,6 +1619,7 @@ class SpeechCoderPreferenceList(primitives.DigitString):
     """
 
 
+@primitives.fixed_size_unsigned_int(1)
 class SubscriptionType(primitives.UnsignedInt):
     """Subscription Type
 
