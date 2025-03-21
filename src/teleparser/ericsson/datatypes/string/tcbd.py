@@ -87,9 +87,7 @@ class IMSI(TBCDString):
 
     @property
     def value(self):
-        return {f"imsi_{k}": v for k, v in self.carrier._asdict().items()} | {
-            "imsi_msin": self.msin
-        }
+        return self.carrier._asdict() | {"msin": self.msin}
 
     def __str__(self) -> str:
         return f"{self.carrier.nome} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"

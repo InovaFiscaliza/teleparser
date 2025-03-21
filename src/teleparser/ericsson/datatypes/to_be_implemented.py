@@ -1,4 +1,4 @@
-from teleparser.decoders.ericsson.datatypes import primitives
+from teleparser.ericsson.datatypes import primitives
 
 
 class AddressStringExtended(primitives.AddressString):

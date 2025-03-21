@@ -118,7 +118,28 @@ class CDRFileManager:
         )
 
 
+def main():
+    from teleparser.ericsson.parser import TlvVozEricsson
+
+    folder = Path(__file__).parent.parent.parent / "data"
+    file = folder / "timvoz.gz"
+    buffer_manager = BufferManager(file)
+    ber = BerDecoder(TlvVozEricsson)
+    file_buffer = buffer_manager.open_file()
+    counter = 0
+    while file_buffer.has_data():
+        # with suppress(KeyError):
+        while (tlv := ber.decode_tlv(file_buffer)) is not None:
+            # print("Varredura: (Call Data Record)")
+            data, length = tlv
+            counter += 1
+    print(f"Total: {counter}")
+
+
 if __name__ == "__main__":
+    import typer
+
+    typer.run(main)
     # import asyncio
     # from collections import Counter
     # from time import perf_counter
@@ -149,16 +170,3 @@ if __name__ == "__main__":
     #     print(f"Total time: {perf_counter() - start}")
 
     # asyncio.run(process_cdr_files())
-    from teleparser.ericsson.parser import TlvVozEricsson
-
-    folder = Path(__file__).parent.parent.parent / "data"
-    file = folder / "clarovoz.gz"
-    buffer_manager = BufferManager(file)
-    ber = BerDecoder(TlvVozEricsson)
-    file_buffer = buffer_manager.open_file()
-    while file_buffer.has_data():
-        # with suppress(KeyError):
-        while (tlv := ber.decode_tlv(file_buffer)) is not None:
-            # print("Varredura: (Call Data Record)")
-            data, length = tlv
-            print(data)
