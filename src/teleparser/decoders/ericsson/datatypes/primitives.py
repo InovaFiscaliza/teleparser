@@ -98,7 +98,7 @@ class DigitString(OctetString):
     @cached_property
     def digits(self):  # sourcery skip: identity-comprehension
         # When you iterate over a bytes object, it returns the bytes as integers
-        return [byte for byte in self.octets]
+        return list(self.octets)
 
     @property
     def value(self) -> str:

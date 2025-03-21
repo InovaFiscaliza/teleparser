@@ -3,7 +3,6 @@ It's organized here because it's just the boilerplate of the type name and its d
 """
 
 from collections import namedtuple
-from functools import cached_property
 from . import primitives
 
 Prestadora = namedtuple(
@@ -174,61 +173,6 @@ class CarrierInfo(primitives.OctetString):
             digit = self.digits[2] & 0x0F
             exit_poi_hierarchy = "Spare" if digit > 2 else self.VALUES[digit]
         self.exit_poi_hierarchy = exit_poi_hierarchy
-
-
-class ChargeAreaCode(primitives.DigitString):
-    r"""ChargeAreaCode ::= OCTET STRING (SIZE(3))
- 
-    The digits for ID Code are encoded as a TBCD-STRING.
-    
-    |    |    |    |    |    |    |    |    | 
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 | 
-    |    |    |    |    |    |    |    |    | 
-    /---------------------------------------\ 
-    | 2nd CA Code digit | 1st CA Code digit | octet 1 of TBCD 
-    +-------------------+-------------------+ 
-    | 4th CA Code digit | 3rd CA Code digit | octet 2 of TBCD 
-    +-------------------+-------------------+ 
-    | Filler            | 5th CA Code digit | octet 3 of TBCD 
-    \---------------------------------------/ 
-    
-    Acceptable digits are between 0 and 9.
-    
-    Note1: CA Code consists currently of max 5 digits and
-        the 6th digit is filler (H'F).
-    Note2: In case of POICA the 6th digit is filler (H'0)."""
-
-    @cached_property
-    def digits(self):
-        digits = [int.from_bytes(byte, byteorder="big") for byte in self.octets]
-        assert all(0 <= digit <= 9 for digit in digits), (
-            " Acceptable digits are between 0 and 9."
-        )
-        return digits
-
-
-@primitives.fixed_size_digit_string(2)
-class ChargingCase(primitives.DigitString):
-    """Charging Case  (M)
-
-      This parameter contains the charging case which is
-      defined for the call and is used in charging analysis
-      for this call.
-
-    ASN.1 Formal Description
-        ChargingCase ::= OCTET STRING (SIZE(2))
-        |    |    |    |    |    |    |    |    |
-        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-        |    |    |    |    |    |    |    |    |
-        /---------------------------------------/
-        | MSB                                   |  octet 1
-        +---------------------------------------+
-        |                                    LSB|  octet 2
-        /---------------------------------------/
-        Note: The OCTET STRING is coded as an unsigned integer.
-        Values vary according to operator's definition.
-        Value range: H'0 - H'0FFF or value H'FFFF
-    """
 
 
 class ChargingIndicator(primitives.OctetString):
@@ -666,20 +610,6 @@ class FaultCode(primitives.UnsignedInt):
     """
 
 
-class GSMCallReferenceNumber(primitives.DigitString):
-    """GSM Call Reference Number
-
-    This parameter is CAMEL specific information parameter.
-    It applies to CAMEL calls and extended CAMEL calls with
-    IN Capability. It correlates Call Data Records output
-    from the GMSC/gsmSSF and the terminating MSC, or call
-    data records from the originating MSC/gsmSSF and a network
-    optional Call Data Record from the gsmSCF."""
-
-    def __init__(self, octets: bytes):
-        super().__init__(octets, lower=1, upper=8)
-
-
 class IMEI(primitives.OctetString):
     """Calling Subscriber IMEI
 
@@ -803,53 +733,6 @@ class IMSI(primitives.TBCDString):
         return f"{self.carrier.nome} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"
 
 
-@primitives.fixed_size_digit_string(2)
-class InternalCauseAndLoc(primitives.DigitString):
-    """Internal Cause and Location
-
-    This parameter contains the reason why the call was
-    disconnected, as well as where the disconnection decision
-    was made.
-
-    MAP, BSSAP, ISUP (or other National User Part) cause codes
-    are converted to the Internal Cause and Location. The
-    translation is market dependent and is defined by exchange
-    parameters.
-
-    This parameter is available if the cause has a
-    relevant value.
-
-    Values for Internal Cause and Location are described in
-    Application Information for Application Information for
-    block RA.
-
-    ASN.1 Formal Description
-    InternalCauseAndLoc ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |         LOCATION                      |  octet 1
-    +---------------------------------------+
-    |         CAUSE                         |  octet 2
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    For values, see the Application Information for function
-    block RA.
-    Also see the Application Information "Mapping of Cause
-    Codes and Location Information".
-    """
-
-    @property
-    def value(self):
-        self.location = self.digits[0]
-        self.cause = self.digits[1]
-        return self.location, self.cause
-
-    def __str__(self):
-        return f"Location: {self.location}, Cause: {self.cause}"
-
-
 class LocationInformation(primitives.OctetString):
     """ASN.1 Formal Description
     LocationInformation ::= OCTET STRING (SIZE(7))
@@ -927,90 +810,6 @@ class LocationInformation(primitives.OctetString):
 
     def __str__(self):
         return f"{self.carrier.name} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) LAC: {self.lac}, CI/SAC: {self.ci_sac}"
-
-
-@primitives.fixed_size_digit_string(1)
-class MiscellaneousInformation(primitives.DigitString):
-    """ASN.1 Formal Description
-    MiscellaneousInformation ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                               LSB |
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value range: H'0 - H'FE, value H'FF is reserved.
-    """
-
-
-@primitives.fixed_size_digit_string(5)
-class NetworkCallReference(primitives.DigitString):
-    """Network Call Reference  (M)
-
-      This parameter provides a mechanism for the post-
-      processing system to link together different call
-      data records produced for a call or, when Multi Party
-      Supplementary Service is invoked, several related calls
-      within a node. As an option, Call Data Records produced
-      in different nodes for the same call can contain the same
-      Network Call Reference (NCR), if the signalling transfers
-      the values between different nodes.
-
-    ASN.1 Formal Description
-        NetworkCallReference ::= OCTET STRING (SIZE(5))
-        |    |    |    |    |    |    |    |    |
-        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-        |    |    |    |    |    |    |    |    |
-        /---------------------------------------/
-        | MSB       SEQUENCE NUMBER             |  octet 1
-        +---------------------------------------+
-        |           SEQUENCE NUMBER             |  octet 2
-        +---------------------------------------+
-        |           SEQUENCE NUMBER         LSB |  octet 3
-        +---------------------------------------+
-        | MSB       SWITCH IDENTITY             |  octet 4
-        +---------------------------------------+
-        |           SWITCH IDENTITY         LSB |  octet 5
-        /---------------------------------------/
-        Note: OCTET STRING is coded internally as an
-        unsigned integer.
-        -   Octet 1-3 Sequence number
-        -   Octet 4-5 Switch identity
-        Value range of Sequence number: H'0 - H'FFFFFF
-        Value range of Switch identity: H'1 - H'FFFF
-    """
-
-    @property
-    def value(self):
-        self.sequence_number = int.from_bytes(self.octets[:3], "big")
-        self.switch_identity = int.from_bytes(self.octets[3:], "big")
-        return {
-            "networkCallReference_sequenceNumber": self.sequence_number,
-            "networkCallReference_switchIdentity": self.switch_identity,
-        }
-
-    def __str__(self):
-        return f"{self.sequence_number:06d}-{self.switch_identity:04d}"
-
-
-@primitives.fixed_size_digit_string(3)
-class NumberOfMeterPulses(primitives.DigitString):
-    """ASN.1 Formal Description
-    NumberOfMeterPulses ::=  OCTET STRING (SIZE(3))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   | octet 1
-    +---------------------------------------+
-    |                                       | octet 2
-    +---------------------------------------+
-    |                                  LSB  | octet 3
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value range: H'1 - H'FFFFFF
-    """
 
 
 @primitives.fixed_size_unsigned_int(1)
@@ -1199,49 +998,6 @@ class Route(primitives.Ia5String):
     """
 
 
-class ServiceKey(primitives.DigitString):
-    def __init__(self, octets: bytes):
-        super().__init__(octets, size=4)
-
-
-@primitives.fixed_size_digit_string(6)
-class SpeechCoderPreferenceList(primitives.DigitString):
-    """Speech Coder Preference List
-
-    This parameter contains speech coder versions received
-    from the UE, listed from most to least preferred.
-
-    The SpeechCoderPreferenceList that is sent to charging is
-    actually the selected Speech Coder Preference list which
-    is the result from the Telecommunication Service Analysis.
-    With this it is possible to charge for what the subscriber
-    will get after the operator's preferences have been taken
-    into account. This gives the operator full control of the
-    use of certain speech coders for certain call cases.
-
-    The parameter is only applicable for GSM.
-
-    ASN.1 Formal Description
-      SpeechCoderPreferenceList ::= OCTET STRING (SIZE (1..6))
-      |    |    |    |    |    |    |    |    |
-      |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-      |    |    |    |    |    |    |    |    |
-      /---------------------------------------/
-      |  1st preference                       | octet 1
-      +---------------------------------------+
-      |  2nd preference                       | octet 2
-      /---------------------------------------/
-      .
-      .
-      .
-      /---------------------------------------/
-      |  6th preference                       | octet 6
-      /---------------------------------------/
-      Value range for all octets: 0 - 5, encoded as
-      enumerated SpeechCoderVersion value.
-    """
-
-
 @primitives.fixed_size_unsigned_int(1)
 class SubscriptionType(primitives.UnsignedInt):
     """Subscription Type
@@ -1378,78 +1134,3 @@ class TypeOfCallingSubscriber(primitives.UnsignedInt):
     When a call is routed from the SSF/gsmSSF, the parameter
     may be modified by SCF/gsmSCF.
     """
-
-
-@primitives.fixed_size_digit_string(2)
-class TariffClass(primitives.DigitString):
-    """ASN.1 Formal Description
-    TariffClass ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   |  octet 1
-    +---------------------------------------+
-    |                                   LSB |  octet 2
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value varies according to operator's definition.
-    Value range: H'0 - H'FFFF
-    Value H'0: No tariff class is defined.
-    """
-
-
-class Time(primitives.DigitString):
-    r"""Time ::= OCTET STRING (SIZE(3..4))
-
-    |    |    |    |    |    |    |    |    | 
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 | 
-    |    |    |    |    |    |    |    |    | 
-    /---------------------------------------\ 
-    |                                       | octet 1 (Hour)
-    +---------------------------------------+ 
-    |                                       | octet 2 (Minute)
-    +---------------------------------------+ 
-    |                                       | octet 3 (Second)
-    +---------------------------------------+ 
-    |                                       | octet 4 (10th of
-    \---------------------------------------/          a second)
-
-    Note: OCTET STRING is coded as an unsigned integer.
-
-    Hour             (octet 1): value range  0-23 (H'0 - H'17)
-    Minute           (octet 2): value range  0-59 (H'0 - H'3B)
-    Second           (octet 3): value range  0-59 (H'0 - H'3B)
-    10th of a second (octet 4): value range  0-9  (H'0 - H'9)
-
-    Note: 10th of a second is only included for the parameter
-        chargeableDuration and only used for WCDMA Japan."""
-
-    def __init__(self, octets: bytes):
-        super().__init__(octets, lower=3, upper=4)
-        self._parse_digits()
-
-    def _parse_digits(self):
-        hour = int.from_bytes(self.octets[:1], "big")
-        minute = int.from_bytes(self.octets[1:2], "big")
-        second = int.from_bytes(self.octets[2:3], "big")
-        assert 0 <= hour <= 23, f"Hour should be in range 0-23: {hour}"
-        assert 0 <= minute <= 59, f"Minute should be in range 0-59: {minute}"
-        assert 0 <= second <= 59, f"Second should be in range 0-59: {second}"
-        self.hour = hour
-        self.minute = minute
-        self.second = second
-        if self.size == 4:
-            tenth_of_a_second = int.from_bytes(self.octets[3:4], "big")
-            assert 0 <= tenth_of_a_second <= 9, (
-                f"10th of a second should be in range 0-9: {tenth_of_a_second}"
-            )
-            self.tenth_of_a_second = tenth_of_a_second
-
-    @property
-    def value(self):
-        """Return datetime string"""
-        value = f"{self.hour:02d}:{self.minute:02d}:{self.second:02d}"
-        if self.size == 4:
-            value += f".{self.tenth_of_a_second:01d}"
-        return value
