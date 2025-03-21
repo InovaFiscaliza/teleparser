@@ -109,6 +109,9 @@ class DigitString(OctetString):
 class Bool:
     """Flag type for presence of optional NULL values"""
 
+    def __init__(self, byte: bytes):
+        assert not byte, "byte should be empty"
+
     @property
     def value(self):
         return True
@@ -150,8 +153,8 @@ class AddressString(OctetString):
     NPI_PRIVATE = 9
     NPI_RESERVED = 15
 
-    def __init__(self, octets: bytes):
-        super().__init__(octets, lower=1, upper=20)
+    def __init__(self, octets: bytes, **kwargs):
+        super().__init__(octets, **kwargs)
         self._parse_ton_npi()
         self._parse_digits()
 
@@ -247,7 +250,7 @@ class UnsignedInt:
             raise TypeError(f"Octet parameter is not a byte object: {type(octets)}")
         if not isinstance(size, int):
             raise TypeError(f"size parameter is not an int: {type(octets)}")
-        assert len(octets) == size, f"Parameter should have size {size}, {len(octets)=}"
+        # assert len(octets) == size, f"Parameter should have size {size}, {len(octets)=}"
         self.octets = octets
 
     @property
