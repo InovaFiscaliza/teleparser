@@ -113,7 +113,7 @@ class InternalCauseAndLoc(DigitString):
     def value(self):
         self.location = self.digits[0]
         self.cause = self.digits[1]
-        return self.location, self.cause
+        return {"location": self.location, "cause": self.cause}
 
     def __str__(self):
         return f"Location: {self.location}, Cause: {self.cause}"
@@ -176,8 +176,8 @@ class NetworkCallReference(DigitString):
         self.sequence_number = int.from_bytes(self.octets[:3], "big")
         self.switch_identity = int.from_bytes(self.octets[3:], "big")
         return {
-            "networkCallReference_sequenceNumber": self.sequence_number,
-            "networkCallReference_switchIdentity": self.switch_identity,
+            "sequenceNumber": self.sequence_number,
+            "switchIdentity": self.switch_identity,
         }
 
     def __str__(self):
@@ -205,7 +205,7 @@ class NumberOfMeterPulses(DigitString):
 
 @fixed_size_digit_string(4)
 class ServiceKey(DigitString):
-    """ASN.1 Formal Description
+    r"""ASN.1 Formal Description
 
     ServiceKey ::=  OCTET STRING (SIZE(4))
 
