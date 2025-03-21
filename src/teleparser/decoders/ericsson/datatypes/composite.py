@@ -4,115 +4,7 @@ It's organized here because it's just the boilerplate of the type name and its d
 
 from collections import namedtuple
 from . import primitives
-
-Prestadora = namedtuple(
-    "Prestadora", ["nome", "cnpj", "mnc", "mcc"], defaults=(None, None, None, "724")
-)
-PRESTADORAS = {
-    0: Prestadora(nome="CLARO S.A.", cnpj="40432544000147", mnc="00"),
-    1: Prestadora(
-        nome="Sisteer Do Brasil Telecomunicações Ltda", cnpj="13420027000185", mnc="01"
-    ),
-    2: Prestadora(nome="TIM S/A", cnpj="02421421000111", mnc="02"),
-    3: Prestadora(nome="TIM S/A", cnpj="02421421000111", mnc="03"),
-    4: Prestadora(nome="TIM S/A", cnpj="02421421000111", mnc="04"),
-    5: Prestadora(nome="CLARO S.A.", cnpj="40432544000147", mnc="05"),
-    6: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="06"),
-    7: Prestadora(
-        nome="TERAPAR TELECOMUNICAÇÕES LTDA", cnpj="14840419000166", mnc="07"
-    ),
-    8: Prestadora(nome="Transatel Brasil Ltda.", cnpj="51042993000103", mnc="08"),
-    9: Prestadora(
-        nome="Virgin Mobile Telecomunicaçoes Ltda", cnpj="13892589000121", mnc="09"
-    ),
-    10: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="10"),
-    11: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="11"),
-    12: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="12"),
-    13: Prestadora(nome="NEXT LEVEL TELECOM LTDA.", cnpj="20877748000184", mnc="13"),
-    14: Prestadora(nome="CLARO S.A.", cnpj="40432544000147", mnc="14"),
-    15: Prestadora(nome="SERCOMTEL CELULAR S.A.", cnpj="02494988000118", mnc="15"),
-    16: Prestadora(
-        nome="OI MÓVEL S.A. - EM RECUPERAÇÃO JUDICIAL", cnpj="05423963000111", mnc="16"
-    ),
-    17: Prestadora(nome="SURF TELECOM SA", cnpj="10455746000143", mnc="17"),
-    18: Prestadora(
-        nome="DATORA MOBILE TELECOMUNICACOES S.A", cnpj="18384930000151", mnc="18"
-    ),
-    19: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="19"),
-    21: Prestadora(nome="LIGUE TELECOMUNICAÇÕES LTDA", cnpj="10442435000140", mnc="21"),
-    23: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="23"),
-    26: Prestadora(nome="AMERICA NET LTDA", cnpj="01778972000174", mnc="26"),
-    27: Prestadora(
-        nome="VMNO COMUNICAÇÕES DO BRASIL S.A.", cnpj="13481715000155", mnc="27"
-    ),
-    28: Prestadora(nome="CLARO S.A.", cnpj="40432544000147", mnc="28"),
-    29: Prestadora(
-        nome="UNIFIQUE TELECOMUNICACOES S/A", cnpj="02255187000108", mnc="29"
-    ),
-    30: Prestadora(
-        nome="OI MÓVEL S.A. - EM RECUPERAÇÃO JUDICIAL", cnpj="05423963000111", mnc="30"
-    ),
-    31: Prestadora(nome="TIM S/A", cnpj="02421421000111", mnc="31"),
-    32: Prestadora(nome="ALGAR TELECOM S/A", cnpj="71208516000174", mnc="32"),
-    33: Prestadora(nome="ALGAR TELECOM S/A", cnpj="71208516000174", mnc="33"),
-    34: Prestadora(nome="ALGAR TELECOM S/A", cnpj="71208516000174", mnc="34"),
-    36: Prestadora(nome="Options Comp & Elet Ltda", cnpj="00063329000100", mnc="36"),
-    38: Prestadora(nome="CLARO S.A.", cnpj="40432544000147", mnc="38"),
-    39: Prestadora(
-        nome="Claro NXT Telecomunicações LTDA", cnpj="66970229000167", mnc="39"
-    ),
-    40: Prestadora(
-        nome="TELEXPERTS TELECOMUNICAÇÕES LTDA", cnpj="07625852000113", mnc="40"
-    ),
-    41: Prestadora(nome="Digaa Telecom Ltda", cnpj="24331791000109", mnc="41"),
-    42: Prestadora(nome="TELEFONICA BRASIL S.A.", cnpj="02558157000162", mnc="42"),
-    46: Prestadora(nome="CUBIC TELECOM BRASIL LTDA", cnpj="31904804000149", mnc="46"),
-    51: Prestadora(nome="EMNIFY BRASIL LTDA", cnpj="45953596000182", mnc="51"),
-    54: Prestadora(nome="TIM S/A", cnpj="02421421000111", mnc="54"),
-    70: Prestadora(nome="IEZ! TELECOM LTDA.", cnpj="37278419000110", mnc="70"),
-    72: Prestadora(
-        nome="AIRNITY BRASIL TELECOMUNICAÇÕES LTDA", cnpj="50667694000193", mnc="72"
-    ),
-    77: Prestadora(
-        nome="Brisanet Serviços de Telecomunicações SA", cnpj="04601397000128", mnc="77"
-    ),
-    88: Prestadora(nome="CONNECT IOT SOLUTIONS LTDA", cnpj="52842561000131", mnc="88"),
-}
-
-
-class AccountCode(primitives.TBCDString):
-    """Account Code
-
-    This parameter indicates which account is to be charged
-    for the call.
-
-    The Account Code contains the account code entered by
-    the calling or called subscriber.
-
-      ASN.1 Formal Description
-      AccountCode ::= TBCDString (SIZE(1..5))
-      Note: Only decimal digits are used.
-    """
-
-    def __init__(self, octets):
-        super().__init__(octets, lower=1, upper=5)
-
-
-class CarrierIdentificationCode(primitives.TBCDString):
-    """Carrier Identification Code
-
-    This parameter identifies which interexchange carrier
-    was used for the Call Component.
-
-    This parameter is present only when an interexchange
-    carrier was used.
-
-      ASN.1 Formal Description
-      CarrierIdentificationCode ::= TBCDString (SIZE(1..3))
-    """
-
-    def __init__(self, octets):
-        super().__init__(octets, lower=1, upper=3)
+from teleparser.config import PRESTADORAS
 
 
 class CarrierInfo(primitives.OctetString):
@@ -675,64 +567,6 @@ class IMEI(primitives.OctetString):
         return f"TAC: {self.tac}, SNR: {self.snr}, Spare: {self.spare}"
 
 
-class IMSI(primitives.TBCDString):
-    """ASN.1 Formal Description
-    IMSI ::= TBCDString (SIZE(3..8))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |  MCC digit 2      |  MCC digit 1      | octet 1
-    +-------------------+-------------------+
-    |  MNC digit 1      |  MCC digit 3      | octet 2
-    +-------------------+-------------------+
-    |  MSIN digit 1     |  MNC digit 2      | octet 3
-    +-------------------+-------------------+
-    |  MSIN digit 3     |  MSIN digit 2     | octet 4
-    /---------------------------------------/
-    .
-    .
-    .
-    /---------------------------------------/
-    |  MSIN digit 2n-7  |  MSIN digit 2n-8  | octet n-1
-    +-------------------+-------------------+
-    |  See note         |  MSIN digit 2n-6  | octet n
-    /---------------------------------------/
-    Note: bits 5-8 of octet n contain
-    - last MSIN digit, or
-    - 1111 used as a filler when there is an odd
-    total number of digits.
-    MCC Mobile Country Code (octet 1 and bits 1-4 of octet 2)
-    MNC Mobile Network Code (bits 5-8 of octet 2 and bits 1-4
-    of octet 3).
-    MSIN Mobile Subscriber Identification Number
-    The total number of digits should not exceed 15.
-    Digits 0 to 9, two digits per octet,
-    each digit encoded 0000 to 1001
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._parse_mcc_mnc_msin()
-
-    def _parse_mcc_mnc_msin(self):
-        self.mcc = self.digits[0]
-        mnc = self.digits[1]
-        msin = self.digits[2:]
-        assert len(msin) <= 15, "The total number of msin digits should not exceed 15."
-        self.carrier = PRESTADORAS[mnc]
-        self.msin = "".join(str(d) for d in msin)
-
-    @property
-    def value(self):
-        return {f"imsi_{k}": v for k, v in self.carrier._asdict().items()} | {
-            "imsi_msin": self.msin
-        }
-
-    def __str__(self) -> str:
-        return f"{self.carrier.nome} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"
-
-
 class LocationInformation(primitives.OctetString):
     """ASN.1 Formal Description
     LocationInformation ::= OCTET STRING (SIZE(7))
@@ -784,12 +618,12 @@ class LocationInformation(primitives.OctetString):
         mcc1 = self.octets[0] & 0x0F  # MCC digit 1
         mcc2 = self.octets[0] >> 4  # MCC digit 2
         mcc3 = self.octets[1] & 0x0F  # MCC digit 3
-        mcc = mcc1 * 100 + mcc2 * 10 + mcc3
+        self.mcc = mcc1 * 100 + mcc2 * 10 + mcc3
         mnc3 = self.octets[1] >> 4  # MNC digit 3
         mnc2 = self.octets[2] >> 4  # MNC digit 2
         mnc1 = self.octets[2] & 0x0F  # MNC digit 1
         mnc = mnc1 * 100 + mnc2 * 10 + mnc3
-        self.carrier = PRESTADORAS[(mcc, mnc)]
+        self.carrier = PRESTADORAS[mnc]
 
     def _parse_lac(self):
         self.lac = int.from_bytes(self.octets[3:5], "big")
