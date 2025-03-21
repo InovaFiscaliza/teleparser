@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 from io import BufferedReader, BytesIO
 from binascii import hexlify
 
-from .ericsson.decoder import TlvVozEricsson
+from ..ericsson.parser import TlvVozEricsson
 
 # Basic ASN.1 Reference
 # https://luca.ntop.org/Teaching/Appunti/asn1.html

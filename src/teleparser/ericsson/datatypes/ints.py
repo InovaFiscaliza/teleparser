@@ -2,11 +2,26 @@
 It's organized here because it's just the boilerplate of the type name and its description
 """
 
-from . import primitives
+from .primitives import UnsignedInt, fixed_size_unsigned_int
 
 
-@primitives.fixed_size_unsigned_int(1)
-class ChargingOrigin(primitives.UnsignedInt):
+@fixed_size_unsigned_int(3)
+class CallIDNumber(UnsignedInt):
+    """Call Identification Number  (M)
+
+    This parameter is a unique number within the own exchange
+    that identifies the Call Component.
+
+    All Call Modules produced in the same Call Component
+    have the same call identification number; that is,
+    if partial output records are produced for the same
+    Call Component, the same call identification number
+    is used
+    """
+
+
+@fixed_size_unsigned_int(1)
+class ChargingOrigin(UnsignedInt):
     """ASN.1 Formal Description
     ChargingOrigin ::= OCTET STRING (SIZE(1))
     |    |    |    |    |    |    |    |    |
@@ -21,8 +36,8 @@ class ChargingOrigin(primitives.UnsignedInt):
     """
 
 
-@primitives.fixed_size_unsigned_int(2)
-class CUGIndex(primitives.UnsignedInt):
+@fixed_size_unsigned_int(2)
+class CUGIndex(UnsignedInt):
     """CUG Index
 
     The Closed User Group (CUG) Index contains the code that
@@ -46,34 +61,8 @@ class CUGIndex(primitives.UnsignedInt):
     """
 
 
-@primitives.fixed_size_ia5_string(15)
-class ExchangeIdentity(primitives.Ia5String):
-    """Exchange Identity
-
-      This parameter contains the identity (name) of the
-      exchange where the output is initiated.
-
-    ASN.1 Formal Description
-        ExchangeIdentity ::= IA5STRING (SIZE(1..15))
-        |    |    |    |    |    |    |    |    |
-        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-        |    |    |    |    |    |    |    |    |
-        /---------------------------------------/
-        |  1st character                        | octet 1
-        /---------------------------------------/
-        .
-        .
-        .
-        /---------------------------------------/
-        |  14th character                       | octet 14
-        +---------------------------------------+
-        |  15th character                       | octet 15
-        /---------------------------------------/
-    """
-
-
-@primitives.fixed_size_unsigned_int(2)
-class FaultCode(primitives.UnsignedInt):
+@fixed_size_unsigned_int(2)
+class FaultCode(UnsignedInt):
     """Fault Code
 
       This parameter contains the internal End-of-Selection
@@ -101,8 +90,8 @@ class FaultCode(primitives.UnsignedInt):
     """
 
 
-@primitives.fixed_size_unsigned_int(1)
-class PartialOutputRecNum(primitives.UnsignedInt):
+@fixed_size_unsigned_int(1)
+class PartialOutputRecNum(UnsignedInt):
     """Partial Output Record Number
 
       This parameter contains a consecutive number which is
@@ -122,8 +111,8 @@ class PartialOutputRecNum(primitives.UnsignedInt):
     """
 
 
-@primitives.fixed_size_unsigned_int(3)
-class RecordSequenceNumber(primitives.UnsignedInt):
+@fixed_size_unsigned_int(3)
+class RecordSequenceNumber(UnsignedInt):
     r"""Record Sequence Number  (M)
 
     This parameter contains a consecutive number for each
@@ -148,8 +137,8 @@ class RecordSequenceNumber(primitives.UnsignedInt):
     Value range: H'0 - H'FFFFFF"""
 
 
-@primitives.fixed_size_unsigned_int(1)
-class RedirectionCounter(primitives.UnsignedInt):
+@fixed_size_unsigned_int(1)
+class RedirectionCounter(UnsignedInt):
     """ASN.1 Formal Description
     RedirectionCounter ::= OCTET STRING (SIZE(1))
     |    |    |    |    |    |    |    |    |
@@ -166,40 +155,8 @@ class RedirectionCounter(primitives.UnsignedInt):
     """
 
 
-class RerountingIndicator(primitives.Bool):
-    """Rerouting Indicator
-
-    This parameter indicates if the call has been rerouted
-    (for example a new B-number analysis has been performed)
-    by the exchange where the charging data is output. This
-    field is output only for ISOCODE or PACKED postprocessing
-    purposes.
-    """
-
-
-@primitives.fixed_size_ia5_string(7)
-class Route(primitives.Ia5String):
-    """ASN.1 Formal Description
-    Route ::= IA5STRING (SIZE(1..7))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |            1st character              | octet 1
-    /---------------------------------------/
-    .
-    .
-    .
-    /---------------------------------------/
-    |            6th character              | octet 6
-    +---------------------------------------+
-    |            7th character              | octet 7
-    /---------------------------------------/
-    """
-
-
-@primitives.fixed_size_unsigned_int(1)
-class SubscriptionType(primitives.UnsignedInt):
+@fixed_size_unsigned_int(1)
+class SubscriptionType(UnsignedInt):
     """Subscription Type
 
       This parameter indicates the subscription type used for
@@ -224,8 +181,8 @@ class SubscriptionType(primitives.UnsignedInt):
     """
 
 
-@primitives.fixed_size_unsigned_int(2)
-class SwitchIdentity(primitives.UnsignedInt):
+@fixed_size_unsigned_int(2)
+class SwitchIdentity(UnsignedInt):
     """Switch Identity
 
       This parameter contains the identification
@@ -254,8 +211,8 @@ class SwitchIdentity(primitives.UnsignedInt):
     """
 
 
-@primitives.fixed_size_unsigned_int(1)
-class TypeOfCallingSubscriber(primitives.UnsignedInt):
+@fixed_size_unsigned_int(1)
+class TypeOfCallingSubscriber(UnsignedInt):
     """Type of Calling Subscriber
 
     This parameter indicates that the type of subscriber is
