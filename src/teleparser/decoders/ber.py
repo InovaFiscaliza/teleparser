@@ -1,10 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Callable
 from io import BufferedReader, BytesIO
 from binascii import hexlify
-
-from ..ericsson.parser import TlvVozEricsson
 
 # Basic ASN.1 Reference
 # https://luca.ntop.org/Teaching/Appunti/asn1.html
@@ -46,6 +44,8 @@ class BerTag:
 class BerDecoder:
     """Basic Encoding Rules decoder"""
 
+    parser: Callable
+
     @staticmethod
     def decode_tag(tag_bytes: bytes):
         first_byte = tag_bytes[0]
@@ -76,7 +76,7 @@ class BerDecoder:
         offset: int = 0,
         depth: int = 0,
         schema: dict = None,
-    ) -> Optional[TlvVozEricsson]:
+    ):
         if (tag_bytes := self._read_tag(stream)) is None:
             return None
 
@@ -85,30 +85,35 @@ class BerDecoder:
         offset += len(tag_bytes) + length_size
 
         if self._reached_eoc(tag, length):
-            return self.decode_tlv(stream, offset, depth)
+            return self.decode_tlv(stream, offset, depth, schema)
         # Read value
         value = stream.read(length)
         if len(value) != length:
             raise ValueError("Unexpected end of data")
 
         # Update offset after tag and length
-        tlv = TlvVozEricsson(tag.number, value, schema)
+        decoded_data, schema = self.unravel_decoded_tlv(tag.number, value, schema)
 
         # Parse constructed types recursively
         if tag.constructed:
-            tlv.children = []
             value_stream = BytesIO(value)
             while value_stream.tell() < length:
-                try:
-                    if child := self.decode_tlv(
-                        value_stream, offset, depth + 1, tlv.schema
-                    ):
-                        tlv.children.append(child)
-                        offset += child.length
-                except KeyError as e:
-                    print(e)
-                    break
-        return tlv
+                if child := self.decode_tlv(value_stream, offset, depth + 1, schema):
+                    child_data, child_length = child
+                    offset += child_length
+                    decoded_data.update(child_data)
+        return decoded_data, length
+
+    def unravel_decoded_tlv(
+        self, tag_number: int, value: bytes, schema: dict
+    ) -> Tuple[dict, dict]:
+        """Unravel TLV tree to a flat dictionary"""
+        tlv = self.parser(tag_number, value, schema)
+        if isinstance(tlv.value, dict):
+            output = {f"{tlv.name}.{k}": v for k, v in tlv.value.items()}
+        else:
+            output = {tlv.name: tlv.value}
+        return output, tlv.schema
 
     @staticmethod
     def _read_tag(stream: BufferedReader) -> Optional[bytes]:

@@ -633,6 +633,60 @@ class PositionAccuracy(OctetString):
         )
 
 
+class PresentationAndScreeningIndicator(OctetString):
+    """Presentation and Screening Indicator
+
+      This parameter indicates if the calling line identity
+      can be shown to the called subscriber and whether the
+      calling line identity was provided by the subscriber or
+      by the network.
+
+      The field is not output when the Calling Party Number
+      is unavailable.
+    ASN.1 Formal Description
+        PresentationAndScreeningIndicator ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB                              LSB  |
+        /---------------------------------------/
+        - Bits 8-5:   Screening indicator
+        0000   Screen indicator not valid
+        0001   User provided, verified, and passed
+        0011   Network provided
+        - Bits 4-1:   Presentation indicator
+        0000   Presentation allowed
+        0001   Presentation restricted
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, size=1)
+        self.screening = {
+            0: "Screen indicator not valid",
+            1: "User provided, verified, and passed",
+            3: "Network provided",
+        }
+        self.presentation = {0: "Presentation allowed", 1: "Presentation restricted"}
+        self._parse_screening_indicator()
+        self._parse_presentation_indicator()
+
+    def _parse_presentation_indicator(self):
+        """Parse Presentation Indicator from octets 1 bits 4-1"""
+        self.presentation_indicator = self.presentation[self.octets[0] & 1]
+
+    def _parse_screening_indicator(self):
+        """Parse Screening Indicator from octets 1 bits 8-5"""
+        self.screening_indicator = self.screening[(self.octets[0] >> 4) & 3]
+
+    @property
+    def value(self):
+        return {
+            "screening": self.screening_indicator,
+            "presentation": self.presentation_indicator,
+        }
+
+
 class TAC(OctetString):
     """Traffic Activity Code (TAC)  (M)
 

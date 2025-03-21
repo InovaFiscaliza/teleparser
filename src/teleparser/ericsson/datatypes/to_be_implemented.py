@@ -1652,25 +1652,6 @@ class PointCodeAndSubSystemNumber(primitives.AddressString):
     """
 
 
-class PresentationAndScreeningIndicator(primitives.AddressString):
-    """ASN.1 Formal Description
-    PresentationAndScreeningIndicator ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                              LSB  |
-    /---------------------------------------/
-    - Bits 8-5:   Screening indicator
-    0000   Screen indicator not valid
-    0001   User provided, verified, and passed
-    0011   Network provided
-    - Bits 4-1:   Presentation indicator
-    0000   Presentation allowed
-    0001   Presentation restricted
-    """
-
-
 class ProcedureCode:
     """ASN.1 Formal Description
     ProcedureCode ::= TBCDString (SIZE(1))

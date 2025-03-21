@@ -149,27 +149,16 @@ if __name__ == "__main__":
     #     print(f"Total time: {perf_counter() - start}")
 
     # asyncio.run(process_cdr_files())
+    from teleparser.ericsson.parser import TlvVozEricsson
 
     folder = Path(__file__).parent.parent.parent / "data"
     file = folder / "clarovoz.gz"
     buffer_manager = BufferManager(file)
-    ber = BerDecoder()
+    ber = BerDecoder(TlvVozEricsson)
     file_buffer = buffer_manager.open_file()
     while file_buffer.has_data():
         # with suppress(KeyError):
         while (tlv := ber.decode_tlv(file_buffer)) is not None:
             # print("Varredura: (Call Data Record)")
-            print(tlv.name, tlv.value)
-            if tlv.children is not None:
-                for child in tlv.children:
-                    print(80 * "=")
-                    # print("Call Module")
-                    print(child.name, child.value)
-                    # print(f"string={child.tag.string}, tipo={child.tag.number}, comprimento={child.length}, bytes={child.value}")
-                    print(80 * "=")
-                    print(
-                        f"Quantidade de parâmetros dentro do Call Module: {len(child.children)}"
-                    )
-                    print("Parâmetros:")
-                    for c in child.children:
-                        print(c.name, c.value)
+            data, length = tlv
+            print(data)
