@@ -5,7 +5,8 @@ from pathlib import Path
 import zipfile
 import shutil
 from typing import List, Set, Optional, BinaryIO
-
+from rust_bindings import rust_bindings
+import os
 
 class CDRFileManager:
     def __init__(self, input_path: Path, output_path: Path, cdr_type: str):
@@ -87,9 +88,11 @@ class BufferManager:
         return self.file_handle.read(size)
 
 
-if __name__ == "__main__":
-    from teleparser.decoders.ber import BerDecoder
+def python_version():
+    from decoders.ber import BerDecoder
     from collections import Counter
+    import time
+    start_time = time.time()
 
     blocks = Counter()
     types = Counter()
@@ -99,6 +102,7 @@ if __name__ == "__main__":
         if file.suffix == ".gz":
             buffer_manager = BufferManager(file)
             ber = BerDecoder()
+            counter = 0
             with buffer_manager.open() as file_buffer:
                 while (tlv := ber.decode_tlv(file_buffer)) is not None:
                     if tlv.children is not None:
@@ -109,3 +113,65 @@ if __name__ == "__main__":
 
     print(f"Count of CDR blocks: {blocks}")
     print(f"Count of Parameter Types: {types}")
+    print(f"processed in {time.time() - start_time}")
+
+
+def absoluteFilePaths(directory):
+    for dirpath,_,filenames in os.walk(directory):
+        for f in filenames:
+            yield os.path.abspath(os.path.join(dirpath, f))
+
+
+def rust_version():
+    from rust_bindings import rust_bindings
+    from collections import Counter
+    import time
+    start_time = time.time()
+
+    blocks = Counter()
+    types = Counter()
+    folder = Path(__file__).parent.parent.parent / "data"
+    decoded = rust_bindings.tlv_from_gz_files(str(folder))
+    for path in absoluteFilePaths(folder):
+        for tlv in decoded[path]:
+            if tlv.children is not None:
+                for child in tlv.children:
+                    blocks[child.tag.number] += 1
+                    for c in child.children:
+                        types[(child.tag.number, c.tag.number)] += 1
+
+    print(f"Count of CDR blocks: {blocks}")
+    print(f"Count of Parameter Types: {types}")
+    print(f"processed in {time.time() - start_time}") 
+
+if __name__ == "__main__":
+    rust_version()
+    # python_version()
+
+    # from src.teleparser.decoders.ber import BerDecoder
+    # from collections import Counter
+    # import time
+    # start_time = time.time()
+
+    # blocks = Counter()
+    # types = Counter()
+    # folder = Path(__file__).parent.parent.parent / "data"
+    # print(folder)
+    # # folder = Path(r"D:\code\cdr\data\input\ClaroVozEricssonMenu1")
+    # for file in folder.iterdir():
+    #     if file.suffix == ".gz":
+    #         print(file)
+    #         buffer_manager = BufferManager(file)
+    #         ber = BerDecoder()
+    #         counter = 0
+    #         with buffer_manager.open() as file_buffer:
+    #             while (tlv := ber.decode_tlv(file_buffer)) is not None:
+    #                 if tlv.children is not None:
+    #                     for child in tlv.children:
+    #                         blocks[child.tag.number] += 1
+    #                         for c in child.children:
+    #                             types[(child.tag.number, c.tag.number)] += 1
+
+    # print(f"Count of CDR blocks: {blocks}")
+    # print(f"Count of Parameter Types: {types}")
+    # print(f"processed in {time.time() - start_time}")
