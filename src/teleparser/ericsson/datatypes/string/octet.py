@@ -1,6 +1,6 @@
 from ..primitives import OctetString, TBCDString
 from ..exceptions import OctetStringError
-from teleparser.config import PRESTADORAS
+from teleparser.config import PRESTADORAS, Prestadora
 
 
 class CarrierInfo(OctetString):
@@ -402,6 +402,180 @@ class Date(OctetString):
             return f"{self.year:02d}-{self.month:02d}-{self.day:02d}"
 
 
+class GlobalTitle(OctetString):
+    """ASN.1 Formal Description
+    GlobalTitle ::= OCTET STRING (SIZE(4..12))
+    |    |    |    |    |    |    |    |    |
+    | 8  | 7  | 6  | 5  | 4  | 3  | 2  | 1  |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |  Translation Type                     | octet 1
+    +---------------------------------------+
+    | Numbering Plan    | ODD/EVEN Indicator| octet 2
+    +---------------------------------------+
+    | Nature of Address Indicator           | octet 3
+    +---------------------------------------+
+    |    2nd digit      |     1st digit     | octet 4
+    /---------------------------------------/
+    .
+    .
+    .
+    /---------------------------------------/
+    |    18th digit     |     17th digit    | octet 12
+    /---------------------------------------/
+    Octet 2:  Bits 4-1 Odd/Even Indicator:
+    0 0 0 1  BCD, odd number of digits
+    0 0 1 0  BCD, even number of digits
+    Bits 8-5 Numbering plan:
+    0 0 0 1  ISDN numbering plan (E.164)
+    0 0 1 1  Data numbering plan (X.121)
+    0 1 0 0  Telex numbering plan (F.69)
+    0 1 0 1  Maritime mobile numbering plan
+    0 1 1 0  Land mobile numbering plan
+    0 1 1 1  ISDN mobile numbering plan
+    Octet 3:  Bits 7-1 Nature of address indicator:
+    0 0 0 0 0 0 1  Subscriber number
+    0 0 0 0 0 1 0  Unknown
+    0 0 0 0 0 1 1  National significant number
+    0 0 0 0 1 0 0  International number
+    Bit 8  Spare
+    Octets 4..12: Address signals, BCD coded
+    Digits value range: H'0-H'9,
+    H'B (code 11)
+    and H'C (code 12)
+    Note: Filler H'0 (last digit) is used in case
+    of odd number of digits.
+    """
+
+    NUMBERING_PLAN = {
+        1: "ISDN numbering plan (E.164)",
+        3: "Data numbering plan (X.121)",
+        4: "Telex numbering plan (F.69)",
+        5: "Maritime mobile numbering plan",
+        6: "Land mobile numbering plan",
+        7: "ISDN mobile numbering plan",
+    }
+    NATURE_OF_ADDRESS = {
+        1: "Subscriber number",
+        2: "Unknown",
+        3: "National significant number",
+        4: "International number",
+    }
+
+    def __init__(self, octets):
+        super().__init__(octets, lower=4, upper=12)
+        self._parse_translation_type()
+        self._parse_numbering_plan()
+        self._parse_numbering_indicator()
+        self._parse_nature_of_address_indicator()
+        self._parse_digits()
+
+    def _parse_translation_type(self):
+        """Parse Translation Type from octets 1"""
+        self.translation_type = self.octets[0]
+
+    def _parse_numbering_plan(self):
+        """Parse Numbering Plan from octets 1 bits 5-5"""
+        self.numbering_plan = self.NUMBERING_PLAN[self.octets[1] >> 4]
+
+    def _parse_numbering_indicator(self):
+        """Parse Nature of Address Indicator from octets 1 bits 4-1"""
+        if self.octets[1] & 1 == 1:
+            self.odd = True
+        elif self.octets[1] & 2 == 2:
+            self.odd = False
+        else:
+            raise ValueError("Invalid value for ODD/EVEN Indicator")
+
+    def _parse_nature_of_address_indicator(self):
+        """Parse Nature of Address Indicator from octets 2 bits 7-1"""
+        self.nature_of_address = self.NATURE_OF_ADDRESS[self.octets[2] & 7]
+
+    def _parse_digits(self):
+        """Parse digits from octets 4..12"""
+        digits = []
+        for octet in self.octets[3:]:
+            # Extract two digits from each octet
+            digit1 = octet & 0x0F
+            digit2 = (octet >> 4) & 0x0F
+            digits.extend([digit1, digit2])
+        if digits and self.odd:  # Discard Filler
+            digits.pop()
+        self.digits = digits
+
+    @property
+    def value(self):
+        return {
+            "translation_type": self.translation_type,
+            "numbering_plan": self.numbering_plan,
+            "nature_of_address": self.nature_of_address,
+            "digits": "".join(str(d) for d in self.digits),
+        }
+
+
+class GlobalTitleAndSubSystemNumber(GlobalTitle):
+    """ASN.1 Formal Description
+    GlobalTitleAndSubSystemNumber ::=
+    OCTET STRING (SIZE(5..13))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |  SubSystemNumber                      | octet 1
+    +---------------------------------------+
+    |  Translation Type                     | octet 2
+    +---------------------------------------+
+    | Numbering Plan    | ODD/EVEN Indicator| octet 3
+    +---------------------------------------+
+    | Nature of Address Indicator           | octet 4
+    +---------------------------------------+
+    |    2nd digit      |     1st digit     | octet 5
+    /---------------------------------------/
+    .
+    .
+    .
+    /---------------------------------------/
+    |    18th digit     |     17th digit    | octet 13
+    /---------------------------------------/
+    Octet 3:  Bits 4-1 Odd/Even Indicator:
+    0 0 0 1  BCD, odd number of digits
+    0 0 1 0  BCD, even number of digits
+    Bits 8-5 Numbering plan:
+    0 0 0 1  ISDN numbering plan (E.164)
+    0 0 1 1  Data numbering plan (X.121)
+    0 1 0 0  Telex numbering plan (F.69)
+    0 1 0 1  Maritime mobile numbering plan
+    0 1 1 0  Land mobile numbering plan
+    0 1 1 1  ISDN mobile numbering plan
+    Octet 4:  Bits 7-1 Nature of address indicator:
+    0 0 0 0 0 0 1  Subscriber number
+    0 0 0 0 0 1 0  Unknown
+    0 0 0 0 0 1 1  National significant number
+    0 0 0 0 1 0 0  International number
+    Bit 8  Spare
+    Octets 5..13: Address signals, BCD coded
+    Digits value range: H'0-H'9,
+    H'B (code 11)
+    and H'C (code 12)
+    Note: Filler H'0 (last digit) is used in case
+    of odd number of digits.
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets[1:])
+        self.subsystem_number = octets[0]
+
+    @property
+    def value(self):
+        return {
+            "subsystem_number": self.subsystem_number,
+            "translation_type": self.translation_type,
+            "numbering_plan": self.numbering_plan,
+            "nature_of_address": self.nature_of_address,
+            "digits": "".join(str(d) for d in self.digits),
+        }
+
+
 class IMEI(OctetString):
     """Calling Subscriber IMEI
 
@@ -522,10 +696,10 @@ class LocationInformation(OctetString):
         mnc1 = self.octets[2] & 0x0F  # MNC digit 1
         mnc2 = self.octets[2] >> 4  # MNC digit 2
         if (mnc3 := self.octets[1] >> 4) == 15:  # MNC digit 3
-            mnc3 = 0
-
-        mnc = mnc1 * 100 + mnc2 * 10 + mnc3
-        self.carrier = PRESTADORAS[mnc]
+            mnc = mnc1 * 10 + mnc2
+        else:
+            mnc = mnc1 * 100 + mnc2 * 10 + mnc3
+        self.carrier = PRESTADORAS.get(mnc, Prestadora(mnc=mnc, mcc=self.mcc))
 
     def _parse_lac(self):
         self.lac = int.from_bytes(self.octets[3:5], "big")
