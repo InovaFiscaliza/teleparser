@@ -542,6 +542,58 @@ class LocationInformation(OctetString):
         return f"{self.carrier.name} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) LAC: {self.lac}, CI/SAC: {self.ci_sac}"
 
 
+class PointCodeAndSubSystemNumber(OctetString):
+    """ASN.1 Formal Description
+    PointCodeAndSubSystemNumber ::= OCTET STRING (SIZE (4))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |  1st SPC                              | octet 1
+    +---------------------------------------+
+    |  2nd SPC                              | octet 2
+    +---------------------------------------+
+    |  3rd SPC                              | octet 3
+    +---------------------------------------+
+    |  SubSystemNumber                      | octet 4
+    /---------------------------------------/
+    - octets 1..3: SPC
+    -              CCITT TCAP:
+    The 2 most significant bits
+    of the 2nd octet, and the 3rd octet
+    are coded 0.
+    -              ANSI TCAP
+    All three octets used for SPC
+    -              JAPANESE BLUE TCAP
+    First two octets used for SPC. 3rd octet
+    coded 0.
+    - octet 4    : SubSystemNumber
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, size=4)
+        self._parse_spc()
+
+    def _parse_spc(self):
+        """Parse SPC from octets 1 and 2"""
+        if self.octets[1] >> 6 == 0 and self.octets[2] == 0:
+            self.spc_type = "CCITT TCAP"
+        elif self.octets[2] == 0:
+            self.spc_type = "JAPANESE BLUE TCAP"
+        else:
+            self.spc_type = "ANSI TCAP"
+        self.spc = int.from_bytes(self.octets[:3], "big")
+        self.subsystem_number = self.octets[3]
+
+    @property
+    def value(self):
+        return {
+            "spc_type": self.spc_type,
+            "spc": self.spc,
+            "subsystem_number": self.subsystem_number,
+        }
+
+
 class PositionAccuracy(OctetString):
     """Position Accuracy
 
