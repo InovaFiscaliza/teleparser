@@ -344,71 +344,75 @@ class EMLPPPriorityLevel(primitives.ByteEnum):
 
 
 class EosInfo(primitives.ByteEnum):
-    """ASN.1 Formal Description
-    EosInfo ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                               LSB |
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value range:  H'0 - H'3F
-    End-of-Selection Information
-    Value        Meaning
-    _____        _______
-    00         Free subscriber.
-    01         Free subscriber. No time supervision.
-    02         Free subscriber. No charging.
-    03         Free subscriber. No time supervision.
-    No charging.
-    04         Free subscriber. Last party release.
-    05         Free subscriber. No time supervision.
-    Last party release.
-    06         Free subscriber. No charging. Last
-    party release.
-    07         Free subscriber. No time supervision.
-    No charging. Last party release.
-    10         Set up speech condition.
-    11         Set up speech condition.
-    No time supervision.
-    12         Set up speech condition.
-    No charging.
-    21         Access barred
-    22         Transferred subscriber.
-    23         Busy subscriber.
-    24         Busy subscriber with callback protection.
-    25         Unallocated number.
-    26         Address incomplete.
-    27         Call transfer protection, that is
-    "follow me" not allowed to this subscriber.
-    28         Subscriber line out of order.
-    29         Intercepted subscriber.
-    2A         Supervised by an operator.
-    Trunk offering marked.
-    2B         Rerouting to service centre.
-    2C         Line lock out.
-    2D         Send acceptance tone.
-    2E         No answer/incompatible destination
-    (used for ISDN).
-    2F         Send refusal tone. Only used
-    at subscriber services.
-    33         Digital path not provided.
-    34         Congestion without differentiation.
-    35         Time release.
-    36         Technical fault.
-    37         Congestion in group selection
-    network.
-    38         Lack of devices.
-    39         Congestion in subscriber
-    selection network.
-    3A         Congestion in international
-    network.
-    3B         Congestion in national network.
-    3C         Conditional congestion (Region option).
-    3D         Route congestion.
-    3E         Unpermitted traffic case.
-    3F         No acknowledgement from mobile subscriber.
+    """End-of-Selection Information  (M)
+
+      This parameter contains End-of-Selection (EOS) information
+      relating to the call and the called-subscriber status.
+    ASN.1 Formal Description
+        EosInfo ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB                               LSB |
+        /---------------------------------------/
+        Note: OCTET STRING is coded as an unsigned integer.
+        Value range:  H'0 - H'3F
+        End-of-Selection Information
+        Value        Meaning
+        _____        _______
+        00         Free subscriber.
+        01         Free subscriber. No time supervision.
+        02         Free subscriber. No charging.
+        03         Free subscriber. No time supervision.
+        No charging.
+        04         Free subscriber. Last party release.
+        05         Free subscriber. No time supervision.
+        Last party release.
+        06         Free subscriber. No charging. Last
+        party release.
+        07         Free subscriber. No time supervision.
+        No charging. Last party release.
+        10         Set up speech condition.
+        11         Set up speech condition.
+        No time supervision.
+        12         Set up speech condition.
+        No charging.
+        21         Access barred
+        22         Transferred subscriber.
+        23         Busy subscriber.
+        24         Busy subscriber with callback protection.
+        25         Unallocated number.
+        26         Address incomplete.
+        27         Call transfer protection, that is
+        "follow me" not allowed to this subscriber.
+        28         Subscriber line out of order.
+        29         Intercepted subscriber.
+        2A         Supervised by an operator.
+        Trunk offering marked.
+        2B         Rerouting to service centre.
+        2C         Line lock out.
+        2D         Send acceptance tone.
+        2E         No answer/incompatible destination
+        (used for ISDN).
+        2F         Send refusal tone. Only used
+        at subscriber services.
+        33         Digital path not provided.
+        34         Congestion without differentiation.
+        35         Time release.
+        36         Technical fault.
+        37         Congestion in group selection
+        network.
+        38         Lack of devices.
+        39         Congestion in subscriber
+        selection network.
+        3A         Congestion in international
+        network.
+        3B         Congestion in national network.
+        3C         Conditional congestion (Region option).
+        3D         Route congestion.
+        3E         Unpermitted traffic case.
+        3F         No acknowledgement from mobile subscriber.
     """
 
     VALUES = {
