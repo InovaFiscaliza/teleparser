@@ -1035,23 +1035,6 @@ class GSMCallReferenceNumber(primitives.AddressString):
     """
 
 
-class INServiceTrigger(primitives.AddressString):
-    """ASN.1 Formal Description
-    INServiceTrigger ::= OCTET STRING (SIZE (2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   | octet 1
-    +---------------------------------------+
-    |                                   LSB | octet 2
-    /---------------------------------------/
-    The meaning of the value can be specified by the operator.
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value range: H'0 - H'FFFF
-    """
-
-
 class LCSAccuracy(primitives.AddressString):
     """ASN.1 Formal Description
     LCSAccuracy ::= OCTET STRING (SIZE(1))
@@ -1714,23 +1697,6 @@ class ServiceKey(primitives.AddressString):
     |                                 LSB   | octet 4
     /---------------------------------------/
     Value Range H'0 - H'7FFFFFFF
-    """
-
-
-class SSFChargingCase(primitives.AddressString):
-    """ASN.1 Formal Description
-    SSFChargingCase ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   | octet 1
-    +---------------------------------------+
-    |                                  LSB  | octet 2
-    /---------------------------------------/
-    The meaning of the value can be specified by the operator.
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value range: H'0 - H'FFFF
     """
 
 

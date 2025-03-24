@@ -291,6 +291,24 @@ class SpeechCoderPreferenceList(DigitString):
 
 
 @fixed_size_digit_string(2)
+class SSFChargingCase(DigitString):
+    """ASN.1 Formal Description
+    SSFChargingCase ::= OCTET STRING (SIZE(2))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                                   | octet 1
+    +---------------------------------------+
+    |                                  LSB  | octet 2
+    /---------------------------------------/
+    The meaning of the value can be specified by the operator.
+    Note: OCTET STRING is coded as an unsigned integer.
+    Value range: H'0 - H'FFFF
+    """
+
+
+@fixed_size_digit_string(2)
 class TariffClass(DigitString):
     """ASN.1 Formal Description
     TariffClass ::= OCTET STRING (SIZE(2))
