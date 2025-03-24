@@ -2,8 +2,6 @@ from collections import UserDict
 from typing import Mapping
 from . import modules
 
-MAPPING_TYPES = (dict, UserDict)
-
 
 class TlvVozEricsson:
     """Tag-Length-Value object for BER encoding for Ericsson Common Charging Output"""
@@ -19,7 +17,7 @@ class TlvVozEricsson:
             tag_mapping = modules.CallDataRecord[tag_number]
         else:
             tag_mapping = schema[tag_number]
-        if isinstance(tag_mapping["type"], MAPPING_TYPES):
+        if isinstance(tag_mapping["type"], dict):
             self.name = tag_mapping["tag"]
             self.value = tag_mapping["name"]
             self.schema = tag_mapping["type"]
