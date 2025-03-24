@@ -105,24 +105,6 @@ class AoCCurrencyAmountSent(primitives.AddressString):
     """
 
 
-class ApplicationIdentifier(primitives.AddressString):
-    """ASN.1 Formal Description
-    ApplicationIdentifier ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   |  octet 1
-    +---------------------------------------+
-    |                                    LSB|  octet 2
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value range: H'0 - H'1FF
-    The meaning of each value is specified in Application
-    Information document "Mobile Telephony Data".
-    """
-
-
 class BitRate(primitives.AddressString):
     """ASN.1 Formal Description
     BitRate ::= OCTET STRING (SIZE(1))
@@ -852,26 +834,6 @@ class EventCRIToMS:
     """
 
 
-class FreeFormatData(primitives.AddressString):
-    """ASN.1 Formal Description
-    FreeFormatData ::= OCTET STRING (SIZE(1..160))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |MSB                                    |  octet 1
-    +---------------------------------------+
-    |                                       |  octet 2
-    /---------------------------------------/
-    .
-    .
-    .
-    /---------------------------------------/
-    |                                    LSB|  octet 160
-    /---------------------------------------/
-    """
-
-
 class GenericDigitsSet(primitives.AddressString):
     """ASN.1 Formal Description
     GenericDigitsSet ::= SET SIZE (1..20) OF GenericDigits
@@ -920,101 +882,6 @@ class GenericNumbersSet(primitives.AddressString):
     """
 
 
-class GlobalTitle(primitives.AddressString):
-    """ASN.1 Formal Description
-    GlobalTitle ::= OCTET STRING (SIZE(4..12))
-    |    |    |    |    |    |    |    |    |
-    | 8  | 7  | 6  | 5  | 4  | 3  | 2  | 1  |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |  Translation Type                     | octet 1
-    +---------------------------------------+
-    | Numbering Plan    | ODD/EVEN Indicator| octet 2
-    +---------------------------------------+
-    | Nature of Address Indicator           | octet 3
-    +---------------------------------------+
-    |    2nd digit      |     1st digit     | octet 4
-    /---------------------------------------/
-    .
-    .
-    .
-    /---------------------------------------/
-    |    18th digit     |     17th digit    | octet 12
-    /---------------------------------------/
-    Octet 2:  Bits 4-1 Odd/Even Indicator:
-    0 0 0 1  BCD, odd number of digits
-    0 0 1 0  BCD, even number of digits
-    Bits 8-5 Numbering plan:
-    0 0 0 1  ISDN numbering plan (E.164)
-    0 0 1 1  Data numbering plan (X.121)
-    0 1 0 0  Telex numbering plan (F.69)
-    0 1 0 1  Maritime mobile numbering plan
-    0 1 1 0  Land mobile numbering plan
-    0 1 1 1  ISDN mobile numbering plan
-    Octet 3:  Bits 7-1 Nature of address indicator:
-    0 0 0 0 0 0 1  Subscriber number
-    0 0 0 0 0 1 0  Unknown
-    0 0 0 0 0 1 1  National significant number
-    0 0 0 0 1 0 0  International number
-    Bit 8  Spare
-    Octets 4..12: Address signals, BCD coded
-    Digits value range: H'0-H'9,
-    H'B (code 11)
-    and H'C (code 12)
-    Note: Filler H'0 (last digit) is used in case
-    of odd number of digits.
-    """
-
-
-class GlobalTitleAndSubSystemNumber(primitives.AddressString):
-    """ASN.1 Formal Description
-    GlobalTitleAndSubSystemNumber ::=
-    OCTET STRING (SIZE(5..13))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |  SubSystemNumber                      | octet 1
-    +---------------------------------------+
-    |  Translation Type                     | octet 2
-    +---------------------------------------+
-    | Numbering Plan    | ODD/EVEN Indicator| octet 3
-    +---------------------------------------+
-    | Nature of Address Indicator           | octet 4
-    +---------------------------------------+
-    |    2nd digit      |     1st digit     | octet 5
-    /---------------------------------------/
-    .
-    .
-    .
-    /---------------------------------------/
-    |    18th digit     |     17th digit    | octet 13
-    /---------------------------------------/
-    Octet 3:  Bits 4-1 Odd/Even Indicator:
-    0 0 0 1  BCD, odd number of digits
-    0 0 1 0  BCD, even number of digits
-    Bits 8-5 Numbering plan:
-    0 0 0 1  ISDN numbering plan (E.164)
-    0 0 1 1  Data numbering plan (X.121)
-    0 1 0 0  Telex numbering plan (F.69)
-    0 1 0 1  Maritime mobile numbering plan
-    0 1 1 0  Land mobile numbering plan
-    0 1 1 1  ISDN mobile numbering plan
-    Octet 4:  Bits 7-1 Nature of address indicator:
-    0 0 0 0 0 0 1  Subscriber number
-    0 0 0 0 0 1 0  Unknown
-    0 0 0 0 0 1 1  National significant number
-    0 0 0 0 1 0 0  International number
-    Bit 8  Spare
-    Octets 5..13: Address signals, BCD coded
-    Digits value range: H'0-H'9,
-    H'B (code 11)
-    and H'C (code 12)
-    Note: Filler H'0 (last digit) is used in case
-    of odd number of digits.
-    """
-
-
 class GSMCallReferenceNumber(primitives.AddressString):
     """ASN.1 Formal Description
     GSMCallReferenceNumber ::= OCTET STRING (SIZE(1..8))
@@ -1057,19 +924,6 @@ class LCSAccuracy(primitives.AddressString):
     uncertainty, still being able to code down to values as
     small as 1 metre.
     For further details for Uncertainty Code see 3G TS 23.032.
-    """
-
-
-class LegID(primitives.AddressString):
-    """ASN.1 Formal Description
-    LegID ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                               LSB |
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
     """
 
 
@@ -1535,22 +1389,6 @@ class NumberOfOperations(primitives.AddressString):
     """
 
 
-class NumberOfShortMessage(primitives.AddressString):
-    """ASN.1 Formal Description
-    NumberOfShortMessage ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   | octet 1
-    +---------------------------------------+
-    |                                   LSB | octet 2
-    /---------------------------------------/
-    Note: OCTET STRING is coded as an unsigned integer.
-    Value range: H'0 - H'FFFF
-    """
-
-
 class OperationIdentifier(primitives.AddressString):
     """ASN.1 Formal Description
     OperationIdentifier ::= OCTET STRING (SIZE(1))
@@ -1603,35 +1441,6 @@ class PositioningDelivery(primitives.AddressString):
     and to GMLC (Bits 3-4 and 5-6 valid)
     Note: Positioning Delivery to Emergency Center is not
     valid for WCDMA.
-    """
-
-
-class PointCodeAndSubSystemNumber(primitives.AddressString):
-    """ASN.1 Formal Description
-    PointCodeAndSubSystemNumber ::= OCTET STRING (SIZE (4))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |  1st SPC                              | octet 1
-    +---------------------------------------+
-    |  2nd SPC                              | octet 2
-    +---------------------------------------+
-    |  3rd SPC                              | octet 3
-    +---------------------------------------+
-    |  SubSystemNumber                      | octet 4
-    /---------------------------------------/
-    - octets 1..3: SPC
-    -              CCITT TCAP:
-    The 2 most significant bits
-    of the 2nd octet, and the 3rd octet
-    are coded 0.
-    -              ANSI TCAP
-    All three octets used for SPC
-    -              JAPANESE BLUE TCAP
-    First two octets used for SPC. 3rd octet
-    coded 0.
-    - octet 4    : SubSystemNumber
     """
 
 

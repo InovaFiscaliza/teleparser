@@ -2,6 +2,25 @@ from functools import cached_property
 from ..primitives import DigitString, fixed_size_digit_string
 
 
+@fixed_size_digit_string(2)
+class ApplicationIdentifier(DigitString):
+    """ASN.1 Formal Description
+    ApplicationIdentifier ::= OCTET STRING (SIZE(2))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                                   |  octet 1
+    +---------------------------------------+
+    |                                    LSB|  octet 2
+    /---------------------------------------/
+    Note: OCTET STRING is coded as an unsigned integer.
+    Value range: H'0 - H'1FF
+    The meaning of each value is specified in Application
+    Information document "Mobile Telephony Data".
+    """
+
+
 @fixed_size_digit_string(3)
 class ChargeAreaCode(DigitString):
     r"""ChargeAreaCode ::= OCTET STRING (SIZE(3))

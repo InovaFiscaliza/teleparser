@@ -108,7 +108,11 @@ Transit = {
     90: {"name": "calledPartyMNPInfo", "type": dt.AddressString},
     91: {"name": "chargeNumber", "type": dt.AddressString},
     92: {"name": "originatingLineInformation", "type": dt.OriginatingLineInformation},
-    93: {"name": "multimediaInformation", "type": MultimediaInformation},
+    93: {
+        "name": "multimediaInformation",
+        "tag": "multimediaInformation",
+        "type": MultimediaInformation,
+    },
     102: {"name": "outputType", "type": dt.OutputType},
     24: {"name": "originatedCode", "type": dt.OriginatedCode},
     121: {"name": "reroutingIndicator", "type": dt.RerountingIndicator},
@@ -184,6 +188,7 @@ MSOriginating = {
     63: {"name": "subscriptionType", "type": dt.SubscriptionType},
     64: {"name": "incompleteCallDataIndicator", "type": dt.Bool},  # NULL type
     65: {"name": "incompleteCompositeCDRIndicator", "type": dt.Bool},  # NULL type
+    66: {"name": "originatedCode", "type": dt.OriginatedCode},
     67: {"name": "switchIdentity", "type": dt.SwitchIdentity},
     68: {"name": "networkCallReference", "type": dt.NetworkCallReference},
     69: {"name": "frequencyBandSupported", "type": dt.FrequencyBandSupported},
@@ -618,7 +623,7 @@ MSOriginatingSMSinMSC = {
     # 38: {"name": "cAMELDestinationAddress", "type": dt.AddressStringExtended},
     39: {"name": "cAMELSMSCAddress", "type": dt.AddressString},
     40: {"name": "defaultSMSHandling", "type": dt.DefaultSMSHandling},
-    # 41: {"name": "freeFormatData", "type": dt.FreeFormatData},
+    41: {"name": "freeFormatData", "type": dt.FreeFormatData},
     42: {"name": "sMSResult", "type": dt.SMSResult},
     43: {"name": "sMSReferenceNumber", "type": dt.NetworkCallReference},
     44: {"name": "mSCAddress", "type": dt.AddressString},
@@ -675,7 +680,7 @@ MSTerminatingSMSinMSC = {
     25: {"name": "restartDuringOutputIndicator", "type": dt.Bool},  # NULL type
     26: {"name": "frequencyBandSupported", "type": dt.FrequencyBandSupported},
     27: {"name": "forloppDuringOutputIndicator", "type": dt.Bool},  # NULL type
-    # 28: {"name": "numberOfShortMessages", "type": dt.NumberOfShortMessage},
+    28: {"name": "numberOfShortMessages", "type": dt.NumberOfShortMessage},
     29: {"name": "lastCalledLocationInformation", "type": dt.LocationInformation},
     30: {"name": "positionAccuracy", "type": dt.PositionAccuracy},
     # 31: {"name": "userTerminalPosition", "type": dt.UserTerminalPosition},
@@ -732,10 +737,10 @@ SSProcedure = {
     20: {"name": "regionalServiceUsed", "type": dt.RegionalServiceUsed},
     21: {"name": "regionDependentChargingOrigin", "type": dt.ChargingOrigin},
     22: {"name": "relatedCallNumber", "type": dt.CallIDNumber},
-    # 23: {"name": "uSSDApplicationIdentifier", "type": dt.ApplicationIdentifier},
-    # 24: {"name": "uSSDServiceCode", "type": dt.ServiceCode},
+    23: {"name": "uSSDApplicationIdentifier", "type": dt.ApplicationIdentifier},
+    24: {"name": "uSSDServiceCode", "type": dt.ServiceCode},
     # 25: {"name": "uSSDProcedureCode", "type": dt.ProcedureCode},
-    # 26: {"name": "networkInitiatedUSSDOperations", "type": dt.NumberOfOperations},
+    26: {"name": "networkInitiatedUSSDOperations", "type": dt.NumberOfOperations},
     # 27: {"name": "uSSDOperationIdentifier", "type": dt.OperationIdentifier},
     28: {"name": "incompleteCallDataIndicator", "type": dt.Bool},  # NULL type
     29: {"name": "restartDuringOutputIndicator", "type": dt.Bool},  # NULL type
@@ -784,14 +789,14 @@ INIncomingCall = {
     2: {"name": "networkCallReference", "type": dt.NetworkCallReference},
     3: {"name": "iNServiceTrigger", "type": dt.INServiceTrigger},
     4: {"name": "sSFChargingCase", "type": dt.SSFChargingCase},
-    # 5: {"name": "triggerData0", "type": dt.TriggerData},
-    # 6: {"name": "triggerData1", "type": dt.TriggerData},
-    # 7: {"name": "triggerData2", "type": dt.TriggerData},
-    # 8: {"name": "triggerData3", "type": dt.TriggerData},
-    # 9: {"name": "triggerData4", "type": dt.TriggerData},
-    # 10: {"name": "triggerData5", "type": dt.TriggerData},
-    # 11: {"name": "triggerData6", "type": dt.TriggerData},
-    # 12: {"name": "triggerData7", "type": dt.TriggerData},
+    5: {"name": "triggerData0", "tag": "triggerData", "type": dt.TriggerData},
+    6: {"name": "triggerData1", "tag": "triggerData", "type": dt.TriggerData},
+    7: {"name": "triggerData2", "tag": "triggerData", "type": dt.TriggerData},
+    8: {"name": "triggerData3", "tag": "triggerData", "type": dt.TriggerData},
+    9: {"name": "triggerData4", "tag": "triggerData", "type": dt.TriggerData},
+    10: {"name": "triggerData5", "tag": "triggerData", "type": dt.TriggerData},
+    11: {"name": "triggerData6", "tag": "triggerData", "type": dt.TriggerData},
+    12: {"name": "triggerData7", "tag": "triggerData", "type": dt.TriggerData},
     13: {"name": "recordSequenceNumber", "type": dt.RecordSequenceNumber},
     14: {"name": "disconnectionDueToSystemRecovery", "type": dt.Bool},  # NULL type
     15: {"name": "incompleteCallDataIndicator", "type": dt.Bool},  # NULL type
@@ -814,16 +819,16 @@ INOutgoingCall = {
     0: {"name": "callIdentificationNumber", "type": dt.CallIDNumber},
     1: {"name": "switchIdentity", "type": dt.SwitchIdentity},
     2: {"name": "networkCallReference", "type": dt.NetworkCallReference},
-    # 3: {"name": "iNServiceTrigger", "type": dt.INServiceTrigger},
-    # 4: {"name": "sSFChargingCase", "type": dt.SSFChargingCase},
-    # 5: {"name": "triggerData0", "type": dt.TriggerData},
-    # 6: {"name": "triggerData1", "type": dt.TriggerData},
-    # 7: {"name": "triggerData2", "type": dt.TriggerData},
-    # 8: {"name": "triggerData3", "type": dt.TriggerData},
-    # 9: {"name": "triggerData4", "type": dt.TriggerData},
-    # 10: {"name": "triggerData5", "type": dt.TriggerData},
-    # 11: {"name": "triggerData6", "type": dt.TriggerData},
-    # 12: {"name": "triggerData7", "type": dt.TriggerData},
+    3: {"name": "iNServiceTrigger", "type": dt.INServiceTrigger},
+    4: {"name": "sSFChargingCase", "type": dt.SSFChargingCase},
+    5: {"name": "triggerData0", "type": dt.TriggerData},
+    6: {"name": "triggerData1", "type": dt.TriggerData},
+    7: {"name": "triggerData2", "type": dt.TriggerData},
+    8: {"name": "triggerData3", "type": dt.TriggerData},
+    9: {"name": "triggerData4", "type": dt.TriggerData},
+    10: {"name": "triggerData5", "type": dt.TriggerData},
+    11: {"name": "triggerData6", "type": dt.TriggerData},
+    12: {"name": "triggerData7", "type": dt.TriggerData},
     13: {"name": "recordSequenceNumber", "type": dt.RecordSequenceNumber},
     14: {"name": "disconnectionDueToSystemRecovery", "type": dt.Bool},  # NULL type
     15: {"name": "incompleteCallDataIndicator", "type": dt.Bool},  # NULL type
@@ -1087,9 +1092,9 @@ INServiceDataEventModule = {
     # 5: {"name": "serviceFeatureCode", "type": dt.ServiceFeatureCode},
     6: {"name": "timeForEvent", "type": dt.Time},
     7: {"name": "incompleteCallDataIndicator", "type": dt.Bool},  # NULL type
-    # 8: {"name": "freeFormatData", "type": dt.FreeFormatData},
-    # 9: {"name": "sSFLegID", "type": dt.LegID},
-    # 10: {"name": "freeFormatData2", "type": dt.FreeFormatData},
+    8: {"name": "freeFormatData", "type": dt.FreeFormatData},
+    9: {"name": "sSFLegID", "type": dt.LegID},
+    10: {"name": "freeFormatData2", "type": dt.FreeFormatData},
     11: {"name": "freeFormatDataAppendIndicator", "type": dt.Bool},  # NULL type
     12: {"name": "freeFormatDataAppendIndicator2", "type": dt.Bool},  # NULL type
 }
