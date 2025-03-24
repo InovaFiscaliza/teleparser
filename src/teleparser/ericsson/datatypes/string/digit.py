@@ -58,6 +58,42 @@ class ChargingCase(DigitString):
     """
 
 
+class FreeFormatData(DigitString):
+    """Free Format Data
+
+    This parameter is CAMEL specific information parameter. It
+    indicates free-format billing or charging, or both
+    characteristics.
+
+    Free Format Data originates from gsmSCF in
+    FurnishChargingInformation (FCI) or
+    FurnishChargingInformationShortMessageService (FCI-SMS)
+    operation. In the case of subsequent FCI operations for
+    the same call party, the total or last data is output
+    according to operations parameters.
+
+    ASN.1 Formal Description
+      FreeFormatData ::= OCTET STRING (SIZE(1..160))
+      |    |    |    |    |    |    |    |    |
+      |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+      |    |    |    |    |    |    |    |    |
+      /---------------------------------------/
+      |MSB                                    |  octet 1
+      +---------------------------------------+
+      |                                       |  octet 2
+      /---------------------------------------/
+      .
+      .
+      .
+      /---------------------------------------/
+      |                                    LSB|  octet 160
+      /---------------------------------------/
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, upper=160)
+
+
 class GSMCallReferenceNumber(DigitString):
     """GSM Call Reference Number
 
@@ -135,6 +171,20 @@ class InternalCauseAndLoc(DigitString):
 
     def __str__(self):
         return f"Location: {self.location}, Cause: {self.cause}"
+
+
+@fixed_size_digit_string(1)
+class LegID(DigitString):
+    """ASN.1 Formal Description
+    LegID ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                               LSB |
+    /---------------------------------------/
+    Note: OCTET STRING is coded as an unsigned integer.
+    """
 
 
 @fixed_size_digit_string(1)
@@ -221,6 +271,23 @@ class NumberOfMeterPulses(DigitString):
     """
 
 
+@fixed_size_digit_string(2)
+class NumberOfShortMessage(DigitString):
+    """ASN.1 Formal Description
+    NumberOfShortMessage ::= OCTET STRING (SIZE(2))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                                   | octet 1
+    +---------------------------------------+
+    |                                   LSB | octet 2
+    /---------------------------------------/
+    Note: OCTET STRING is coded as an unsigned integer.
+    Value range: H'0 - H'FFFF
+    """
+
+
 @fixed_size_digit_string(4)
 class ServiceKey(DigitString):
     r"""ASN.1 Formal Description
@@ -288,6 +355,7 @@ class SpeechCoderPreferenceList(DigitString):
         assert all(0 <= digit <= 5 for digit in digits), (
             f"Speech Coder Preference List should be in range 0-5: {self.digits}"
         )
+        return digits
 
 
 @fixed_size_digit_string(2)
