@@ -91,3 +91,31 @@ class IMSI(TBCDString):
 
     def __str__(self) -> str:
         return f"{self.carrier.nome} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"
+
+
+class ServiceCode(TBCDString):
+    """Unstructured Supplementary Service Data Service Code
+
+    This parameter identifies the call-independent
+    USSD service in the case of a mobile-initiated
+    service request.
+
+    The parameter values are defined by the operator and
+    are administered with General Purpose Digit Analysis.
+
+    The operator can associate a USSD Service Code with
+    a USSD Application Identifier. The service code is
+    part of the MSC/VLR-supported formats for USSD strings
+    of UE-initiated USSD operations. For further details,
+    see the Application Information for function
+    block MUSSAN.
+
+    This parameter is unavailable for a network-initiated
+    service request.
+
+      ASN.1 Formal Description
+      ServiceCode ::= TBCDString (SIZE(1..2))
+    """
+
+    def __init__(self, octets):
+        super().__init__(octets, lower=1, upper=2)
