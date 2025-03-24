@@ -8,8 +8,6 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "fastcore>=1.7.29",
-    "fastprogress>=1.0.3",
     "typer>=0.15.2",
 ]
 
@@ -22,7 +20,4 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "ipykernel>=6.29.5",
-    "pre-commit>=4.1.0",
-    "pytest>=8.3.4",
-]
+]  
