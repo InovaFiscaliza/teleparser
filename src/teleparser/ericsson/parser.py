@@ -1,5 +1,8 @@
+from collections import UserDict
 from typing import Mapping
 from . import modules
+
+MAPPING_TYPES = (dict, UserDict)
 
 
 class TlvVozEricsson:
@@ -16,7 +19,7 @@ class TlvVozEricsson:
             tag_mapping = modules.CallDataRecord[tag_number]
         else:
             tag_mapping = schema[tag_number]
-        if isinstance(tag_mapping["type"], dict):
+        if isinstance(tag_mapping["type"], MAPPING_TYPES):
             self.name = tag_mapping["tag"]
             self.value = tag_mapping["name"]
             self.schema = tag_mapping["type"]
