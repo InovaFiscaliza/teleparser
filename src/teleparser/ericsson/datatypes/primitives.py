@@ -124,7 +124,7 @@ class ByteEnum(DigitString):
 
     @property
     def value(self):
-        return self.VALUES[int.from_bytes(self.octets, "big")]
+        return self.VALUES.get(int.from_bytes(self.octets, "big"), "Unknown")
 
 
 class AddressString(OctetString):
