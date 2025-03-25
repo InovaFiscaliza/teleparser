@@ -85,39 +85,48 @@ class BerDecoder:
     def _reached_eoc(tag: BerTag, length: int):
         return (tag.tag_class, tag.constructed, tag.number, length) in EOC
 
-    def decode_tlv(
-        self,
-        stream: BufferedReader | BytesIO,
-        offset: int = 0,
-        depth: int = 0,
-        schema: dict = None,
-    ):
-        if (tag_bytes := self._read_tag(stream)) is None:
+    def decode_tlv(self, index: int = 0, depth: int = 0, schema: dict = None):
+        """Decode TLV structure using index-based approach"""
+        if index >= len(self.buffer):
             return None
 
-        tag = self.decode_tag(tag_bytes)
-        length, length_size = self._read_length(stream)
-        offset += len(tag_bytes) + length_size
+        tag_data = self._read_tag_indexed(index)
+        if tag_data is None:
+            return None
+
+        tag, tag_size = tag_data
+        index += tag_size
+
+        length_data = self._read_length_indexed(index)
+        length, length_size = length_data
+        index += length_size
 
         if self._reached_eoc(tag, length) or length == 0:
-            return self.decode_tlv(stream, offset, depth, schema)
-        # Read value
-        value = stream.read(length)
+            return self.decode_tlv(index, depth, schema)
+
+        # Extract value directly from buffer
+        value = self.buffer[index : index + length]
         if len(value) != length:
             raise ValueError("Unexpected end of data")
 
-        # Update offset after tag and length
+        # Update index after value
+        index += length
+
         decoded_data, schema = self.unravel_decoded_tlv(tag.number, value, schema)
 
         # Parse constructed types recursively
         if tag.constructed:
-            value_stream = BytesIO(value)
-            while value_stream.tell() < length:
-                if child := self.decode_tlv(value_stream, offset, depth + 1, schema):
-                    child_data, child_length = child
-                    offset += child_length
-                    decoded_data.update(child_data)
-        return decoded_data, length
+            value_index = index - length  # Start of value
+            end_index = index  # End of value
+
+            while value_index < end_index and (
+                child := self.decode_tlv(value_index, depth + 1, schema)
+            ):
+                child_data, child_index = child
+                value_index = child_index  # Move to next child
+                decoded_data.update(child_data)
+
+        return decoded_data, index
 
     def unravel_decoded_tlv(
         self, tag_number: int, value: bytes, schema: dict
