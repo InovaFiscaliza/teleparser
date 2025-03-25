@@ -3,6 +3,46 @@ from ..exceptions import OctetStringError
 from teleparser.config import PRESTADORAS, Prestadora
 
 
+class BSSMAPCauseCode(OctetString):
+    """ASN.1 Formal Description
+    BSSMAPCauseCode ::= OCTET STRING (SIZE(1..2))
+    |    |    |    |    |    |    |    |    |
+    | 8  | 7  | 6  | 5  | 4  | 3  | 2  | 1  |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |ext |         cause value              | octet 1
+    +---------------------------------------+
+    |          extended cause value         | octet 2
+    /---------------------------------------/
+    The second octet is used only if the ext bit is
+    set to one.
+    The cause value is specified in the Function
+    Specification "A-Interface, Section H:
+    Base Station System Management Application Part,
+    BSSMAP, Message Formats And Coding" in chapter
+    "Information Elements".
+    """
+
+    def __init__(self, octets):
+        super().__init__(octets, upper=2)
+        self._parse_cause_value()
+
+    def _parse_cause_value(self):
+        """Parse cause value from octets 1 and 2"""
+        self.cause_value = self.octets[0] & 0x7F
+        if self.octets[0] >> 7 == 1:
+            self.extended_cause_value = self.octets[1]
+
+    @property
+    def value(self):
+        if self.size == 2:
+            return {
+                "cause_value": self.cause_value,
+                "extended_cause_value": self.extended_cause_value,
+            }
+        return {"cause_value": self.cause_value}
+
+
 class CarrierInfo(OctetString):
     """ASN.1 Formal Description
     CarrierInfo ::= OCTET STRING (SIZE(2..3))

@@ -220,7 +220,7 @@ MSOriginating = {
     95: {"name": "fNURRequested", "type": dt.FixedNetworkUserRate},
     96: {"name": "aIURRequested", "type": dt.AirInterfaceUserRate},
     97: {"name": "numberOfChannelsRequested", "type": dt.NumberOfChannels},
-    # 98: {"name": "bSSMAPCauseCode", "type": dt.BSSMAPCauseCode},
+    98: {"name": "bSSMAPCauseCode", "type": dt.BSSMAPCauseCode},
     99: {"name": "multimediaCall", "type": dt.Bool},  # NULL type
     # 100: {"name": "guaranteedBitRate", "type": dt.BitRate},
     101: {"name": "trafficClass", "type": dt.TrafficClass},
@@ -548,7 +548,7 @@ MSTerminating = {
     82: {"name": "fNURRequested", "type": dt.FixedNetworkUserRate},
     83: {"name": "aIURRequested", "type": dt.AirInterfaceUserRate},
     84: {"name": "numberOfChannelsRequested", "type": dt.NumberOfChannels},
-    # 85: {"name": "bSSMAPCauseCode", "type": dt.BSSMAPCauseCode},
+    85: {"name": "bSSMAPCauseCode", "type": dt.BSSMAPCauseCode},
     # 86: {"name": "guaranteedBitRate", "type": dt.BitRate},
     87: {"name": "trafficClass", "type": dt.TrafficClass},
     # 88: {"name": "rANAPCauseCode", "type": dt.RANAPCauseCode},
