@@ -130,27 +130,6 @@ class BitRate(primitives.AddressString):
     """
 
 
-class BSSMAPCauseCode(primitives.AddressString):
-    """ASN.1 Formal Description
-    BSSMAPCauseCode ::= OCTET STRING (SIZE(1..2))
-    |    |    |    |    |    |    |    |    |
-    | 8  | 7  | 6  | 5  | 4  | 3  | 2  | 1  |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |ext |         cause value              | octet 1
-    +---------------------------------------+
-    |          extended cause value         | octet 2
-    /---------------------------------------/
-    The second octet is used only if the ext bit is
-    set to one.
-    The cause value is specified in the Function
-    Specification "A-Interface, Section H:
-    Base Station System Management Application Part,
-    BSSMAP, Message Formats And Coding" in chapter
-    "Information Elements".
-    """
-
-
 class CAMELTDPData:
     """ASN.1 Formal Description
     CAMELTDPData ::= SEQUENCE(

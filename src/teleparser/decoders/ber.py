@@ -1,3 +1,5 @@
+import gzip
+from pathlib import Path
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Tuple, Callable
@@ -40,11 +42,24 @@ class BerTag:
     number: int
 
 
-@dataclass
 class BerDecoder:
     """Basic Encoding Rules decoder"""
 
-    parser: Callable
+    def __init__(self, parser: Callable, file_path_or_bytes: Path | bytes):
+        self.parser = parser
+        self.load_buffer(file_path_or_bytes)
+
+    def load_buffer(self, file_path_or_bytes):
+        """Load the entire file or bytes object into memory"""
+        if isinstance(file_path_or_bytes, bytes):
+            self.buffer = file_path_or_bytes
+        elif isinstance(file_path_or_bytes, (str, Path)):
+            file_path_or_bytes = Path(file_path_or_bytes)
+            open_func = gzip.open if file_path_or_bytes.suffix == ".gz" else open
+            with open_func(file_path_or_bytes, "rb") as f:
+                self.buffer = f.read()
+        else:
+            raise ValueError("Invalid file path or bytes object")
 
     @staticmethod
     def decode_tag(tag_bytes: bytes):
