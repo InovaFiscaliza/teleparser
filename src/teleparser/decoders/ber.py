@@ -61,6 +61,18 @@ class BerDecoder:
         else:
             raise ValueError("Invalid file path or bytes object")
 
+    def decode_from_stream(self, stream: BufferedReader | BytesIO, schema: dict = None):
+        """Backward compatible method that reads the stream and uses index-based decoding"""
+        # Read the entire stream into memory
+        if isinstance(stream, BytesIO):
+            stream.seek(0)
+            self.buffer = stream.read()
+        else:
+            self.buffer = stream.read()
+
+        # Use the index-based approach
+        return self.decode_tlv(0, 0, schema)
+
     @staticmethod
     def decode_tag(tag_bytes: bytes):
         first_byte = tag_bytes[0]
@@ -139,45 +151,52 @@ class BerDecoder:
             output = {tlv.name: tlv.value}
         return output, tlv.schema
 
-    @staticmethod
-    def _read_tag(stream: BufferedReader) -> Optional[bytes]:
-        first_byte = stream.read(1)
-        if not first_byte:
+    def _read_tag_indexed(self, index: int):
+        """Read tag using index-based approach"""
+        if index >= len(self.buffer):
             return None
 
-        tag_bytes = first_byte
-        if int.from_bytes(tag_bytes, "big") & HIGH_CLASS_NUM == HIGH_CLASS_NUM:
+        first_byte = self.buffer[index]
+        tag_size = 1
+
+        if first_byte & HIGH_CLASS_NUM == HIGH_CLASS_NUM:
             # Multi-byte tag
             while True:
-                b = stream.read(1)
-                if not b:
+                if index + tag_size >= len(self.buffer):
                     raise ValueError("Unexpected end of tag")
-                tag_bytes += b
-                if int.from_bytes(b, "big") & MASK_BIT8 == 0:
+
+                b = self.buffer[index + tag_size]
+                tag_size += 1
+
+                if b & MASK_BIT8 == 0:
                     break
 
-        return tag_bytes
+        tag_bytes = self.buffer[index : index + tag_size]
+        tag = self.decode_tag(tag_bytes)
 
-    @staticmethod
-    def _read_length(stream: BufferedReader) -> Tuple[int, int]:
-        first_byte = stream.read(1)[0]
+        return tag, tag_size
+
+    def _read_length_indexed(self, index: int):
+        """Read length using index-based approach"""
+        first_byte = self.buffer[index]
+
         # definite short form
         if first_byte >> SHIFT_7 == 0:
             return first_byte, 1
 
         length = 0
         length_size = first_byte & MASK_BIT7
+
         # indefinite form
         if length_size == 0:
             return length, length_size + 1
 
-        length_bytes = stream.read(length_size)
-        if len(length_bytes) != length_size:
+        if index + 1 + length_size > len(self.buffer):
             raise ValueError("Unexpected end of length")
 
-        #  definite long form
-        #  When iterating on bytes it's already converted to int
-        for b in length_bytes:
+        # definite long form
+        for i in range(length_size):
+            b = self.buffer[index + 1 + i]
             length = (length << SHIFT_8) | b
 
         return length, length_size + 1
