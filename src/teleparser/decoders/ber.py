@@ -84,7 +84,7 @@ class BerDecoder:
         length, length_size = self._read_length(stream)
         offset += len(tag_bytes) + length_size
 
-        if self._reached_eoc(tag, length):
+        if self._reached_eoc(tag, length) or length == 0:
             return self.decode_tlv(stream, offset, depth, schema)
         # Read value
         value = stream.read(length)
