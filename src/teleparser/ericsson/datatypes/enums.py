@@ -533,6 +533,10 @@ class FrequencyBandSupported(primitives.ByteEnum):
         1: Frequency Band supported
     """
 
+    def __init__(self, octets):
+        super().__init__(octets)
+        self._parse_frequency_band()
+
     def _parse_frequency_band(self):
         """Parse Frequency Band from octets 1 and 2"""
         self.pgsm = self.octets[0] & 1 == 1
@@ -541,7 +545,7 @@ class FrequencyBandSupported(primitives.ByteEnum):
 
     @property
     def value(self):
-        return self.pgsm, self.egsm, self.gsm1800
+        return {"pgsm": self.pgsm, "egsm": self.egsm, "gsm1800": self.gsm1800}
 
 
 class INMarkingOfMS(primitives.ByteEnum):
