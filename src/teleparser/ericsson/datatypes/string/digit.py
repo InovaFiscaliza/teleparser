@@ -290,6 +290,21 @@ class NumberOfMeterPulses(DigitString):
     """
 
 
+@fixed_size_digit_string(1)
+class NumberOfOperations(DigitString):
+    """ASN.1 Formal Description
+    NumberOfOperations ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                               LSB |
+    /---------------------------------------/
+    Note: OCTET STRING is coded as an unsigned integer.
+    Value range: H'0 - H'FF
+    """
+
+
 @fixed_size_digit_string(2)
 class NumberOfShortMessage(DigitString):
     """ASN.1 Formal Description
