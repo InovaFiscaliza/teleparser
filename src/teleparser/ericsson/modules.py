@@ -405,6 +405,7 @@ CallForwarding = {
     52: {"name": "subscriptionType", "type": dt.SubscriptionType},
     53: {"name": "incompleteCallDataIndicator", "type": dt.Bool},  # NULL type
     54: {"name": "incompleteCompositeCDRIndicator", "type": dt.Bool},  # NULL type
+    55: {"name": "originatedCode", "type": dt.OriginatedCode},
     56: {"name": "switchIdentity", "type": dt.SwitchIdentity},
     57: {"name": "networkCallReference", "type": dt.NetworkCallReference},
     58: {"name": "disconnectionDueToSystemRecovery", "type": dt.Bool},  # NULL type
