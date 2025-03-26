@@ -63,6 +63,8 @@ class BerDecoder:
             number = 0
             for b in tag_bytes[1:]:
                 number = (number << SHIFT_7) | (b & MASK_BIT7)
+                if b >> SHIFT_7 == 0:
+                    break
 
         return BerTag(string, tag_class, constructed, number)
 
@@ -91,8 +93,13 @@ class BerDecoder:
         if len(value) != length:
             raise ValueError("Unexpected end of data")
 
+        # if tag.number == 47:
+        #     breakpoint()
+
         # Update offset after tag and length
-        decoded_data, schema = self.unravel_decoded_tlv(tag.number, value, schema)
+        if (decoded_tlv := self.unravel_decoded_tlv(tag.number, value, schema)) is None:
+            return None
+        decoded_data, schema = decoded_tlv
 
         # Parse constructed types recursively
         if tag.constructed:
@@ -109,6 +116,8 @@ class BerDecoder:
     ) -> Tuple[dict, dict]:
         """Unravel TLV tree to a flat dictionary"""
         tlv = self.parser(tag_number, value, schema)
+        if tlv.value is None:
+            return None
         if isinstance(tlv.value, dict):
             output = {f"{tlv.name}.{k}": v for k, v in tlv.value.items()}
         else:
@@ -117,22 +126,22 @@ class BerDecoder:
 
     @staticmethod
     def _read_tag(stream: BufferedReader) -> Optional[bytes]:
-        first_byte = stream.read(1)
+        first_byte = stream.read(1)  # index makes a converted to int
         if not first_byte:
             return None
 
-        tag_bytes = first_byte
-        if int.from_bytes(tag_bytes, "big") & HIGH_CLASS_NUM == HIGH_CLASS_NUM:
+        tag_byte = first_byte
+        if int.from_bytes(tag_byte, "big") & HIGH_CLASS_NUM == HIGH_CLASS_NUM:
             # Multi-byte tag
             while True:
                 b = stream.read(1)
                 if not b:
                     raise ValueError("Unexpected end of tag")
-                tag_bytes += b
+                tag_byte += b
                 if int.from_bytes(b, "big") & MASK_BIT8 == 0:
                     break
 
-        return tag_bytes
+        return tag_byte
 
     @staticmethod
     def _read_length(stream: BufferedReader) -> Tuple[int, int]:
@@ -145,7 +154,7 @@ class BerDecoder:
         length_size = first_byte & MASK_BIT7
         # indefinite form
         if length_size == 0:
-            return length, length_size + 1
+            return 0, 1
 
         length_bytes = stream.read(length_size)
         if len(length_bytes) != length_size:
