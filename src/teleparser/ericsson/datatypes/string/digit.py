@@ -322,6 +322,34 @@ class NumberOfShortMessage(DigitString):
     """
 
 
+@fixed_size_digit_string(1)
+class RANAPCauseCode(DigitString):
+    """Radio Access Network Application Part Cause Code
+
+      This parameter is used to indicate the reason why
+      a particular Radio Access Network Application Part event
+      occured.
+
+      This parameter is available if a call disconnection is
+      initiated by the RANAP.
+
+      The parameter is only applicable for WCDMA.
+    ASN.1 Formal Description
+        RANAPCauseCode ::= OCTET STRING (SIZE(1))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        | MSB                              LSB  | octet 1
+        /---------------------------------------/
+        The cause value is specified in the Function
+        Specification (FS) "IU-Interface, Section H:
+        Radio Access Network Application Part,
+        RANAP, Message Formats And Coding" in chapter
+        "Information Elements".
+    """
+
+
 @fixed_size_digit_string(4)
 class ServiceKey(DigitString):
     r"""ASN.1 Formal Description
