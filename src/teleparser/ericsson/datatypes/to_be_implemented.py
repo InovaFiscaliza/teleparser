@@ -1507,22 +1507,6 @@ class TrafficActivityCode(primitives.AddressString):
     """
 
 
-class TransferDelay(primitives.AddressString):
-    """ASN.1 Formal Description
-    TransferDelay ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   |  octet 1
-    +---------------------------------------+
-    |                                   LSB |  octet 2
-    /---------------------------------------/
-    Note : The OCTET STRING is coded as an unsigned INTEGER.
-    Value range: H'0 - H'FFFF
-    """
-
-
 class TransitCarrierInfo(primitives.AddressString):
     """ASN.1 Formal Description
     TransitCarrierInfo ::= OCTET STRING (SIZE(7..96))

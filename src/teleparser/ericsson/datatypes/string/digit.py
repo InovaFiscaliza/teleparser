@@ -511,3 +511,31 @@ class Time(DigitString):
         if self.size == 4:
             value += f".{self.tenth_of_a_second:01d}"
         return value
+
+
+@fixed_size_digit_string(2)
+class TransferDelay(DigitString):
+    """Transfer Delay
+
+    This parameter indicates the maximum delay for 95 percent
+    of the distribution of delay for all delivered Service Data
+    Units (SDUs) during the lifetime of a Radio Access Bearer
+    (RAB), where delay for an SDU is defined as the time from a
+    request to transfer an SDU from a Service Access Point
+    (SAP) to another. The unit is millisecond.
+
+     The parameter is only applicable for WCDMA.
+
+    ASN.1 Formal Description
+       TransferDelay ::= OCTET STRING (SIZE(2))
+       |    |    |    |    |    |    |    |    |
+       |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+       |    |    |    |    |    |    |    |    |
+       /---------------------------------------/
+       | MSB                                   |  octet 1
+       +---------------------------------------+
+       |                                   LSB |  octet 2
+       /---------------------------------------/
+       Note : The OCTET STRING is coded as an unsigned INTEGER.
+       Value range: H'0 - H'FFFF
+    """
