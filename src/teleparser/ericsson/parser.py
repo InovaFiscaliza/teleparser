@@ -8,6 +8,11 @@ UNKNOWNS_TAGS = {
     28: (modules.INIncomingCall, modules.INOutgoingCall),
     103: (modules.CallForwarding,),
     143: (modules.MSOriginating,),
+    154: (modules.MSOriginating,),
+    151: (modules.MSOriginating,),
+    43: (modules.MSTerminatingSMSinMSC,),
+    116: (modules.MSTerminating,),
+    119: (modules.MSTerminating,),
 }
 
 

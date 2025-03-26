@@ -555,7 +555,7 @@ MSTerminating = {
     # 89: {"name": "rNCidOfFirstRNC", "type": dt.TargetRNCid},
     90: {"name": "maxBitRateDownlink", "type": dt.BitRate},
     91: {"name": "maxBitRateUplink", "type": dt.BitRate},
-    # 92: {"name": "transferDelay", "type": dt.TransferDelay},
+    92: {"name": "transferDelay", "type": dt.TransferDelay},
     93: {"name": "deliveryOfErroneousSDU1", "type": dt.DeliveryOfErroneousSDU},
     94: {"name": "deliveryOfErroneousSDU2", "type": dt.DeliveryOfErroneousSDU},
     95: {"name": "deliveryOfErroneousSDU3", "type": dt.DeliveryOfErroneousSDU},
