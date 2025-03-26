@@ -6,10 +6,18 @@ from pathlib import Path
 import zipfile
 import shutil
 from typing import List, Set, Optional, BinaryIO
+from rich.progress import (
+    Progress,
+    TextColumn,
+    BarColumn,
+    TaskProgressColumn,
+    TimeRemainingColumn,
+)
 
-from fastcore.parallel import parallel_async, parallel
+# from fastcore.parallel import parallel_async, parallel
 
 from teleparser.decoders.ber import BerDecoder
+from teleparser.ericsson.parser import TlvVozEricsson
 
 
 class BufferManager:
@@ -60,7 +68,12 @@ class CDRFileManager:
     @cached_property
     def gz_files(self) -> List[Path]:
         """It traverses the tree to get the list of .gz files, decompressing ZIP archives if needed"""
-        files = list(self.input_path.rglob("*[.gz|.zip]"))
+        if self.input_path.is_file():
+            files = [self.input_path]
+        elif self.input_path.is_dir():
+            files = list(self.input_path.rglob("*[.gz|.zip]"))
+        else:
+            raise ValueError(f"Invalid input path: {self.input_path}")
         zip_files = [f for f in files if f.suffix == ".zip"]
         gz_files = [f for f in files if f.suffix == ".gz"]
         if zip_files:
@@ -73,17 +86,27 @@ class CDRFileManager:
         self.temp_dir.mkdir(parents=True, exist_ok=True)
 
         gz_files: List[Path] = []
-        for zip_file in zip_files:
-            try:
-                with zipfile.ZipFile(zip_file) as zf:
-                    zf.extractall(self.temp_dir)
-                    gz_files.extend(
-                        self.temp_dir / file
-                        for file in zf.namelist()
-                        if file.endswith(".gz")
-                    )
-            except zipfile.BadZipFile:
-                self.failed_files.add(Path(zip_file))
+        with Progress(
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TimeRemainingColumn(),
+        ) as progress:
+            task = progress.add_task(
+                "[cyan]Extracting ZIP files...", total=len(zip_files)
+            )
+            for zip_file in zip_files:
+                try:
+                    with zipfile.ZipFile(zip_file) as zf:
+                        zf.extractall(self.temp_dir)
+                        gz_files.extend(
+                            self.temp_dir / file
+                            for file in zf.namelist()
+                            if file.endswith(".gz")
+                        )
+                except zipfile.BadZipFile:
+                    self.failed_files.add(Path(zip_file))
+                progress.update(task, advance=1)
         return gz_files
 
     def cleanup(self):
@@ -91,49 +114,71 @@ class CDRFileManager:
         if self.temp_dir is not None and self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)
 
+    def decode_files(self) -> list:
+        """Decode all files with a progress bar"""
+        all_blocks = []
+        with Progress(
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TimeRemainingColumn(),
+        ) as progress:
+            task = progress.add_task(
+                "[cyan]Decoding CDR files...", total=len(self.gz_files)
+            )
+            for file_path in self.gz_files:
+                # try:
+                blocks = self.decode_file(file_path, progress)
+                all_blocks.extend(blocks)
+                self.processed_files.add(file_path)
+                # except KeyError as e:
+                #     print(f"Error processing {file_path.name}: {e}")
+                #     self.failed_files.add(file_path)
+                progress.update(task, advance=1)
+        return all_blocks
+
     @staticmethod
-    def decode_file(file_path: Path) -> list:
+    def decode_file(file_path: Path, progress: Progress) -> list:
         blocks = []
         buffer_manager = BufferManager(file_path)
-        ber = BerDecoder()
+        ber = BerDecoder(TlvVozEricsson)
+
+        task = progress.add_task(
+            f"[cyan]Processing CDR records: ({file_path.name})", total=None
+        )
+        counter = 0
         with buffer_manager.open() as file_buffer:
             while (tlv := ber.decode_tlv(file_buffer)) is not None:
                 blocks.append(tlv)
-        print(f"{file_path.name} done!")
+                counter += 1
+                if counter % 100 == 0:  # Update progress every 100 records
+                    progress.update(
+                        task,
+                        description=f"[cyan]Processing CDR records: {file_path.name} ({counter})",
+                    )
+
         return blocks
 
-    async def decode_async(self):
-        return await parallel_async(
-            CDRFileManager.decode_file,
-            self.gz_files,
-            n_workers=min(16, len(self.gz_files)),
-        )
+    # async def decode_async(self):
+    #     return await parallel_async(
+    #         CDRFileManager.decode_file,
+    #         self.gz_files,
+    #         n_workers=min(16, len(self.gz_files)),
+    #     )
 
-    def decode(self):
-        return parallel(
-            CDRFileManager.decode_file,
-            self.gz_files,
-            n_workers=min(16, len(self.gz_files)),
-            progress=True,
-        )
+    # def decode(self):
+    #     return parallel(
+    #         CDRFileManager.decode_file,
+    #         self.gz_files,
+    #         n_workers=min(16, len(self.gz_files)),
+    #         progress=True,
+    #     )
 
 
 def main():
-    from teleparser.ericsson.parser import TlvVozEricsson
-
     folder = Path(__file__).parent.parent.parent / "data"
-    file = folder / "timvoz.gz"
-    buffer_manager = BufferManager(file)
-    ber = BerDecoder(TlvVozEricsson)
-    file_buffer = buffer_manager.open_file()
-    counter = 0
-    while file_buffer.has_data():
-        # with suppress(KeyError):
-        while (tlv := ber.decode_tlv(file_buffer)) is not None:
-            # print("Varredura: (Call Data Record)")
-            data, length = tlv
-            counter += 1
-    print(f"Total: {counter}")
+    file = folder / "vivovoz.gz"
+    CDRFileManager(file, folder, "ericsson_voz").decode_files()
 
 
 if __name__ == "__main__":
