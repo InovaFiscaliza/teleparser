@@ -740,7 +740,7 @@ SSProcedure = {
     22: {"name": "relatedCallNumber", "type": dt.CallIDNumber},
     23: {"name": "uSSDApplicationIdentifier", "type": dt.ApplicationIdentifier},
     24: {"name": "uSSDServiceCode", "type": dt.ServiceCode},
-    # 25: {"name": "uSSDProcedureCode", "type": dt.ProcedureCode},
+    25: {"name": "uSSDProcedureCode", "type": dt.ProcedureCode},
     26: {"name": "networkInitiatedUSSDOperations", "type": dt.NumberOfOperations},
     # 27: {"name": "uSSDOperationIdentifier", "type": dt.OperationIdentifier},
     28: {"name": "incompleteCallDataIndicator", "type": dt.Bool},  # NULL type

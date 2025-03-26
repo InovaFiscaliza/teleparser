@@ -93,6 +93,15 @@ class IMSI(TBCDString):
         return f"{self.carrier.nome} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"
 
 
+class ProcedureCode(TBCDString):
+    """ASN.1 Formal Description
+    ProcedureCode ::= TBCDString (SIZE(1))
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, size=1)
+
+
 class ServiceCode(TBCDString):
     """Unstructured Supplementary Service Data Service Code
 

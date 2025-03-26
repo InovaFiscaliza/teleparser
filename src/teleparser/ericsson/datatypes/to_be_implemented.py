@@ -1430,12 +1430,6 @@ class PositioningDelivery(primitives.AddressString):
     """
 
 
-class ProcedureCode:
-    """ASN.1 Formal Description
-    ProcedureCode ::= TBCDString (SIZE(1))
-    """
-
-
 class RANAPCauseCode(primitives.AddressString):
     """ASN.1 Formal Description
     RANAPCauseCode ::= OCTET STRING (SIZE(1))
