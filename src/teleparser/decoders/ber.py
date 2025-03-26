@@ -49,11 +49,7 @@ class BerDecoder:
     @staticmethod
     def decode_tag(tag_bytes: bytes):
         first_byte = tag_bytes[0]
-        string = hexlify(
-            tag_bytes[:1]
-        ).decode(
-            "utf-8"
-        )  # This doesn't belong to the original ber encoding, it's specific to this implementation
+        string = tag_bytes.hex().upper()  # This doesn't belong to the original ber encoding, it's just to visualize the tag string
         tag_class = BerClass((first_byte >> CLASS_SHIFT) & TWO_BIT_MASK)
         constructed = bool((first_byte >> ENCODE_SHIFT) & MODULO_2)
         number = first_byte & CLASSNUM_MASK
