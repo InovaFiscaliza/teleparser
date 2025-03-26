@@ -2,7 +2,13 @@ from collections import UserDict
 from typing import Mapping
 from . import modules
 
-UNKNOWNS_TAGS = {47: modules.RoamingCallForwarding}
+UNKNOWNS_TAGS = {
+    47: (modules.RoamingCallForwarding,),
+    130: (modules.RoamingCallForwarding,),
+    28: (modules.INIncomingCall, modules.INOutgoingCall),
+    103: (modules.CallForwarding,),
+    143: (modules.MSOriginating,),
+}
 
 
 class TlvVozEricsson:
@@ -35,4 +41,6 @@ class TlvVozEricsson:
             self.schema = {}
 
     def _is_tag_unknown(self, tag_number: int, schema: Mapping) -> bool:
-        return tag_number not in schema and UNKNOWNS_TAGS.get(tag_number) == schema
+        return tag_number not in schema and any(
+            schema == d for d in UNKNOWNS_TAGS.get(tag_number, [])
+        )
