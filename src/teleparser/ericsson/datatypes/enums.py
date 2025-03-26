@@ -101,6 +101,46 @@ class BearerServiceCode(ByteEnum):
     }
 
 
+class BitRate(ByteEnum):
+    """ASN.1 Formal Description
+    BitRate ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                                LSB|  octet 1
+    /---------------------------------------/
+    BitRate                      Bits 8 7 6 5 4 3 2 1
+    4.75 kbps                        0 0 0 0 0 0 0 1
+    5.15 kbps                        0 0 0 0 0 0 1 0
+    5.9  kbps                        0 0 0 0 0 0 1 1
+    6.7  kbps                        0 0 0 0 0 1 0 0
+    7.4  kbps                        0 0 0 0 0 1 0 1
+    7.95 kbps                        0 0 0 0 0 1 1 0
+    10.2  kbps                        0 0 0 0 0 1 1 1
+    12.2  kbps                        0 0 0 0 1 0 0 0
+    14.4  kbps                        0 0 0 0 1 0 0 1
+    64.0  kbps                        0 0 0 0 1 0 1 0
+    28.8  kbps                        0 0 0 0 1 0 1 1
+    57.6  kbps                        0 0 0 0 1 1 0 0
+    """
+
+    VALUES = {
+        1: "4.75 kbps",
+        2: "5.15 kbps",
+        3: "5.9 kbps",
+        4: "6.7 kbps",
+        5: "7.4 kbps",
+        6: "7.95 kbps",
+        7: "10.2 kbps",
+        8: "12.2 kbps",
+        9: "14.4 kbps",
+        10: "64.0 kbps",
+        11: "28.8 kbps",
+        12: "57.6 kbps",
+    }
+
+
 class CallAttemptState(ByteEnum):
     """ASN.1 Formal Description
     CallAttemptState ::= ENUMERATED

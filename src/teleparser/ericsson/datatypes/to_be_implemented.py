@@ -105,31 +105,6 @@ class AoCCurrencyAmountSent(primitives.AddressString):
     """
 
 
-class BitRate(primitives.AddressString):
-    """ASN.1 Formal Description
-    BitRate ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                LSB|  octet 1
-    /---------------------------------------/
-    BitRate                      Bits 8 7 6 5 4 3 2 1
-    4.75 kbps                        0 0 0 0 0 0 0 1
-    5.15 kbps                        0 0 0 0 0 0 1 0
-    5.9  kbps                        0 0 0 0 0 0 1 1
-    6.7  kbps                        0 0 0 0 0 1 0 0
-    7.4  kbps                        0 0 0 0 0 1 0 1
-    7.95 kbps                        0 0 0 0 0 1 1 0
-    10.2  kbps                        0 0 0 0 0 1 1 1
-    12.2  kbps                        0 0 0 0 1 0 0 0
-    14.4  kbps                        0 0 0 0 1 0 0 1
-    64.0  kbps                        0 0 0 0 1 0 1 0
-    28.8  kbps                        0 0 0 0 1 0 1 1
-    57.6  kbps                        0 0 0 0 1 1 0 0
-    """
-
-
 class BSSMAPCauseCode(primitives.AddressString):
     """ASN.1 Formal Description
     BSSMAPCauseCode ::= OCTET STRING (SIZE(1..2))
