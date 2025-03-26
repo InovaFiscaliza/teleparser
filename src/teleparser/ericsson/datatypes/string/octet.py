@@ -103,6 +103,52 @@ class CarrierInfo(OctetString):
         self.exit_poi_hierarchy = exit_poi_hierarchy
 
 
+class CarrierInformation(OctetString):
+    """ASN.1 Formal Description
+    CarrierInformation ::= OCTET STRING (SIZE(1))
+    |   |   |   |   |   |   |   |   |
+    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
+    |   |   |   |   |   |   |   |   |
+    /-------------------------------/
+    |   |   TNI     |     NIP       |  Octet 1
+    /-------------------------------/
+    Note: The OCTET STRING is coded as an unsigned INTEGER.
+    - Bit 8: Spare
+    - Bit 7-5: Type Of Network Identification (TNI)
+    where
+    010  national network
+    - Bit 4-1: Network Identification Plan (NIP)
+    where
+    0000  unknown
+    0001  3-digit carrier
+    0010  4-digit carrier
+    """
+
+    def __init__(self, octets):
+        super().__init__(octets, size=1)
+        self._parse_network_identification()
+
+    def _parse_network_identification(self):
+        value = self.octets[0]
+        self.type_of_network_identification = (value >> 5) & 0x07
+        match value & 0x0F:
+            case 0:
+                self.network_identification_plan = "Unknown"
+            case 1:
+                self.network_identification_plan = "3-digit carrier"
+            case 2:
+                self.network_identification_plan = "4-digit carrier"
+            case _:
+                self.network_identification_plan = "Unknown"
+
+    @property
+    def value(self):
+        return {
+            "type_of_network_identification": self.type_of_network_identification,
+            "network_identification_plan": self.network_identification_plan,
+        }
+
+
 class ChargingIndicator(OctetString):
     r"""Charging Indicator
     

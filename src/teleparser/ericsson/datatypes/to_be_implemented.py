@@ -159,28 +159,6 @@ class CAMELTDPData:
     """
 
 
-class CarrierInformation(primitives.AddressString):
-    """ASN.1 Formal Description
-    CarrierInformation ::= OCTET STRING (SIZE(1))
-    |   |   |   |   |   |   |   |   |
-    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
-    |   |   |   |   |   |   |   |   |
-    /-------------------------------/
-    |   |   TNI     |     NIP       |  Octet 1
-    /-------------------------------/
-    Note: The OCTET STRING is coded as an unsigned INTEGER.
-    - Bit 8: Spare
-    - Bit 7-5: Type Of Network Identification (TNI)
-    where
-    010  national network
-    - Bit 4-1: Network Identification Plan (NIP)
-    where
-    0000  unknown
-    0001  3-digit carrier
-    0010  4-digit carrier
-    """
-
-
 class CarrierSelectionSubstitutionInformation(primitives.AddressString):
     """ASN.1 Formal Description
     CarrierSelectionSubstitutionInformation ::= OCTET STRING

@@ -257,7 +257,7 @@ MSOriginating = {
     # },  # WCDMA Japan
     133: {"name": "terminatingUserClass", "type": dt.UserClass},
     134: {"name": "contractorNumber", "type": dt.AddressString},
-    # 135: {"name": "carrierInformation", "type": dt.CarrierInformation},
+    135: {"name": "carrierInformation", "type": dt.CarrierInformation},
     # 136: {
     #     "name": "carrierSelectionSubstitutionInformation",
     #     "type": dt.CarrierSelectionSubstitutionInformation,
@@ -333,8 +333,8 @@ RoamingCallForwarding = {
     60: {"name": "terminatingCarrier", "type": dt.CarrierInfo},
     61: {"name": "terminatingChargeArea", "type": dt.ChargeAreaCode},
     62: {"name": "contractorNumber", "type": dt.AddressString},
-    # 63: {"name": "carrierIdentificationCode", "type": dt.CarrierIdentificationCode},
-    # 64: {"name": "carrierInformation", "type": dt.CarrierInformation},
+    63: {"name": "carrierIdentificationCode", "type": dt.CarrierIdentificationCode},
+    64: {"name": "carrierInformation", "type": dt.CarrierInformation},
     65: {
         "name": "carrierSelectionSubstitutionInformation",
         "type": dt.CarrierSelectionSubstitutionInformation,
@@ -444,7 +444,7 @@ CallForwarding = {
     91: {"name": "contractorNumber", "type": dt.AddressString},
     92: {"name": "calledPartyMNPInfo", "type": dt.AddressString},
     93: {"name": "carrierIdentificationCode", "type": dt.CarrierIdentificationCode},
-    # 94: {"name": "carrierInformation", "type": dt.CarrierInformation},
+    94: {"name": "carrierInformation", "type": dt.CarrierInformation},
     # 95: {
     #     "name": "carrierSelectionSubstitutionInformation",
     #     "type": dt.CarrierSelectionSubstitutionInformation,
