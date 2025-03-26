@@ -748,22 +748,6 @@ class EndToEndAccessDataMap(primitives.AddressString):
     """
 
 
-class ErrorRatio(primitives.AddressString):
-    """ASN.1 Formal Description
-    ErrorRatio ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |               Mantissa                |  octet 1
-    +---------------------------------------+
-    |               Exponent                |  octet 2
-    /---------------------------------------/
-    Note: The OCTET STRING is coded as an unsigned INTEGER.
-    Value range:  0 - 9 for both octets.
-    """
-
-
 class EventCRIToMS:
     """ASN.1 Formal Description
     EventCRIToMS ::= TBCDString (SIZE(4))
@@ -1422,38 +1406,6 @@ class ServiceKey(primitives.AddressString):
     |                                 LSB   | octet 4
     /---------------------------------------/
     Value Range H'0 - H'7FFFFFFF
-    """
-
-
-class TargetRNCid(primitives.AddressString):
-    """ASN.1 Formal Description
-    TargetRNCid ::= OCTET STRING (SIZE(7))
-    |   |   |   |   |   |   |   |   |
-    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
-    |   |   |   |   |   |   |   |   |
-    /-------------------------------/
-    |  MCC digit 2  |  MCC digit 1  | octet 1
-    +---------------+---------------+
-    |  MNC digit 3  |  MCC digit 3  | octet 2
-    +---------------+---------------+
-    |  MNC digit 2  |  MNC digit 1  | octet 3
-    +-------------------------------+
-    | MSB          LAC              | octet 4
-    +-------------------------------+
-    |              LAC, cont.   LSB | octet 5
-    +-------------------------------+
-    | MSB   RNC-id                  | octet 6
-    +-------------------------------+
-    |       RNC-id,     cont.   LSB | octet 7
-    /-------------------------------/
-    Note: The OCTET STRING is coded as an unsigned INTEGER.
-    MCC, Mobile country code (octet 1 and 2).
-    MNC, Mobile network code (octet 2 and 3).
-    Note: If MNC uses only 2 digits, 3rd is coded with
-    filler H'F.
-    LAC, Location area code (octet 4 and 5).
-    RNC-id, Radio Network Control id (octet 6 and 7),
-    value range: H'0 - H'FFF.
     """
 
 

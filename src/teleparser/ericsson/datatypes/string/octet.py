@@ -1166,3 +1166,65 @@ class TAC(OctetString):
     def __str__(self):
         # Build result string
         return f"{self.value}"
+
+
+class TargetRNCid(OctetString):
+    """ASN.1 Formal Description
+    TargetRNCid ::= OCTET STRING (SIZE(7))
+    |   |   |   |   |   |   |   |   |
+    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
+    |   |   |   |   |   |   |   |   |
+    /-------------------------------/
+    |  MCC digit 2  |  MCC digit 1  | octet 1
+    +---------------+---------------+
+    |  MNC digit 3  |  MCC digit 3  | octet 2
+    +---------------+---------------+
+    |  MNC digit 2  |  MNC digit 1  | octet 3
+    +-------------------------------+
+    | MSB          LAC              | octet 4
+    +-------------------------------+
+    |              LAC, cont.   LSB | octet 5
+    +-------------------------------+
+    | MSB   RNC-id                  | octet 6
+    +-------------------------------+
+    |       RNC-id,     cont.   LSB | octet 7
+    /-------------------------------/
+    Note: The OCTET STRING is coded as an unsigned INTEGER.
+    MCC, Mobile country code (octet 1 and 2).
+    MNC, Mobile network code (octet 2 and 3).
+    Note: If MNC uses only 2 digits, 3rd is coded with
+    filler H'F.
+    LAC, Location area code (octet 4 and 5).
+    RNC-id, Radio Network Control id (octet 6 and 7),
+    value range: H'0 - H'FFF.
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, size=7)
+        self._parse_mcc_mnc()
+        self._parse_lac()
+        self._parse_rnc_id()
+
+    def _parse_mcc_mnc(self):
+        mcc1 = self.octets[0] & 0x0F  # MCC digit 1
+        mcc2 = self.octets[0] >> 4  # MCC digit 2
+        mcc3 = self.octets[1] & 0x0F  # MCC digit 3
+        self.mcc = mcc1 * 100 + mcc2 * 10 + mcc3
+        mnc1 = self.octets[2] & 0x0F  # MNC digit 1
+        mnc2 = self.octets[2] >> 4  # MNC digit 2
+        if (mnc3 := self.octets[1] >> 4) == 15:  # MNC digit 3
+            mnc = mnc1 * 10 + mnc2
+        else:
+            mnc = mnc1 * 100 + mnc2 * 10 + mnc3
+        self.carrier = PRESTADORAS.get(mnc, Prestadora(mnc=mnc, mcc=self.mcc))
+
+    def _parse_lac(self):
+        self.lac = int.from_bytes(self.octets[3:5], "big")
+
+    def _parse_rnc_id(self):
+        rnc_id = int.from_bytes(self.octets[5:], "big")
+        self.rnc_id = rnc_id
+
+    @property
+    def value(self):
+        return self.carrier._asdict() | {"lac": self.lac, "rnc_id": self.rnc_id}

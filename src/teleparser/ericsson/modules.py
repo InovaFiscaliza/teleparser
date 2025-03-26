@@ -225,7 +225,7 @@ MSOriginating = {
     100: {"name": "guaranteedBitRate", "type": dt.BitRate},
     101: {"name": "trafficClass", "type": dt.TrafficClass},
     102: {"name": "outputType", "type": dt.OutputType},
-    # 103: {"name": "rNCidOfFirstRNC", "type": dt.TargetRNCid},
+    103: {"name": "rNCidOfFirstRNC", "type": dt.TargetRNCid},
     104: {"name": "maxBitRateDownlink", "type": dt.BitRate},
     105: {"name": "maxBitRateUplink", "type": dt.BitRate},
     106: {"name": "transferDelay", "type": dt.TransferDelay},
@@ -552,7 +552,7 @@ MSTerminating = {
     86: {"name": "guaranteedBitRate", "type": dt.BitRate},
     87: {"name": "trafficClass", "type": dt.TrafficClass},
     88: {"name": "rANAPCauseCode", "type": dt.RANAPCauseCode},
-    # 89: {"name": "rNCidOfFirstRNC", "type": dt.TargetRNCid},
+    89: {"name": "rNCidOfFirstRNC", "type": dt.TargetRNCid},
     90: {"name": "maxBitRateDownlink", "type": dt.BitRate},
     91: {"name": "maxBitRateUplink", "type": dt.BitRate},
     92: {"name": "transferDelay", "type": dt.TransferDelay},
@@ -618,7 +618,7 @@ MSOriginatingSMSinMSC = {
     32: {"name": "destinationAddress", "type": dt.AddressStringExtended},
     # 33: {"name": "messageReference", "type": dt.MessageReference},
     34: {"name": "messageTypeIndicator", "type": dt.MessageTypeIndicator},
-    # 35: {"name": "rNCidOfFirstRNC", "type": dt.TargetRNCid},
+    35: {"name": "rNCidOfFirstRNC", "type": dt.TargetRNCid},
     36: {"name": "bCSMTDPData1", "tag": "camelTDPData", "type": CAMELTDPData},
     37: {"name": "cAMELCallingPartyNumber", "type": dt.AddressString},
     38: {"name": "cAMELDestinationAddress", "type": dt.AddressStringExtended},
@@ -688,7 +688,7 @@ MSTerminatingSMSinMSC = {
     32: {"name": "switchIdentity", "type": dt.SwitchIdentity},
     33: {"name": "originatingAddress", "type": dt.AddressStringExtended},
     34: {"name": "messageTypeIndicator", "type": dt.MessageTypeIndicator},
-    # 35: {"name": "rNCidOfFirstRNC", "type": dt.TargetRNCid},
+    35: {"name": "rNCidOfFirstRNC", "type": dt.TargetRNCid},
     102: {"name": "outputType", "type": dt.OutputType},
 }
 
@@ -751,7 +751,7 @@ SSProcedure = {
     33: {"name": "networkCallReference", "type": dt.NetworkCallReference},
     34: {"name": "positionAccuracy", "type": dt.PositionAccuracy},
     # 35: {"name": "userTerminalPosition", "type": dt.UserTerminalPosition},
-    # 36: {"name": "rNCidOfFirstRNC", "type": dt.TargetRNCid},
+    36: {"name": "rNCidOfFirstRNC", "type": dt.TargetRNCid},
     102: {"name": "outputType", "type": dt.OutputType},
 }
 
@@ -1119,7 +1119,7 @@ ISDNSSInvocationEventModule = {
 handOverEventModule = {
     0: {"name": "tAC", "type": dt.TAC},
     1: {"name": "timeForEvent", "type": dt.Time},
-    # 2: {"name": "rNCidOfTargetRNC", "type": dt.TargetRNCid},
+    2: {"name": "rNCidOfTargetRNC", "type": dt.TargetRNCid},
     3: {"name": "incompleteCallDataIndicator", "type": dt.Bool},  # NULL type
     4: {"name": "targetLocationInformation", "type": dt.LocationInformation},
     5: {"name": "radioChannelProperty", "type": dt.RadioChannelProperty},
