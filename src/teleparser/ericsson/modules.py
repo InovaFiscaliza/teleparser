@@ -335,10 +335,10 @@ RoamingCallForwarding = {
     62: {"name": "contractorNumber", "type": dt.AddressString},
     # 63: {"name": "carrierIdentificationCode", "type": dt.CarrierIdentificationCode},
     # 64: {"name": "carrierInformation", "type": dt.CarrierInformation},
-    # 65: {
-    #     "name": "carrierSelectionSubstitutionInformation",
-    #     "type": dt.CarrierSelectionSubstitutionInformation,
-    # },
+    65: {
+        "name": "carrierSelectionSubstitutionInformation",
+        "type": dt.CarrierSelectionSubstitutionInformation,
+    },
     66: {"name": "chargeNumber", "type": dt.AddressString},
     67: {"name": "interExchangeCarrierIndicator", "type": dt.Bool},  # NULL type
     68: {"name": "originatingLineInformation", "type": dt.OriginatingLineInformation},

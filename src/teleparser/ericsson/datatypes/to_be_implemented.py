@@ -1430,23 +1430,6 @@ class PositioningDelivery(primitives.AddressString):
     """
 
 
-class RANAPCauseCode(primitives.AddressString):
-    """ASN.1 Formal Description
-    RANAPCauseCode ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                              LSB  | octet 1
-    /---------------------------------------/
-    The cause value is specified in the Function
-    Specification (FS) "IU-Interface, Section H:
-    Radio Access Network Application Part,
-    RANAP, Message Formats And Coding" in chapter
-    "Information Elements".
-    """
-
-
 class ServiceCode:
     """ASN.1 Formal Description
     ServiceCode ::= TBCDString (SIZE(1..2))

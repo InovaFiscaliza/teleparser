@@ -136,6 +136,75 @@ class CallPosition(primitives.ByteEnum):
     }
 
 
+class CarrierSelectionSubstitutionInformation(primitives.ByteEnum):
+    r"""Carrier Selection Substitution Information
+
+    This parameter identifies the method used to select a 
+    carrier.
+
+    This parameter is present only when an interexchange
+    carrier was used. The Carrier Selection Substitution
+    Information (CSSI) supplements the ISUP Carrier Selection
+    Information (CSI) parameter.
+    ASN.1 Formal Description
+
+    CarrierSelectionSubstitutionInformation ::= OCTET STRING
+                                                (SIZE(1))
+
+    |   |   |   |   |   |   |   |   |
+    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
+    |   |   |   |   |   |   |   |   |
+    /-------------------------------\
+    |MSB                         LSB|  Octet 1
+    \-------------------------------/
+
+    Note: The OCTET STRING is coded as an unsigned INTEGER.
+
+    CarrierSelectionSubstitionInformation
+
+                                Bits  8 7 6 5 4 3 2 1
+
+    Presubscribed carrier exists,       0 0 0 0 0 0 0 1
+    and carrier is not input by
+    calling party. Presubscribed
+    carrier is used.
+
+    Presubscribed carrier is same as    0 0 0 0 0 0 1 0
+    carrier input by calling party.
+    Input carrier is used.
+
+    Presubscribed carrier exists,       0 0 0 0 0 0 1 1
+    and input by calling party is
+    undetermined. Presubscribed
+    carrier is used.
+
+    Carrier is input by calling party,  0 0 0 0 0 1 0 0
+    and it is not the presubscribed
+    carrier for the calling party.
+    Input carrier is used.
+
+    Carrier given by Carrier Analysis   0 0 0 0 0 1 0 1
+    is used instead of presubscribed
+    carrier.
+
+    Carrier given by Carrier Analysis   0 0 0 0 0 1 1 0
+    is used instead of carrier input
+    by calling party.
+
+    Default carrier is used.            0 0 0 0 0 1 1 1
+    """
+
+    VALUES = {
+        1: "Presubscribed carrier exists, and carrier is not input by calling party. Presubscribed carrier is used.",
+        2: "Presubscribed carrier is same as carrier input by calling party. Input carrier is used.",
+        3: "Presubscribed carrier exists, and input by calling party is undetermined. Presubscribed carrier is used.",
+        4: "Carrier is input by calling party, and it is not the presubscribed carrier for the calling party. Input carrier is used.",
+        5: "Carrier given by Carrier Analysis is used instead of presubscribed carrier.",
+        6: "Carrier given by Carrier Analysis is used instead of carrier input by calling party.",
+        7: "Default carrier is used.",
+    }
+
+
 class ChannelAllocationPriorityLevel(primitives.ByteEnum):
     """ASN.1 Formal Description
     ChannelAllocationPriorityLevel ::= OCTET STRING (SIZE(1))
