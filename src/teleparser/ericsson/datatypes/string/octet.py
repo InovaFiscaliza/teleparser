@@ -564,6 +564,39 @@ class Date(OctetString):
             return f"{self.year:02d}-{self.month:02d}-{self.day:02d}"
 
 
+class ErrorRatio(OctetString):
+    """SDU Error Ratio
+
+    These parameters are reliability attributes which indicates
+    the fraction of Service Data Unit (SDU) lost or detected
+    as erroneous when transferring data in a Radio Access
+    Bearer (RAB).
+
+    These parameters are only applicable for WCDMA.
+    ASN.1 Formal Description
+        ErrorRatio ::= OCTET STRING (SIZE(2))
+        |    |    |    |    |    |    |    |    |
+        |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+        |    |    |    |    |    |    |    |    |
+        /---------------------------------------/
+        |               Mantissa                |  octet 1
+        +---------------------------------------+
+        |               Exponent                |  octet 2
+        /---------------------------------------/
+        Note: The OCTET STRING is coded as an unsigned INTEGER.
+        Value range:  0 - 9 for both octets.
+    """
+
+    def __init__(self, octets):
+        super().__init__(octets, size=2)
+
+    @property
+    def value(self):
+        mantissa = int.from_bytes(self.octets[:1], byteorder="big")
+        exponent = int.from_bytes(self.octets[1:2], byteorder="big")
+        return mantissa * (10 ** (-exponent))
+
+
 class GlobalTitle(OctetString):
     """ASN.1 Formal Description
     GlobalTitle ::= OCTET STRING (SIZE(4..12))
