@@ -830,7 +830,7 @@ class IMEI(OctetString):
 
     @property
     def value(self):
-        return self.tac, self.snr, self.spare
+        return {" TAC": self.tac, " SNR": self.snr, " Spare": self.spare}
 
     def __str__(self):
         return f"TAC: {self.tac}, SNR: {self.snr}, Spare: {self.spare}"
