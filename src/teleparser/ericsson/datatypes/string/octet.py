@@ -1,6 +1,82 @@
-from ..primitives import OctetString, TBCDString
+from ..primitives import OctetString, TBCDString, Ia5String
 from ..exceptions import OctetStringError
 from teleparser.config import PRESTADORAS, Prestadora
+
+
+class AddressStringExtended(OctetString):
+    """ASN.1 Formal Description
+    AddressStringExtended ::= OCTET STRING (SIZE(1..20))
+    TBCD representation
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |        TON        |        NPI        |
+    +-------------------+-------------------+
+    |     2nd digit     |     1st digit     | octet 1 of TBCD
+    +-------------------+-------------------+
+    |     4th digit     |     3rd digit     | octet 2 of TBCD
+    +-------------------+-------------------+
+    |     6th digit     |     5th digit     | octet 3 of TBCD
+    /---------------------------------------/
+    .
+    .
+    .
+    /---------------------------------------/
+    |    (2n)th digit   | (2n - 1)th digit  | octet n of TBCD
+    /---------------------------------------/
+    Character representation
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    |       TON         |        NPI        |
+    +---------------------------------------+
+    |               1st character           | octet 1 of char
+    +---------------------------------------+
+    |               2nd character           | octet 2 of char
+    +---------------------------------------+
+    |               3rd character           | octet 3 of char
+    /---------------------------------------/
+    .
+    .
+    .
+    /---------------------------------------/
+    |               Nth character           | octet N of char
+    /---------------------------------------/
+    Note: The OCTET STRING is coded as an unsigned INTEGER.
+    The first octet uses 4 bits for Type Of Number (TON)
+    and 4 bits for Numbering Plan Indicator (NPI):
+    - Bit 8-5: Type of number
+    - Bit 4-1: Numbering plan indicator
+    Note: The values and their meanings for TON and NPI are
+    described in the Application Information "Type Of
+    Number and Numbering Plan Indicator".
+    Subsequent octets representing address digits or characters
+    are encoded as TBCD string or as GSM 7-bit default alphabet
+    character depending on the NPI value.
+    """
+
+    def __init__(self, octets):
+        super().__init__(octets, lower=1, upper=20)
+        self._parse_ton_npi()
+        self._parse_digits()
+
+    def _parse_ton_npi(self):
+        """Parse Type of Number and Numbering Plan Indicator from first octet"""
+        self.ton = self.octets[0] >> 4  # Extract bits 8-5
+        self.npi = self.octets[0] & 0x0F  # Extract bits 4-1
+
+    def _parse_digits(self):
+        """Parse TBCD-encoded digits from remaining octets"""
+        if self.npi == 1:
+            self.digits = TBCDString(self.octets[1:]).value
+        else:
+            self.digits = self.octets[1:].hex().upper()
+
+    @property
+    def value(self):
+        return self.digits
 
 
 class BSSMAPCauseCode(OctetString):
