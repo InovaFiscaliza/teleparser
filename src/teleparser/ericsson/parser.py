@@ -13,6 +13,8 @@ UNKNOWNS_TAGS = {
     43: (modules.MSTerminatingSMSinMSC,),
     116: (modules.MSTerminating,),
     119: (modules.MSTerminating,),
+    17: (modules.MSOriginatingSMSinMSC,),
+    33: (modules.MSOriginatingSMSinMSC,),
 }
 
 
