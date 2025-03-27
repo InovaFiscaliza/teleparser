@@ -537,10 +537,10 @@ class Date(OctetString):
             self._extract_4digits_year()
             i = 2
         else:
-            year = int.from_bytes(self.octets[:1], "big")
+            i = 1
+            year = int.from_bytes(self.octets[:i], "big")
             assert 0 <= year <= 99, f"Year should be in range 0-99: {year}"
             self.year = year
-            i = 1
         month = int.from_bytes(self.octets[i : i + 1], "big")
         assert 1 <= month <= 12, f"Month should be in range 1-12: {month}"
         day = int.from_bytes(self.octets[i + 1 :], "big")
@@ -559,9 +559,9 @@ class Date(OctetString):
     def value(self):
         """Return date string"""
         if self.size == 4:
-            return f"{self.year:04d}-{self.month:02d}-{self.day:02d}"
+            return f"{self.day:04d}-{self.month:02d}-{self.year:02d}"
         else:
-            return f"{self.year:02d}-{self.month:02d}-{self.day:02d}"
+            return f"{self.day:02d}-{self.month:02d}-{self.year:02d}"
 
 
 class ErrorRatio(OctetString):
