@@ -186,11 +186,11 @@ class CDRFileManager:
                 copy=False,
                 dtype="string",
             )
-            # df.astype("category").to_parquet(
-            #     output_file,
-            #     index=False,
-            #     compression="gzip",
-            # )
+            df.astype("category").to_parquet(
+                output_file,
+                index=False,
+                compression="gzip",
+            )
             del blocks, df
             gc.collect()
 
