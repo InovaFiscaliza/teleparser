@@ -11,15 +11,19 @@ from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
 from typing import BinaryIO, List, Optional, Set
+from time import perf_counter
+
 
 import pandas as pd
 from rich.progress import (
     Progress,
+    BarColumn,
     SpinnerColumn,
     TaskProgressColumn,
     TextColumn,
     TimeRemainingColumn,
 )
+from rich import print
 
 from teleparser.decoders.ericsson import ericsson_voz_decoder
 
@@ -130,7 +134,7 @@ class CDRFileManager:
         """Create a progress bar for decoding files"""
         return Progress(
             TextColumn("[bold blue]{task.description}"),
-            SpinnerColumn(),
+            BarColumn(),
             TaskProgressColumn(),
             TimeRemainingColumn(),
             expand=False,
@@ -268,7 +272,7 @@ class CDRFileManager:
 
     async def decode_files_async(self):
         # Create a single shared progress context for all tasks
-        with CDRFileManager.create_progress_bar() as progress:
+        with CDRFileManager.create_progress_bar(False) as progress:
             # Main task for overall progress
             main_task = progress.add_task(
                 "[cyan]Decoding CDR files...", total=len(self.gz_files)
@@ -322,11 +326,27 @@ class CDRFileManager:
 
             return results
 
+    @staticmethod
+    def process_single_file(file_path, decoder, output_path):
+        """Process a single file in a worker process"""
+        try:
+            result = CDRFileManager.decode_file(
+                file_path=file_path,
+                decoder=decoder,
+                output_path=output_path,
+                # Can't pass progress objects to subprocesses
+                progress=None,
+                task=None,
+            )
+            return {"file_path": file_path, "result": result}
+        except Exception as e:
+            return {"file_path": file_path, "error": str(e)}
+
     def decode_files_parallel(self):
         """Decode files using parallel processing with multiple CPU cores"""
 
         # Determine the number of workers (use fewer than available cores to avoid overloading)
-        max_workers = min(os.cpu_count() or 4, ASYNC_CONCURRENCY, len(self.gz_files))
+        max_workers = min(os.cpu_count() - 2, ASYNC_CONCURRENCY, len(self.gz_files))
 
         # Create a progress bar for tracking overall progress
         with CDRFileManager.create_progress_bar() as progress:
@@ -335,40 +355,25 @@ class CDRFileManager:
                 "[cyan]Decoding CDR files...", total=len(self.gz_files)
             )
 
-            # Create a dictionary to track individual file tasks
-            file_tasks = {}
-            for file_path in self.gz_files:
-                # Create a task for each file but don't show it yet
-                file_tasks[file_path] = progress.add_task(
+            file_tasks = {
+                file_path: progress.add_task(
                     f"[green]Waiting: {file_path.name}", total=None, visible=False
                 )
-
-            # Define a wrapper function to process a single file
-            def process_single_file(file_path):
-                # Note: We can't update the progress bar directly from a worker process
-                # We'll return status information instead and update the progress in the main process
-                try:
-                    result = CDRFileManager.decode_file(
-                        file_path=file_path,
-                        decoder=self.decoder,
-                        output_path=self.output_path,
-                        # Can't pass progress objects to subprocesses
-                        progress=None,
-                        task=None,
-                    )
-                    return {"file_path": file_path, "result": result}
-                except Exception as e:
-                    return {"file_path": file_path, "error": str(e)}
-
+                for file_path in self.gz_files
+            }
             results = []
             # Use ProcessPoolExecutor for true parallel processing
             with ProcessPoolExecutor(max_workers=max_workers) as executor:
                 # Submit all tasks
                 future_to_file = {
-                    executor.submit(process_single_file, file_path): file_path
+                    executor.submit(
+                        CDRFileManager.process_single_file,
+                        file_path,
+                        self.decoder,
+                        self.output_path,
+                    ): file_path
                     for file_path in self.gz_files
                 }
-
                 # Process results as they complete
                 for future in concurrent.futures.as_completed(future_to_file):
                     file_path = future_to_file[future]
@@ -404,6 +409,7 @@ class CDRFileManager:
 
                         results.append(result)
                     except Exception as exc:
+                        print(exc)
                         progress.update(
                             file_tasks[file_path],
                             description=f"[red]Error: {file_path.name} - {exc}",
@@ -416,30 +422,8 @@ class CDRFileManager:
 
             return results
 
-    # def decode(self):
-    #     return parallel(
-    #         CDRFileManager.decode_file,
-    #         self.gz_files,
-    #         n_workers=min(16, len(self.gz_files)),
-    #         progress=True,
-    #     )
 
-
-async def main(
-    input_path: Path, output_path: Path, cdr_type: str, parallel: bool, async_: bool
-):
-    from rich import print
-
-    manager = CDRFileManager(input_path, output_path, cdr_type)
-    print(f"[blue]Starting processing of {len(manager.gz_files)} files...[/blue]")
-    if parallel:
-        if async_:
-            results = await manager.decode_files_async()
-        else:
-            results = manager.decode_files_parallel()
-    else:
-        results = manager.decode_files_sequential()
-    # Display summary
+def display_summary(results, total_time, output_path):
     success_count = sum(r.get("status") == "success" for r in results)
     failed_count = sum(r.get("status") == "failed" for r in results)
     total_records = sum(r.get("records", 0) for r in results)
@@ -447,8 +431,26 @@ async def main(
     print(f"[green]Files processed successfully: {success_count}[/green]")
     print(f"[red]Files failed: {failed_count}[/red]")
     print(f"[yellow]Total records processed: {total_records}[/yellow]")
-    print(f"[magenta]Output directory: {manager.output_path}[/magenta]")
-    print("[blue]Cleaning up temporary files if present...[/blue]")
+    print(f"[magenta]Output directory: {output_path}[/magenta]")
+    print(f"[green]Time taken: {total_time:.2f} seconds[/green]")
+    print("[blue]Cleaning up temporary files now, if present...[/blue]")
+
+
+async def main(
+    input_path: Path, output_path: Path, cdr_type: str, parallel: bool, async_: bool
+):
+    manager = CDRFileManager(input_path, output_path, cdr_type)
+    print(f"[blue]Starting processing of {len(manager.gz_files)} files...[/blue]")
+    start = perf_counter()
+    if parallel:
+        if async_:
+            results = await manager.decode_files_async()
+        else:
+            results = manager.decode_files_parallel()
+    else:
+        results = manager.decode_files_sequential()
+    total_time = perf_counter() - start
+    display_summary(results, total_time, manager.output_path)
     manager.cleanup()
 
 
