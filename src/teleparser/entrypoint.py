@@ -313,7 +313,7 @@ class CDRFileManager:
 
                 # Process the file
                 result = await asyncio.to_thread(
-                    CDRFileManager.decode_file,
+                    CDRFileManager.process_single_file,
                     file_path=file_path,
                     decoder=self.decoder,
                     output_path=self.output_path,
@@ -346,7 +346,7 @@ class CDRFileManager:
             return results
 
     @staticmethod
-    def process_single_file(file_path, decoder, output_path):
+    def process_single_file(file_path, decoder, output_path, progress, task):
         """Process a single file in a worker process"""
         try:
             # Add file locking to prevent I/O contention
@@ -364,9 +364,8 @@ class CDRFileManager:
                     file_path=file_path,
                     decoder=decoder,
                     output_path=output_path,
-                    # Can't pass progress objects to subprocesses
-                    progress=None,
-                    task=None,
+                    progress=progress,
+                    task=task,
                 )
                 return {"file_path": file_path, "result": result}
             finally:
@@ -408,6 +407,8 @@ class CDRFileManager:
                         file_path,
                         self.decoder,
                         self.output_path,
+                        None,  # Can't pass progress objects to subprocesses
+                        None,
                     ): file_path
                     for file_path in self.gz_files
                 }
