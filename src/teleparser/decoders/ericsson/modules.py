@@ -1,4 +1,4 @@
-from teleparser.ericsson import datatypes as dt
+from . import datatypes as dt
 
 CAMELTDPData = {
     0: {"name": "serviceKey", "type": dt.ServiceKey},

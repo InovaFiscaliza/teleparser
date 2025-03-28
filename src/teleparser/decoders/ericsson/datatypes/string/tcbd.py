@@ -1,5 +1,5 @@
 from ..primitives import TBCDString
-from teleparser.config import PRESTADORAS
+from teleparser.prestadoras import PRESTADORAS
 
 
 class AccountCode(TBCDString):

@@ -1,4 +1,3 @@
-from collections import UserDict
 from typing import Mapping
 from . import modules
 

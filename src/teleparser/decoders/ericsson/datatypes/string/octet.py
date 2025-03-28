@@ -1,6 +1,6 @@
 from ..primitives import OctetString, TBCDString, Ia5String
 from ..exceptions import OctetStringError
-from teleparser.config import PRESTADORAS, Prestadora
+from teleparser.prestadoras import PRESTADORAS, Prestadora
 
 
 class AddressStringExtended(OctetString):

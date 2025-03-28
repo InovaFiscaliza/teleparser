@@ -1,8 +1,7 @@
+from collections import namedtuple
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional, Tuple, Callable
 from io import BufferedReader, BytesIO
-from binascii import hexlify
 
 # Basic ASN.1 Reference
 # https://luca.ntop.org/Teaching/Appunti/asn1.html
@@ -20,24 +19,17 @@ MASK_BIT8 = 128
 SHIFT_8 = 8
 
 
-class BerClass(Enum):
-    UNIVERSAL = 0
-    APPLICATION = 1
-    CONTEXT = 2
-    PRIVATE = 3
+# BerClass
+UNIVERSAL = 0
+APPLICATION = 1
+CONTEXT = 2
+PRIVATE = 3
 
 
-EOC = {(BerClass.UNIVERSAL, False, 0, 0), (BerClass.CONTEXT, True, 1, 0)}
+EOC = {(0, False, 0, 0), (2, True, 1, 0)}
 
 
-@dataclass
-class BerTag:
-    """BER Encoded Class"""
-
-    string: str
-    tag_class: BerClass
-    constructed: bool
-    number: int
+BerTag = namedtuple("BerTag", ["tag_class", "constructed", "number"])
 
 
 @dataclass
@@ -49,9 +41,8 @@ class BerDecoder:
     @staticmethod
     def decode_tag(tag_bytes: bytes):
         first_byte = tag_bytes[0]
-        string = tag_bytes.hex().upper()  # This doesn't belong to the original ber encoding, it's just to visualize the tag string
-        tag_class = BerClass((first_byte >> CLASS_SHIFT) & TWO_BIT_MASK)
-        constructed = bool((first_byte >> ENCODE_SHIFT) & MODULO_2)
+        tag_class = (first_byte >> CLASS_SHIFT) & TWO_BIT_MASK
+        constructed = ((first_byte >> ENCODE_SHIFT) & MODULO_2) == 1
         number = first_byte & CLASSNUM_MASK
 
         if number == CLASSNUM_MASK:
@@ -62,13 +53,13 @@ class BerDecoder:
                 if b >> SHIFT_7 == 0:
                     break
 
-        return BerTag(string, tag_class, constructed, number)
+        return BerTag(tag_class, constructed, number)
 
     @staticmethod
     def _reached_eoc(tag: BerTag, length: int):
         return (tag.tag_class, tag.constructed, tag.number, length) in EOC
 
-    def decode_tlv(
+    def decode(
         self,
         stream: BufferedReader | BytesIO,
         offset: int = 0,
@@ -83,14 +74,11 @@ class BerDecoder:
         offset += len(tag_bytes) + length_size
 
         if self._reached_eoc(tag, length) or length == 0:
-            return self.decode_tlv(stream, offset, depth, schema)
+            return self.decode(stream, offset, depth, schema)
         # Read value
         value = stream.read(length)
         if len(value) != length:
             raise ValueError("Unexpected end of data")
-
-        # if tag.number == 47:
-        #     breakpoint()
 
         # Update offset after tag and length
         if (decoded_tlv := self.unravel_decoded_tlv(tag.number, value, schema)) is None:
@@ -101,7 +89,7 @@ class BerDecoder:
         if tag.constructed:
             value_stream = BytesIO(value)
             while value_stream.tell() < length:
-                if child := self.decode_tlv(value_stream, offset, depth + 1, schema):
+                if child := self.decode(value_stream, offset, depth + 1, schema):
                     child_data, child_length = child
                     offset += child_length
                     decoded_data.update(child_data)
