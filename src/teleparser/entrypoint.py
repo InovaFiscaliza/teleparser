@@ -11,14 +11,13 @@ from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
 from typing import BinaryIO, List, Optional, Set
-from time import perf_counter
+from time import perf_counter, sleep
 
 
 import pandas as pd
 from rich.progress import (
     Progress,
     BarColumn,
-    SpinnerColumn,
     TaskProgressColumn,
     TextColumn,
     TimeRemainingColumn,
@@ -81,7 +80,7 @@ class CDRFileManager:
             )
         self.decoder = DECODERS[self.cdr_type]
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        output_dir = self.output_path / f"{self.cdr_type}_{timestamp}"
+        output_dir = self.output_path / f"{timestamp}"
         output_dir.mkdir(parents=True, exist_ok=True)
         self.output_path = output_dir
 
@@ -181,18 +180,35 @@ class CDRFileManager:
 
             # Save the processed data
             output_file = output_path / f"{file_path.stem}.parquet.gzip"
-            df = pd.DataFrame(
-                blocks,
-                copy=False,
-                dtype="string",
-            )
-            df.astype("category").to_parquet(
-                output_file,
-                index=False,
-                compression="gzip",
-            )
-            del blocks, df
-            gc.collect()
+
+            # Use a try-finally block to ensure resources are released
+            try:
+                df = pd.DataFrame(
+                    blocks,
+                    copy=False,
+                    dtype="string",
+                )
+
+                # Write to a temporary file first, then rename to avoid partial writes
+                temp_file = output_path / f"{file_path.stem}.temp.parquet.gzip"
+                df.astype("category").to_parquet(
+                    temp_file,
+                    index=False,
+                    compression="gzip",
+                )
+
+                # Rename the temp file to the final file
+                if temp_file.exists():
+                    # On Windows, we need to remove the destination file first
+                    if output_file.exists():
+                        output_file.unlink()
+                    temp_file.rename(output_file)
+
+            finally:
+                # Explicitly clean up resources
+                del blocks
+                del df
+                gc.collect()
 
             # Final progress update
             progress.update(
@@ -212,6 +228,9 @@ class CDRFileManager:
             # Only close the progress if we created it locally
             if local_progress:
                 local_progress.stop()
+
+            # Ensure buffer is closed
+            buffer_manager.close()
 
     def decode_files_sequential(self):
         """Decode all files sequentially with a progress bar and return results"""
@@ -330,15 +349,31 @@ class CDRFileManager:
     def process_single_file(file_path, decoder, output_path):
         """Process a single file in a worker process"""
         try:
-            result = CDRFileManager.decode_file(
-                file_path=file_path,
-                decoder=decoder,
-                output_path=output_path,
-                # Can't pass progress objects to subprocesses
-                progress=None,
-                task=None,
-            )
-            return {"file_path": file_path, "result": result}
+            # Add file locking to prevent I/O contention
+            lock_file = Path(output_path) / f"{file_path.stem}.lock"
+
+            # Simple file-based lock
+            while lock_file.exists():
+                sleep(0.1)  # Wait if another process is writing
+
+            # Create lock file
+            lock_file.touch()
+
+            try:
+                result = CDRFileManager.decode_file(
+                    file_path=file_path,
+                    decoder=decoder,
+                    output_path=output_path,
+                    # Can't pass progress objects to subprocesses
+                    progress=None,
+                    task=None,
+                )
+                return {"file_path": file_path, "result": result}
+            finally:
+                # Remove lock file
+                if lock_file.exists():
+                    lock_file.unlink()
+
         except Exception as e:
             return {"file_path": file_path, "error": str(e)}
 
@@ -346,7 +381,9 @@ class CDRFileManager:
         """Decode files using parallel processing with multiple CPU cores"""
 
         # Determine the number of workers (use fewer than available cores to avoid overloading)
-        max_workers = min(os.cpu_count() - 2, ASYNC_CONCURRENCY, len(self.gz_files))
+        max_workers = min(
+            max(os.cpu_count() // 2, 1), ASYNC_CONCURRENCY, len(self.gz_files)
+        )
 
         # Create a progress bar for tracking overall progress
         with CDRFileManager.create_progress_bar() as progress:
@@ -419,7 +456,7 @@ class CDRFileManager:
                         results.append(
                             {"file": file_path, "error": str(exc), "status": "failed"}
                         )
-
+                    gc.collect()
             return results
 
 
@@ -436,19 +473,22 @@ def display_summary(results, total_time, output_path):
     print("[blue]Cleaning up temporary files now, if present...[/blue]")
 
 
-async def main(
-    input_path: Path, output_path: Path, cdr_type: str, parallel: bool, async_: bool
-):
+async def main(input_path: Path, output_path: Path, cdr_type: str, mode: str):
     manager = CDRFileManager(input_path, output_path, cdr_type)
-    print(f"[blue]Starting processing of {len(manager.gz_files)} files...[/blue]")
+    print(f"[blue]Started processing of {len(manager.gz_files)} files...[/blue]")
     start = perf_counter()
-    if parallel:
-        if async_:
-            results = await manager.decode_files_async()
-        else:
+    match mode:
+        case "multi_core":
             results = manager.decode_files_parallel()
-    else:
-        results = manager.decode_files_sequential()
+        case "single_core":
+            results = manager.decode_files_sequential()
+        case "async":
+            if asyncio.get_event_loop().is_running():
+                results = await manager.decode_files_async()
+            else:
+                results = manager.decode_files_parallel()
+        case _:
+            raise ValueError(f"Invalid mode: {mode}")
     total_time = perf_counter() - start
     display_summary(results, total_time, manager.output_path)
     manager.cleanup()
@@ -469,24 +509,18 @@ def process_cdrs():
             "ericsson_voz",
             help=f"CDR type to process. Options: {', '.join(DECODERS.keys())}",
         ),
-        parallel: bool = typer.Option(
-            False,
-            "--parallel",
-            help="Process files in parallel. If True and async is False, uses multiple CPU cores",
-        ),
-        async_: bool = typer.Option(
-            False,
-            "--async",
-            help="Process files asynchronously. If True and parallel is False, it's ignored and the files will be processed sequentially",
+        mode: str = typer.Option(
+            "multi_core",
+            "--mode",
+            help="Processing mode. Options: multi-core, single-core, async",
         ),
     ):
         """Process CDR files from input_path (file/folder) and save results to output path.\n
         The expected format is a file or folder with one or more gzipped files.\n
         If the gzipped files are in a ZIP archive, they will be extracted first.
+        Default mode is multi-core CPU processing.
         """
-        asyncio.run(
-            main(Path(input_path), Path(output_path), cdr_type, parallel, async_)
-        )
+        asyncio.run(main(Path(input_path), Path(output_path), cdr_type, mode))
 
     app()
 
