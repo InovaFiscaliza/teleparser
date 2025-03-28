@@ -16,10 +16,23 @@ dependencies = [
 [project.scripts]
 process-cdrs = "teleparser.entrypoint:process_cdrs"
 
+
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=42", "wheel", "nuitka", "toml"]
+build-backend = "nuitka.distutils.Build"
+
+
+[tool.nuitka]
+# These are not recommended, but they make it obvious to have effect.
+# boolean option, e.g. if you cared for C compilation commands, leading
+# dashes are omitted
+show-scons = true
+
+# options with several values, e.g. avoid including modules, accepts
+# list argument.
+nofollow-import-to = ["*.tests", "*.distutils", "*.nbs"]
 
 [dependency-groups]
 dev = [
+    "nuitka>=2.6.9",
 ]  
