@@ -141,6 +141,78 @@ class CDRFileManager:
             transient=False,  # Keep completed tasks visible
         )
 
+    @staticmethod
+    def decode_file(
+        file_path: Path,
+        decoder,
+        output_path: Path,
+        progress: Progress = None,
+        task=None,
+    ):
+        blocks = []
+        buffer_manager = BufferManager(file_path)
+        decoder = decoder()
+        counter = 0
+
+        # Create a local progress bar only if not provided
+        local_progress = None
+        if progress is None:
+            local_progress = CDRFileManager.create_progress_bar()
+            progress = local_progress
+            task = progress.add_task(f"[green]Processing: {file_path.name}", total=None)
+
+        try:
+            # Update task description to show it's being processed
+            progress.update(
+                task,
+                description=f"[green]Processing: [green]{file_path.name} [cyan](0 records)",
+            )
+
+            with buffer_manager.open() as file_buffer:
+                while (tlv := decoder.decode(file_buffer)) is not None:
+                    record, _ = tlv
+                    blocks.append(record)
+                    counter += 1
+                    if counter % 250 == 0:
+                        progress.update(
+                            task,
+                            description=f"[green]Processing: [green]{file_path.name} [cyan]({counter} records)",
+                        )
+
+            # Save the processed data
+            output_file = output_path / f"{file_path.stem}.parquet.gzip"
+            df = pd.DataFrame(
+                blocks,
+                copy=False,
+                dtype="string",
+            )
+            # df.astype("category").to_parquet(
+            #     output_file,
+            #     index=False,
+            #     compression="gzip",
+            # )
+            del blocks, df
+            gc.collect()
+
+            # Final progress update
+            progress.update(
+                task,
+                description=f"[green]Completed: [green]{file_path.name} [cyan]({counter} records)",
+            )
+
+            return {"file": file_path, "records": counter, "status": "success"}
+
+        except Exception as e:
+            progress.update(
+                task, description=f"[red]Failed: [red]{file_path.name} [red]({str(e)})"
+            )
+            return {"file": file_path, "error": str(e), "status": "failed"}
+
+        finally:
+            # Only close the progress if we created it locally
+            if local_progress:
+                local_progress.stop()
+
     def decode_files_sequential(self):
         """Decode all files sequentially with a progress bar and return results"""
         results = []
@@ -198,81 +270,9 @@ class CDRFileManager:
 
         return results
 
-    @staticmethod
-    def decode_file(
-        file_path: Path,
-        decoder,
-        output_path: Path,
-        progress: Progress = None,
-        task=None,
-    ):
-        blocks = []
-        buffer_manager = BufferManager(file_path)
-        decoder = decoder()
-        counter = 0
-
-        # Create a local progress bar only if not provided
-        local_progress = None
-        if progress is None:
-            local_progress = CDRFileManager.create_progress_bar()
-            progress = local_progress
-            task = progress.add_task(f"[green]Processing: {file_path.name}", total=None)
-
-        try:
-            # Update task description to show it's being processed
-            progress.update(
-                task,
-                description=f"[green]Processing: [green]{file_path.name} [cyan](0 records)",
-            )
-
-            with buffer_manager.open() as file_buffer:
-                while (tlv := decoder.decode(file_buffer)) is not None:
-                    record, _ = tlv
-                    blocks.append(record)
-                    counter += 1
-                    if counter % 250 == 0:
-                        progress.update(
-                            task,
-                            description=f"[green]Processing: [green]{file_path.name} [cyan]({counter} records)",
-                        )
-
-            # Save the processed data
-            output_file = output_path / f"{file_path.stem}.parquet.gzip"
-            df = pd.DataFrame(
-                blocks,
-                copy=False,
-                dtype="string",
-            )
-            df.astype("category").to_parquet(
-                output_file,
-                index=False,
-                compression="gzip",
-            )
-            del blocks, df
-            gc.collect()
-
-            # Final progress update
-            progress.update(
-                task,
-                description=f"[green]Completed: [green]{file_path.name} [cyan]({counter} records)",
-            )
-
-            return {"file": file_path, "records": counter, "status": "success"}
-
-        except Exception as e:
-            progress.update(
-                task, description=f"[red]Failed: [red]{file_path.name} [red]({str(e)})"
-            )
-            return {"file": file_path, "error": str(e), "status": "failed"}
-
-        finally:
-            # Only close the progress if we created it locally
-            if local_progress:
-                local_progress.stop()
-
     async def decode_files_async(self):
         # Create a single shared progress context for all tasks
-        with CDRFileManager.create_progress_bar(False) as progress:
+        with CDRFileManager.create_progress_bar() as progress:
             # Main task for overall progress
             main_task = progress.add_task(
                 "[cyan]Decoding CDR files...", total=len(self.gz_files)
