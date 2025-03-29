@@ -99,7 +99,11 @@ class BerDecoder:
         self, tag_number: int, value: bytes, schema: dict
     ) -> Tuple[dict, dict]:
         """Unravel TLV tree to a flat dictionary"""
-        tlv = self.parser(tag_number, value, schema)
+        try:
+            tlv = self.parser(tag_number, value, schema)
+        except KeyError:
+            # print(f"{e}: Unknown tag {tag_number} in {schema}")
+            return None
         if tlv.value is None:
             return None
         if isinstance(tlv.value, dict):
