@@ -532,7 +532,7 @@ def process_cdrs():
     @app.command()
     def cli(
         input_path: str = typer.Argument(
-            ..., help="Path to input CDR files or directory"
+            ..., help="Path to a single CDR file or directory"
         ),
         output_path: str = typer.Argument(..., help="Path to output directory"),
         cdr_type: str = typer.Argument(

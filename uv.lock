@@ -273,15 +273,18 @@ wheels = [
 
 [[package]]
 name = "teleparser"
-version = "0.1.0"
+version = "0.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "pandas" },
     { name = "pyarrow" },
-    { name = "typer" },
+    { name = "rich" },
 ]
 
 [package.dev-dependencies]
+cli = [
+    { name = "typer" },
+]
 dev = [
     { name = "nuitka" },
 ]
@@ -290,10 +293,11 @@ dev = [
 requires-dist = [
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pyarrow", specifier = ">=19.0.1" },
-    { name = "typer", specifier = ">=0.15.2" },
+    { name = "rich", specifier = ">=13.6.0" },
 ]
 
 [package.metadata.requires-dev]
+cli = [{ name = "typer", specifier = ">=0.15.2" }]
 dev = [{ name = "nuitka", specifier = ">=2.6.9" }]
 
 [[package]]
