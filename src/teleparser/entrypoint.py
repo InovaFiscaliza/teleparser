@@ -13,10 +13,11 @@ from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
 from typing import BinaryIO, List, Optional, Set
-from time import perf_counter, sleep
+from time import perf_counter
 
 
 import pandas as pd
+from contextlib import suppress
 from rich.progress import (
     Progress,
     BarColumn,
@@ -25,16 +26,49 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 from rich import print
-from rich.logging import RichHandler
-
 from teleparser.decoders.ericsson import ericsson_voz_decoder
 
+
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[RichHandler(rich_tracebacks=True)],
-)
+def setup_logging(output_path: Path, log_level: int = logging.INFO):
+    """Set up logging to both file and console"""
+    # Create logs directory if it doesn't exist
+    logs_dir = output_path / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create a timestamped log file name
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    log_file = logs_dir / f"teleparser_{timestamp}.log"
+
+    # Configure root logger
+    logger = logging.getLogger("teleparser")
+    logger.setLevel(log_level)
+
+    # Clear any existing handlers
+    if logger.handlers:
+        logger.handlers.clear()
+
+    # File handler - detailed format with timestamps
+    file_handler = logging.FileHandler(log_file)
+    file_format = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    file_handler.setFormatter(file_format)
+    file_handler.setLevel(log_level)
+
+    # # Console handler - using Rich for better formatting
+    # console_handler = RichHandler(rich_tracebacks=True)
+    # console_handler.setLevel(log_level)
+
+    # Add handlers to logger
+    logger.addHandler(file_handler)
+    # logger.addHandler(console_handler)
+
+    # logger.info(f"Logging initialized. Log file: {log_file}")
+    return logger
+
+
+# Initialize a placeholder logger - will be properly configured later
 logger = logging.getLogger("teleparser")
 
 ASYNC_CONCURRENCY = 8
@@ -166,6 +200,24 @@ class CDRFileManager:
         )
 
     @staticmethod
+    def _save_data(blocks: list, output_file: Path):
+        # Use a try-finally block to ensure resources are released
+        try:
+            pd.DataFrame(
+                blocks,
+                copy=False,
+                dtype="string",  # Convert to string first to avoid casting issues with pyarrow
+            ).astype("category").to_parquet(
+                output_file,
+                index=False,
+                compression="gzip",
+            )
+        finally:
+            # Explicitly clean up resources
+            del blocks
+            gc.collect()
+
+    @staticmethod
     def decode_file(
         file_path: Path,
         decoder,
@@ -177,7 +229,6 @@ class CDRFileManager:
         buffer_manager = BufferManager(file_path)
         decoder = decoder()
         counter = 0
-        file_logger = logging.getLogger(f"teleparser.file.{file_path.name}")
 
         # Create a local progress bar only if not provided
         local_progress = None
@@ -187,13 +238,7 @@ class CDRFileManager:
             task = progress.add_task(f"[green]Processing: {file_path.name}", total=None)
 
         try:
-            # Update task description to show it's being processed
-            progress.update(
-                task,
-                description=f"[green]Processing: [green]{file_path.name} [cyan](0 records)",
-            )
-            file_logger.info(f"Started processing file: {file_path}")
-
+            logger.info(f"Started processing file: {file_path}")
             with buffer_manager.open() as file_buffer:
                 while (tlv := decoder.decode(file_buffer)) is not None:
                     record, _ = tlv
@@ -204,63 +249,19 @@ class CDRFileManager:
                             task,
                             description=f"[green]Processing: [green]{file_path.name} [cyan]({counter} records)",
                         )
-                        file_logger.debug(
-                            f"Processed {counter} records from {file_path}"
-                        )
-
             # Save the processed data
             output_file = output_path / f"{file_path.stem}.parquet.gzip"
-            file_logger.info(
-                f"Completed processing {counter} records, saving to {output_file}"
+            logger.info(
+                f"Completed processing {counter} records from , saving to {output_file}"
             )
-
-            # Use a try-finally block to ensure resources are released
-            try:
-                df = pd.DataFrame(
-                    blocks,
-                    copy=False,
-                    dtype="string",
-                )
-
-                # Write to a temporary file first, then rename to avoid partial writes
-                temp_file = output_path / f"{file_path.stem}.temp.parquet.gzip"
-                file_logger.debug(f"Writing to temporary file: {temp_file}")
-                df.astype("category").to_parquet(
-                    temp_file,
-                    index=False,
-                    compression="gzip",
-                )
-
-                # Rename the temp file to the final file
-                if temp_file.exists():
-                    # On Windows, we need to remove the destination file first
-                    if output_file.exists():
-                        output_file.unlink()
-                    temp_file.rename(output_file)
-                    file_logger.info(f"Successfully saved data to {output_file}")
-
-            finally:
-                # Explicitly clean up resources
-                del blocks
-                del df
-                gc.collect()
-
-            # Final progress update
-            progress.update(
-                task,
-                description=f"[green]Completed: [green]{file_path.name} [cyan]({counter} records)",
-            )
+            CDRFileManager._save_data(blocks, output_file)
 
             return {"file": file_path, "records": counter, "status": "success"}
 
         except Exception as e:
             error_details = traceback.format_exc()
-            file_logger.error(
-                f"Failed to process {file_path}: {str(e)}\n{error_details}"
-            )
-            progress.update(
-                task, description=f"[red]Failed: [red]{file_path.name} [red]({str(e)})"
-            )
+            logger.error(f"Failed to process {file_path}: {e}\n{error_details}")
+
             return {
                 "file": file_path,
                 "error": str(e),
@@ -272,7 +273,6 @@ class CDRFileManager:
             # Only close the progress if we created it locally
             if local_progress:
                 local_progress.stop()
-
             # Ensure buffer is closed
             buffer_manager.close()
 
@@ -280,8 +280,7 @@ class CDRFileManager:
         """Decode all files sequentially with a progress bar and return results"""
         results = []
         logger.info(f"Starting sequential processing of {len(self.gz_files)} files")
-
-        with self.create_progress_bar() as progress:
+        with CDRFileManager.create_progress_bar() as progress:
             # Main task for overall progress
             main_task = progress.add_task(
                 "[cyan]Decoding CDR files...", total=len(self.gz_files)
@@ -296,10 +295,10 @@ class CDRFileManager:
             for file_path in self.gz_files:
                 try:
                     # Make this file's task visible when processing starts
-                    progress.update(file_tasks[file_path], visible=True)
                     progress.update(
                         file_tasks[file_path],
                         description=f"[green]Processing: {file_path.name}",
+                        visible=True,
                     )
                     logger.info(f"Processing file: {file_path}")
 
@@ -434,42 +433,22 @@ class CDRFileManager:
             return results
 
     @staticmethod
-    def process_single_file(file_path, decoder, output_path, progress, task):
+    def process_single_file(file_path, decoder, output_path, progress=None, task=None):
         """Process a single file in a worker process"""
-        file_logger = logging.getLogger(f"teleparser.worker.{file_path.stem}")
         try:
-            # Add file locking to prevent I/O contention
-            lock_file = Path(output_path) / f"{file_path.stem}.lock"
-            file_logger.debug(f"Checking lock file: {lock_file}")
-
-            # Simple file-based lock
-            while lock_file.exists():
-                file_logger.debug(f"Lock file exists for {file_path}, waiting...")
-                sleep(0.1)  # Wait if another process is writing
-
-            # Create lock file
-            file_logger.debug(f"Creating lock file for {file_path}")
-            lock_file.touch()
-
-            try:
-                file_logger.info(f"Processing file in worker: {file_path}")
-                result = CDRFileManager.decode_file(
-                    file_path=file_path,
-                    decoder=decoder,
-                    output_path=output_path,
-                    progress=progress,
-                    task=task,
-                )
-                return {"file_path": file_path, "result": result}
-            finally:
-                # Remove lock file
-                if lock_file.exists():
-                    file_logger.debug(f"Removing lock file for {file_path}")
-                    lock_file.unlink()
+            logger.info(f"Processing file in worker: {file_path}")
+            result = CDRFileManager.decode_file(
+                file_path=file_path,
+                decoder=decoder,
+                output_path=output_path,
+                progress=progress,
+                task=task,
+            )
+            return {"file_path": file_path, "result": result}
 
         except Exception as e:
             error_details = traceback.format_exc()
-            file_logger.error(
+            logger.error(
                 f"Exception in worker processing {file_path}: {str(e)}\n{error_details}"
             )
             return {
@@ -484,7 +463,7 @@ class CDRFileManager:
 
         # Determine the number of workers (use fewer than available cores to avoid overloading)
         max_workers = min(
-            max(os.cpu_count() // 2, 1), ASYNC_CONCURRENCY, len(self.gz_files)
+            max(os.cpu_count() - 2, 1), ASYNC_CONCURRENCY, len(self.gz_files)
         )
         logger.info(
             f"Starting parallel processing with {max_workers} workers for {len(self.gz_files)} files"
@@ -496,13 +475,6 @@ class CDRFileManager:
             main_task = progress.add_task(
                 "[cyan]Decoding CDR files...", total=len(self.gz_files)
             )
-
-            file_tasks = {
-                file_path: progress.add_task(
-                    f"[green]Waiting: {file_path.name}", total=None, visible=False
-                )
-                for file_path in self.gz_files
-            }
             results = []
             # Use ProcessPoolExecutor for true parallel processing
             logger.info(f"Creating process pool with {max_workers} workers")
@@ -514,8 +486,6 @@ class CDRFileManager:
                         file_path,
                         self.decoder,
                         self.output_path,
-                        None,  # Can't pass progress objects to subprocesses
-                        None,
                     ): file_path
                     for file_path in self.gz_files
                 }
@@ -527,41 +497,31 @@ class CDRFileManager:
                 for future in concurrent.futures.as_completed(future_to_file):
                     file_path = future_to_file[future]
                     try:
-                        # Make this file's task visible
-                        progress.update(file_tasks[file_path], visible=True)
-                        progress.update(
-                            file_tasks[file_path],
-                            description=f"[green]Processing: {file_path.name}",
-                        )
                         logger.info(f"Processing result for file: {file_path}")
 
                         # Get the result
                         data = future.result()
                         result = data.get("result", {})
-
                         # Update progress
                         if "records" in result:
-                            progress.update(
-                                file_tasks[file_path],
-                                description=f"[green]Completed: {file_path.name} [cyan]({result['records']} records)",
-                            )
                             logger.info(
                                 f"Successfully processed {file_path}: {result['records']} records"
                             )
                         else:
-                            progress.update(
-                                file_tasks[file_path],
-                                description=f"[red]Failed: {file_path.name}",
-                            )
                             logger.error(
                                 f"Failed to process {file_path}: {data.get('error', 'Unknown error')}"
                             )
-
-                        # Hide the completed file task to reduce clutter
-                        progress.update(file_tasks[file_path], visible=False)
+                        if "traceback" in data:
+                            logger.debug(
+                                f"Traceback for {file_path}:\n{data['traceback']}"
+                            )
 
                         # Update main progress
-                        progress.update(main_task, advance=1)
+                        progress.update(
+                            main_task,
+                            description=f"[green]Processed: {file_path.name} [cyan]({result['records']} records)",
+                            advance=1,
+                        )
 
                         results.append(result)
                     except Exception as exc:
@@ -569,11 +529,6 @@ class CDRFileManager:
                         logger.error(
                             f"Exception processing result for {file_path}: {str(exc)}\n{error_details}"
                         )
-                        progress.update(
-                            file_tasks[file_path],
-                            description=f"[red]Error: {file_path.name} - {exc}",
-                        )
-                        progress.update(file_tasks[file_path], visible=False)
                         progress.update(main_task, advance=1)
                         results.append(
                             {
@@ -611,14 +566,23 @@ def display_summary(results, total_time, output_path):
     print("[blue]Cleaning up temporary files now, if present...[/blue]")
 
 
-async def main(input_path: Path, output_path: Path, cdr_type: str, mode: str):
+async def main(
+    input_path: Path,
+    output_path: Path,
+    cdr_type: str,
+    mode: str,
+    log_level: int = logging.INFO,
+):
+    # Set up logging to file and console
+    global logger
+    logger = setup_logging(output_path, log_level)
+
     logger.info(
         f"Starting teleparser with input: {input_path}, output: {output_path}, type: {cdr_type}, mode: {mode}"
     )
     try:
         manager = CDRFileManager(input_path, output_path, cdr_type)
         file_count = len(manager.gz_files)
-        logger.info(f"Found {file_count} files to process")
         print(f"[blue]Started processing of {file_count} files...[/blue]")
 
         start = perf_counter()
@@ -638,13 +602,6 @@ async def main(input_path: Path, output_path: Path, cdr_type: str, mode: str):
                         "No event loop running, falling back to multi-core mode"
                     )
                     results = manager.decode_files_parallel()
-            case "multi_core":
-                logger.info("Using multi-core processing mode")
-                results = manager.decode_files_parallel()
-
-            case "single_core":
-                logger.info("Using single-core processing mode")
-                results = manager.decode_files_sequential()
             case _:
                 logger.error(f"Invalid processing mode: {mode}")
                 raise ValueError(f"Invalid mode: {mode}")
@@ -703,23 +660,31 @@ def process_cdrs():
         If the gzipped files are in a ZIP archive, they will be extracted first.
         Default mode is multi-core CPU processing.
         """
+        # Create output directory if it doesn't exist
+        output_dir = Path(output_path)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
         # Set log level based on command line argument
         numeric_level = getattr(logging, log_level.upper(), None)
         if not isinstance(numeric_level, int):
             print(f"[bold red]Invalid log level: {log_level}[/bold red]")
             numeric_level = logging.INFO
 
-        logger.setLevel(numeric_level)
-        logger.info(f"Log level set to {log_level}")
-
         try:
-            asyncio.run(main(Path(input_path), Path(output_path), cdr_type, mode))
-        except Exception as e:
-            error_details = traceback.format_exc()
-            logger.critical(
-                f"Unhandled exception in main process: {str(e)}\n{error_details}"
+            asyncio.run(
+                main(Path(input_path), output_dir, cdr_type, mode, numeric_level)
             )
+        except Exception as e:
+            # At this point, logger might not be initialized yet, so we print to console
+            error_details = traceback.format_exc()
             print(f"[bold red]Fatal error: {str(e)}[/bold red]")
+
+            # Try to log to file if possible
+            with suppress(Exception):
+                temp_logger = setup_logging(output_dir, logging.ERROR)
+                temp_logger.critical(
+                    f"Unhandled exception in main process: {str(e)}\n{error_details}"
+                )
             raise
 
     app()
