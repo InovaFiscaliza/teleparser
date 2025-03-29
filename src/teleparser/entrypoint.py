@@ -1,4 +1,3 @@
-import asyncio
 import gc
 import gzip
 import os
@@ -238,7 +237,6 @@ class CDRFileManager:
             task = progress.add_task(f"[green]Processing: {file_path.name}", total=None)
 
         try:
-            logger.info(f"Started processing file: {file_path}")
             with buffer_manager.open() as file_buffer:
                 while (tlv := decoder.decode(file_buffer)) is not None:
                     record, _ = tlv
@@ -251,9 +249,6 @@ class CDRFileManager:
                         )
             # Save the processed data
             output_file = output_path / f"{file_path.stem}.parquet.gzip"
-            logger.info(
-                f"Completed processing {counter} records from , saving to {output_file}"
-            )
             CDRFileManager._save_data(blocks, output_file)
 
             return {"file": file_path, "records": counter, "status": "success"}
@@ -351,87 +346,6 @@ class CDRFileManager:
 
         return results
 
-    async def decode_files_async(self):
-        logger.info(f"Starting async processing of {len(self.gz_files)} files")
-        # Create a single shared progress context for all tasks
-        with CDRFileManager.create_progress_bar() as progress:
-            # Main task for overall progress
-            main_task = progress.add_task(
-                "[cyan]Decoding CDR files...", total=len(self.gz_files)
-            )
-
-            # Create a dictionary to track individual file tasks
-            file_tasks = {
-                # Create a task for each file but don't show it yet (set visible=False)
-                file_path: progress.add_task(
-                    f"[green]Waiting: {file_path.name}", total=None, visible=False
-                )
-                for file_path in self.gz_files
-            }
-
-            # Define a wrapper function to handle progress updates
-            async def process_file(file_path):
-                # Make this file's task visible when processing starts
-                progress.update(file_tasks[file_path], visible=True)
-                logger.info(f"Starting async processing of file: {file_path}")
-
-                try:
-                    # Process the file
-                    result = await asyncio.to_thread(
-                        CDRFileManager.process_single_file,
-                        file_path=file_path,
-                        decoder=self.decoder,
-                        output_path=self.output_path,
-                        progress=progress,
-                        task=file_tasks[file_path],
-                    )
-
-                    if result.get("result", {}).get("status") == "success":
-                        logger.info(
-                            f"Successfully processed {file_path} asynchronously"
-                        )
-                    else:
-                        logger.error(
-                            f"Failed to process {file_path} asynchronously: {result.get('error', 'Unknown error')}"
-                        )
-
-                    # Update main progress when a file is complete
-                    progress.update(main_task, advance=1)
-
-                    # Hide the completed file task to reduce clutter
-                    progress.update(file_tasks[file_path], visible=False)
-
-                    return result
-                except Exception as e:
-                    error_details = traceback.format_exc()
-                    logger.error(
-                        f"Exception in async processing of {file_path}: {str(e)}\n{error_details}"
-                    )
-                    progress.update(main_task, advance=1)
-                    progress.update(file_tasks[file_path], visible=False)
-                    return {
-                        "file_path": file_path,
-                        "error": str(e),
-                        "traceback": error_details,
-                        "status": "failed",
-                    }
-
-            # Process files with controlled concurrency
-            results = []
-            # Use a semaphore to limit concurrent tasks
-            semaphore = asyncio.Semaphore(min(ASYNC_CONCURRENCY, len(self.gz_files)))
-
-            async def bounded_process_file(file_path):
-                async with semaphore:
-                    return await process_file(file_path)
-
-            # Execute all tasks and gather results
-            results = await asyncio.gather(
-                *[bounded_process_file(file_path) for file_path in self.gz_files]
-            )
-
-            return results
-
     @staticmethod
     def process_single_file(file_path, decoder, output_path, progress=None, task=None):
         """Process a single file in a worker process"""
@@ -458,13 +372,11 @@ class CDRFileManager:
                 "status": "failed",
             }
 
-    def decode_files_parallel(self):
+    def decode_files_parallel(self, workers):
         """Decode files using parallel processing with multiple CPU cores"""
 
         # Determine the number of workers (use fewer than available cores to avoid overloading)
-        max_workers = min(
-            max(os.cpu_count() - 2, 1), ASYNC_CONCURRENCY, len(self.gz_files)
-        )
+        max_workers = min(workers, os.cpu_count() - 1, len(self.gz_files))
         logger.info(
             f"Starting parallel processing with {max_workers} workers for {len(self.gz_files)} files"
         )
@@ -477,7 +389,6 @@ class CDRFileManager:
             )
             results = []
             # Use ProcessPoolExecutor for true parallel processing
-            logger.info(f"Creating process pool with {max_workers} workers")
             with ProcessPoolExecutor(max_workers=max_workers) as executor:
                 # Submit all tasks
                 future_to_file = {
@@ -489,9 +400,6 @@ class CDRFileManager:
                     ): file_path
                     for file_path in self.gz_files
                 }
-                logger.info(
-                    f"Submitted {len(future_to_file)} tasks to the process pool"
-                )
 
                 # Process results as they complete
                 for future in concurrent.futures.as_completed(future_to_file):
@@ -566,11 +474,11 @@ def display_summary(results, total_time, output_path):
     print("[blue]Cleaning up temporary files now, if present...[/blue]")
 
 
-async def main(
+def main(
     input_path: Path,
     output_path: Path,
     cdr_type: str,
-    mode: str,
+    workers: str,
     log_level: int = logging.INFO,
 ):
     # Set up logging to file and console
@@ -578,7 +486,7 @@ async def main(
     logger = setup_logging(output_path, log_level)
 
     logger.info(
-        f"Starting teleparser with input: {input_path}, output: {output_path}, type: {cdr_type}, mode: {mode}"
+        f"Starting teleparser with input: {input_path}, output: {output_path}, type: {cdr_type}, workers: {workers}"
     )
     try:
         manager = CDRFileManager(input_path, output_path, cdr_type)
@@ -586,25 +494,12 @@ async def main(
         print(f"[blue]Started processing of {file_count} files...[/blue]")
 
         start = perf_counter()
-        match mode:
-            case "multi_core":
-                logger.info("Using multi-core processing mode")
-                results = manager.decode_files_parallel()
-            case "single_core":
-                logger.info("Using single-core processing mode")
-                results = manager.decode_files_sequential()
-            case "async":
-                logger.info("Using async processing mode")
-                if asyncio.get_event_loop().is_running():
-                    results = await manager.decode_files_async()
-                else:
-                    logger.info(
-                        "No event loop running, falling back to multi-core mode"
-                    )
-                    results = manager.decode_files_parallel()
-            case _:
-                logger.error(f"Invalid processing mode: {mode}")
-                raise ValueError(f"Invalid mode: {mode}")
+        if workers > 1:
+            logger.info("Using multi-core processing mode")
+            results = manager.decode_files_parallel(workers)
+        else:
+            logger.info("Using single-core processing mode")
+            results = manager.decode_files_sequential()
 
         total_time = perf_counter() - start
         logger.info(f"Processing completed in {total_time:.2f} seconds")
@@ -644,10 +539,10 @@ def process_cdrs():
             "ericsson_voz",
             help=f"CDR type to process. Options: {', '.join(DECODERS.keys())}",
         ),
-        mode: str = typer.Option(
-            "multi_core",
-            "--mode",
-            help="Processing mode. Options: multi-core, single-core, async",
+        workers: int = typer.Option(
+            os.cpu_count(),
+            "--workers",
+            help="Number of workers to use for parallel processing, max is number of CPU cores - 1",
         ),
         log_level: str = typer.Option(
             "INFO",
@@ -671,9 +566,7 @@ def process_cdrs():
             numeric_level = logging.INFO
 
         try:
-            asyncio.run(
-                main(Path(input_path), output_dir, cdr_type, mode, numeric_level)
-            )
+            main(Path(input_path), output_dir, cdr_type, workers, numeric_level)
         except Exception as e:
             # At this point, logger might not be initialized yet, so we print to console
             error_details = traceback.format_exc()
