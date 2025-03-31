@@ -16,13 +16,16 @@ def process_cdrs():
             ..., help="Caminho para um arquivo CDR único ou diretório"
         ),
         saída: str = typer.Argument(..., help="Caminho para o diretório de saída"),
-        tipo_cdr: str = typer.Argument(
+        tipo_cdr: str = typer.Option(
             "ericsson_voz",
+            "--tipo",
+            "-t",
             help=f"Tipo de CDR para processar. Opções: {', '.join(DECODERS.keys())}",
         ),
         workers: int = typer.Option(
             os.cpu_count(),
             "--nucleos",
+            "-n",
             help="Número de núcleos para processamento paralelo, máximo é o número de núcleos da CPU",
         ),
         log_level: str = typer.Option(

@@ -10,32 +10,14 @@ requires-python = ">=3.12"
 dependencies = [
     "pandas>=2.2.3",
     "pyarrow>=19.0.1",
-    "rich>=13.6.0",
+    "typer>=0.15.2",
 ]
 
 [project.scripts]
-process-cdrs = "teleparser.entrypoint:process_cdrs"
+tradutor-cdr = "teleparser.cli:process_cdrs"
 
 
 [build-system]
-requires = ["setuptools>=42", "wheel", "nuitka", "toml"]
-build-backend = "nuitka.distutils.Build"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-
-[tool.nuitka]
-# These are not recommended, but they make it obvious to have effect.
-# boolean option, e.g. if you cared for C compilation commands, leading
-# dashes are omitted
-show-scons = true
-
-# options with several values, e.g. avoid including modules, accepts
-# list argument.
-nofollow-import-to = ["*.tests", "*.distutils", "*.nbs"]
-
-[dependency-groups]
-dev = [
-    "nuitka>=2.6.9",
-]
-cli = [
-    "typer>=0.15.2",
-]

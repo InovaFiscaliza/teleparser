@@ -218,32 +218,17 @@ class CDRFileManager:
         file_path: Path,
         decoder,
         output_path: Path,
-        progress: Progress = None,
-        task=None,
     ):
         blocks = []
         buffer_manager = BufferManager(file_path)
         decoder = decoder()
-        counter = 0
-
-        # Create a local progress bar only if not provided
-        local_progress = None
-        if progress is None:
-            local_progress = CDRFileManager.create_progress_bar()
-            progress = local_progress
-            task = progress.add_task(f"[green]Processing: {file_path.name}", total=None)
 
         try:
             with buffer_manager.open() as file_buffer:
                 while (tlv := decoder.decode(file_buffer)) is not None:
                     record, _ = tlv
                     blocks.append(record)
-                    counter += 1
-                    if counter % 250 == 0:
-                        progress.update(
-                            task,
-                            description=f"[green]Processing: [green]{file_path.name} [cyan]({counter} records)",
-                        )
+            counter = len(blocks)
             # Save the processed data
             output_file = output_path / f"{file_path.stem}.parquet.gzip"
             CDRFileManager._save_data(blocks, output_file)
@@ -262,10 +247,6 @@ class CDRFileManager:
             }
 
         finally:
-            # Only close the progress if we created it locally
-            if local_progress:
-                local_progress.stop()
-            # Ensure buffer is closed
             buffer_manager.close()
 
     def decode_files_sequential(self):
@@ -277,21 +258,8 @@ class CDRFileManager:
             main_task = progress.add_task(
                 "[cyan]Decoding CDR files...", total=len(self.gz_files)
             )
-
-            file_tasks = {
-                file_path: progress.add_task(
-                    f"[green]Waiting: {file_path.name}", total=None, visible=False
-                )
-                for file_path in self.gz_files
-            }
             for file_path in self.gz_files:
                 try:
-                    # Make this file's task visible when processing starts
-                    progress.update(
-                        file_tasks[file_path],
-                        description=f"[green]Processing: {file_path.name}",
-                        visible=True,
-                    )
                     logger.info(f"Processing file: {file_path}")
 
                     # Process the file
@@ -299,8 +267,6 @@ class CDRFileManager:
                         file_path=file_path,
                         decoder=self.decoder,
                         output_path=self.output_path,
-                        progress=progress,
-                        task=file_tasks[file_path],
                     )
 
                     # Add to processed files
@@ -310,9 +276,20 @@ class CDRFileManager:
                         logger.info(
                             f"Successfully processed {file_path}: {result.get('records', 0)} records"
                         )
+                        progress.update(
+                            main_task,
+                            description=f"[green]Processed: {file_path.name} [cyan]({result['records']} records)",
+                            advance=1,
+                        )
+
                     else:
                         logger.error(
                             f"Failed to process {file_path}: {result.get('error', 'Unknown error')}"
+                        )
+                        progress.update(
+                            main_task,
+                            description=f"[red]Failed: {file_path.name})",
+                            advance=1,
                         )
 
                 except Exception as e:
@@ -320,10 +297,6 @@ class CDRFileManager:
                     error_details = traceback.format_exc()
                     logger.error(
                         f"Exception while processing {file_path}: {str(e)}\n{error_details}"
-                    )
-                    progress.update(
-                        file_tasks[file_path],
-                        description=f"[red]Failed: {file_path.name} [red]({str(e)})",
                     )
                     self.failed_files.add(file_path)
                     results.append(
@@ -334,12 +307,11 @@ class CDRFileManager:
                             "status": "failed",
                         }
                     )
-
-                finally:
-                    # Hide the completed file task to reduce clutter
-                    progress.update(file_tasks[file_path], visible=False)
-                    # Update main progress when a file is complete
-                    progress.update(main_task, advance=1)
+                    progress.update(
+                        main_task,
+                        description=f"[red]Failed: {file_path.name})",
+                        advance=1,
+                    )
 
         return results
 
