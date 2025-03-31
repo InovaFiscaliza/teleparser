@@ -203,11 +203,8 @@ class CDRFileManager:
                 blocks,
                 copy=False,
                 dtype="string",  # Convert to string first to avoid casting issues with pyarrow
-            ).astype("category").to_parquet(
-                output_file,
-                index=False,
-                compression="gzip",
-            )
+            ).to_csv(output_file, index=False, compression="gzip")
+
         finally:
             # Explicitly clean up resources
             del blocks
@@ -230,8 +227,10 @@ class CDRFileManager:
                     blocks.append(record)
             counter = len(blocks)
             # Save the processed data
-            output_file = output_path / f"{file_path.stem}.parquet.gzip"
+            output_file = output_path / f"{file_path.stem}.csv"
             CDRFileManager._save_data(blocks, output_file)
+            # circumvent bug of not removing .gzip extension after decompression
+            output_file.rename(output_file.with_suffix(".csv.gzip"))
 
             return {"file": file_path, "records": counter, "status": "success"}
 
@@ -316,7 +315,7 @@ class CDRFileManager:
         return results
 
     @staticmethod
-    def process_single_file(file_path, decoder, output_path, progress=None, task=None):
+    def process_single_file(file_path, decoder, output_path):
         """Process a single file in a worker process"""
         try:
             logger.info(f"Processing file in worker: {file_path}")
@@ -324,8 +323,6 @@ class CDRFileManager:
                 file_path=file_path,
                 decoder=decoder,
                 output_path=output_path,
-                progress=progress,
-                task=task,
             )
             return {"file_path": file_path, "result": result}
 
@@ -428,7 +425,7 @@ def display_summary(results, total_time, output_path):
     logger.info(f"Files failed: {failed_count}")
     logger.info(f"Total records processed: {total_records}")
     logger.info(f"Output directory: {output_path}")
-    logger.info(f"Time taken: {total_time:.2f} seconds")
+    logger.info(f"Total Time: {total_time:.2f} seconds")
     logger.info("Cleaning up temporary files now, if present...")
 
     # Also print for user-friendly output
@@ -437,7 +434,7 @@ def display_summary(results, total_time, output_path):
     print(f"[red]Files failed: {failed_count}[/red]")
     print(f"[yellow]Total records processed: {total_records}[/yellow]")
     print(f"[magenta]Output directory: {output_path}[/magenta]")
-    print(f"[green]Time taken: {total_time:.2f} seconds[/green]")
+    print(f"[green]Total Time: {total_time:.2f} seconds[/green]")
     print("[blue]Cleaning up temporary files now, if present...[/blue]")
 
 
