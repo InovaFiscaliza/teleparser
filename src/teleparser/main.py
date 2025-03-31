@@ -16,7 +16,6 @@ from time import perf_counter
 
 
 import pandas as pd
-from contextlib import suppress
 from rich.progress import (
     Progress,
     BarColumn,
@@ -69,8 +68,6 @@ def setup_logging(output_path: Path, log_level: int = logging.INFO):
 
 # Initialize a placeholder logger - will be properly configured later
 logger = logging.getLogger("teleparser")
-
-ASYNC_CONCURRENCY = 8
 
 DECODERS = {
     "ericsson_voz": ericsson_voz_decoder,
@@ -372,11 +369,11 @@ class CDRFileManager:
                 "status": "failed",
             }
 
-    def decode_files_parallel(self, workers):
+    def decode_files_parallel(self, workers: int):
         """Decode files using parallel processing with multiple CPU cores"""
 
         # Determine the number of workers (use fewer than available cores to avoid overloading)
-        max_workers = min(workers, os.cpu_count() - 1, len(self.gz_files))
+        max_workers = min(workers, os.cpu_count(), len(self.gz_files))
         logger.info(
             f"Starting parallel processing with {max_workers} workers for {len(self.gz_files)} files"
         )
@@ -407,10 +404,8 @@ class CDRFileManager:
                     try:
                         logger.info(f"Processing result for file: {file_path}")
 
-                        # Get the result
                         data = future.result()
                         result = data.get("result", {})
-                        # Update progress
                         if "records" in result:
                             logger.info(
                                 f"Successfully processed {file_path}: {result['records']} records"
@@ -491,7 +486,7 @@ def main(
     try:
         manager = CDRFileManager(input_path, output_path, cdr_type)
         file_count = len(manager.gz_files)
-        print(f"[blue]Started processing of {file_count} files...[/blue]")
+        logger.info(f"[blue]Started processing of {file_count} files...[/blue]")
 
         start = perf_counter()
         if workers > 1:
@@ -522,66 +517,3 @@ def main(
         logger.critical(f"Critical error in main process: {str(e)}\n{error_details}")
         print(f"[bold red]Critical error: {str(e)}[/bold red]")
         raise
-
-
-def process_cdrs():
-    import typer
-
-    app = typer.Typer()
-
-    @app.command()
-    def cli(
-        input_path: str = typer.Argument(
-            ..., help="Path to a single CDR file or directory"
-        ),
-        output_path: str = typer.Argument(..., help="Path to output directory"),
-        cdr_type: str = typer.Argument(
-            "ericsson_voz",
-            help=f"CDR type to process. Options: {', '.join(DECODERS.keys())}",
-        ),
-        workers: int = typer.Option(
-            os.cpu_count(),
-            "--workers",
-            help="Number of workers to use for parallel processing, max is number of CPU cores - 1",
-        ),
-        log_level: str = typer.Option(
-            "INFO",
-            "--log-level",
-            help="Logging level. Options: DEBUG, INFO, WARNING, ERROR, CRITICAL",
-        ),
-    ):
-        """Process CDR files from input_path (file/folder) and save results to output path.\n
-        The expected format is a file or folder with one or more gzipped files.\n
-        If the gzipped files are in a ZIP archive, they will be extracted first.
-        Default mode is multi-core CPU processing.
-        """
-        # Create output directory if it doesn't exist
-        output_dir = Path(output_path)
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        # Set log level based on command line argument
-        numeric_level = getattr(logging, log_level.upper(), None)
-        if not isinstance(numeric_level, int):
-            print(f"[bold red]Invalid log level: {log_level}[/bold red]")
-            numeric_level = logging.INFO
-
-        try:
-            main(Path(input_path), output_dir, cdr_type, workers, numeric_level)
-        except Exception as e:
-            # At this point, logger might not be initialized yet, so we print to console
-            error_details = traceback.format_exc()
-            print(f"[bold red]Fatal error: {str(e)}[/bold red]")
-
-            # Try to log to file if possible
-            with suppress(Exception):
-                temp_logger = setup_logging(output_dir, logging.ERROR)
-                temp_logger.critical(
-                    f"Unhandled exception in main process: {str(e)}\n{error_details}"
-                )
-            raise
-
-    app()
-
-
-if __name__ == "__main__":
-    process_cdrs()
