@@ -23,10 +23,10 @@ def process_cdrs():
             help=f"Tipo de CDR para processar. Opções: {', '.join(DECODERS.keys())}",
         ),
         workers: int = typer.Option(
-            os.cpu_count(),
+            os.cpu_count() - 1,
             "--nucleos",
             "-n",
-            help="Número de núcleos para processamento paralelo, máximo é o número de núcleos da CPU",
+            help="Número de núcleos para processamento paralelo, máximo é o número de núcleos da CPU - 1",
         ),
         log_level: str = typer.Option(
             "INFO",
@@ -34,9 +34,9 @@ def process_cdrs():
             help="Nível de log. Opções: DEBUG, INFO, WARNING, ERROR, CRITICAL",
         ),
     ):
-        """Processa arquivos CDR do caminho de entrada (arquivo/pasta) e salva resultados no caminho de saída em formato .csv.gzip.\n
+        """Processa arquivos CDR da ENTRADA (arquivo/pasta) e salva resultados na pasta SAIDA em formato .csv.gzip.\n
         O formato esperado é um arquivo ou pasta com um ou mais arquivos gzip.\n
-        Se os arquivos gzip estiverem em um arquivo ZIP, eles serão extraídos primeiro.
+        Se os arquivos gzip estiverem em um arquivo ZIP, eles serão extraídos primeiro.\n
         O modo padrão é processamento paralelo utilizando múltiplos núcleos da CPU.
         """
         # Create output directory if it doesn't exist

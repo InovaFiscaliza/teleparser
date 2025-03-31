@@ -1,3 +1,4 @@
+import csv
 import gc
 import gzip
 import os
@@ -15,7 +16,6 @@ from typing import BinaryIO, List, Optional, Set
 from time import perf_counter
 
 
-import pandas as pd
 from rich.progress import (
     Progress,
     BarColumn,
@@ -191,7 +191,7 @@ class CDRFileManager:
             BarColumn(),
             TaskProgressColumn(),
             TimeRemainingColumn(),
-            expand=False,
+            expand=True,
             transient=False,  # Keep completed tasks visible
         )
 
@@ -199,11 +199,13 @@ class CDRFileManager:
     def _save_data(blocks: list, output_file: Path):
         # Use a try-finally block to ensure resources are released
         try:
-            pd.DataFrame(
-                blocks,
-                copy=False,
-                dtype="string",  # Convert to string first to avoid casting issues with pyarrow
-            ).to_csv(output_file, index=False, compression="gzip")
+            all_columns = {k for block in blocks for k in block.keys()}
+            # Sort columns for consistent output
+            columns = sorted(all_columns)
+            with gzip.open(output_file, "wt", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=columns)
+                writer.writeheader()
+                writer.writerows(blocks)
 
         finally:
             # Explicitly clean up resources
@@ -458,12 +460,12 @@ def main(
         logger.info(f"[blue]Started processing of {file_count} files...[/blue]")
 
         start = perf_counter()
-        if workers > 1:
-            logger.info("Using multi-core processing mode")
-            results = manager.decode_files_parallel(workers)
-        else:
+        if workers <= 1 or file_count == 1:
             logger.info("Using single-core processing mode")
             results = manager.decode_files_sequential()
+        else:
+            logger.info("Using multi-core processing mode")
+            results = manager.decode_files_parallel(workers)
 
         total_time = perf_counter() - start
         logger.info(f"Processing completed in {total_time:.2f} seconds")

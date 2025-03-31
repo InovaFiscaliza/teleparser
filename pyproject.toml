@@ -8,7 +8,6 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "pandas>=2.2.3",
     "typer>=0.15.2",
 ]
 
@@ -22,6 +21,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "nuitka>=2.6.9",
     "pyinstaller>=6.12.0",
 ]
 
