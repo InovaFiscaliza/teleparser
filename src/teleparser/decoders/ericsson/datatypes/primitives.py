@@ -189,7 +189,7 @@ class Ia5String(OctetString):
 
 
 class TBCDString(OctetString):
-    """TBCDString ::= OCTET STRING (SIZE(1..n))
+    r"""TBCDString ::= OCTET STRING (SIZE(1..n))
 
     |    |    |    |    |    |    |    |    |
     |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |

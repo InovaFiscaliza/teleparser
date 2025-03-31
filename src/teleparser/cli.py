@@ -3,7 +3,7 @@ import traceback
 from contextlib import suppress
 from pathlib import Path
 import os
-from .main import main, setup_logging, DECODERS
+from teleparser.main import main, setup_logging, DECODERS
 import typer
 
 
@@ -34,7 +34,7 @@ def process_cdrs():
             help="Nível de log. Opções: DEBUG, INFO, WARNING, ERROR, CRITICAL",
         ),
     ):
-        """Processa arquivos CDR do caminho de entrada (arquivo/pasta) e salva resultados no caminho de saída em formato .parquet.gzip.\n
+        """Processa arquivos CDR do caminho de entrada (arquivo/pasta) e salva resultados no caminho de saída em formato .csv.gzip.\n
         O formato esperado é um arquivo ou pasta com um ou mais arquivos gzip.\n
         Se os arquivos gzip estiverem em um arquivo ZIP, eles serão extraídos primeiro.
         O modo padrão é processamento paralelo utilizando múltiplos núcleos da CPU.
@@ -68,4 +68,7 @@ def process_cdrs():
 
 
 if __name__ == "__main__":
+    import multiprocessing
+
+    multiprocessing.freeze_support()
     process_cdrs()
