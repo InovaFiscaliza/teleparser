@@ -470,7 +470,9 @@ if __name__ == "__main__":
             i = parser.index + header["length"]
             parser.binary_data[i : i + 22]
             header = parser.parse_header(i)
-            progress.update(task, description=f"[green]Position: {i}", advance=i)
+            progress.update(
+                task, description=f"[green]Position: {i}, Header: {header}", advance=i
+            )
 
     # parsed_cdr = parser.parse_message(binary_data)
 
