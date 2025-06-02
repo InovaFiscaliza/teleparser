@@ -5,6 +5,44 @@ import socket
 from fastcore.xtras import Path
 
 
+def is_avp_flag_valid(flags_byte: int, parameter_flag: str | None = None) -> bool:
+    """Validate AVP flags byte according to Diameter protocol specification
+
+    Bit layout (8 bits):
+    V M P 0 0 0 0 0
+    | | | | | | | |
+    0 1 2 3 4 5 6 7  (bit positions)
+
+    Args:
+        flags_byte: Single byte (0-255) containing the flags
+        parameter_flag: String containing expected flags ('V', 'M', 'P')
+
+    Returns:
+        bool: True if flags match expected pattern, False otherwise
+
+    Raises:
+        ValueError: If flags_byte is not a valid byte value or reserved bits are not 0
+    """
+    if parameter_flag is None:  # No parameter flag means ACA message
+        return True
+
+    if not (0 <= flags_byte <= 255):
+        raise ValueError(f"Flags byte must be 0-255, got: {flags_byte}")
+
+    # Extract flag bits
+    v_flag = bool(flags_byte & 0x80)  # Vendor flag
+    m_flag = bool(flags_byte & 0x40)  # Mandatory flag
+    p_flag = bool(flags_byte & 0x20)  # Protected flag
+
+    # Check reserved bits (bits 7-3 should be zero)
+    if not (flags_byte & 0x1F) == 0:
+        raise ValueError("Reserved bits 7-3 must be 0, got: {bin(flags_byte)[3:]}")
+    flags_string = "".join(
+        ["V" if v_flag else "", "M" if m_flag else "", "P" if p_flag else ""]
+    )
+    return flags_string == parameter_flag
+
+
 class EricssonAVPDatabase:
     # Vendor IDs
     VENDOR_DIAMETER = 0
@@ -27,14 +65,21 @@ class EricssonAVPDatabase:
         self._build_avp_database()
 
     def _build_avp_database(self):
-        # Helper function to add AVP definitions
-        def add_avp(code, vendor, name, avp_type, variant=None):
+        def add_avp(code, vendor, name, avp_type, flags=None, variant=None):
+            """Helper function to add AVP definitions
+            Flags are only applicable to ACR messages, None indicates ACA messages
+            """
             key = (code, vendor)
-            self.avp_db[key] = {"name": name, "type": avp_type, "variant": variant}
+            self.avp_db[key] = {
+                "name": name,
+                "type": avp_type,
+                "flags": flags,
+                "variant": variant,
+            }
 
         # Common AVPs (both variants)
         add_avp(1, self.VENDOR_DIAMETER, "User-Name", self.TYPE_UTF8_STRING)
-        add_avp(263, self.VENDOR_DIAMETER, "Session-Id", self.TYPE_UTF8_STRING)
+        add_avp(263, self.VENDOR_DIAMETER, "Session-Id", self.TYPE_UTF8_STRING, "M")
         add_avp(264, self.VENDOR_DIAMETER, "Origin-Host", self.TYPE_DIAMETER_IDENTITY)
         add_avp(296, self.VENDOR_DIAMETER, "Origin-Realm", self.TYPE_DIAMETER_IDENTITY)
         # ... (add all common AVPs from Tables 3/4)
@@ -175,11 +220,14 @@ class EricssonCDRParser:
     DIAMETER_HEADER_FORMAT = ">B3sB3sIII"  # Big-endian format
     HEADER_SIZE = 20  # Fixed 20-byte header
     NTP_EPOCH = datetime(1900, 1, 1)  # For timestamp conversion
+    PREFIX_HEADER_LENGTH = 2
 
-    def __init__(self):
+    def __init__(self, binary_data: bytes):
         self.avp_db = EricssonAVPDatabase()
+        self.binary_data = binary_data
+        self.index = 0
 
-    def parse_header(self, binary_data: bytes) -> Tuple[dict, bytes]:
+    def parse_header(self, index: int) -> dict:
         """Parse Diameter header (version 1 only)
         The format string ">B3sB3sIII" defines how to interpret the 20-byte Diameter protocol header:
         Format Components:
@@ -193,16 +241,19 @@ class EricssonCDRParser:
         I - Unsigned int (4 bytes) → End-to-End Identifier
         Total: 1 + 3 + 1 + 3 + 4 + 4 + 4 = 20 bytes
         """
+        self.index = index + 2  # Skip first 2 bytes
+
+        block_data = self.binary_data[self.index :]
 
         # Validate minimum length
-        if len(binary_data) < self.HEADER_SIZE:
+        if len(block_data) < self.HEADER_SIZE:
             raise ValueError(
-                f"Header requires {self.HEADER_SIZE} bytes, got {len(binary_data)}"
+                f"Header requires {self.HEADER_SIZE} bytes, got {len(block_data)}"
             )
 
         # Unpack all header fields
         (version, msg_len_bytes, flags, cmd_bytes, app_id, hbh_id, e2e_id) = (
-            struct.unpack(self.DIAMETER_HEADER_FORMAT, binary_data[: self.HEADER_SIZE])
+            struct.unpack(self.DIAMETER_HEADER_FORMAT, block_data[: self.HEADER_SIZE])
         )
 
         # Convert 24-bit fields
@@ -228,7 +279,7 @@ class EricssonCDRParser:
             )
 
         # Build header dictionary
-        header = {
+        return {
             "version": version,
             "length": msg_length,
             "flags": flag_bits,
@@ -238,8 +289,6 @@ class EricssonCDRParser:
             "end_to_end_id": e2e_id,
             "message_type": "ACR" if flag_bits["R"] else "ACA",
         }
-
-        return header, binary_data[self.HEADER_SIZE :]
 
     def parse_avp(self, binary_data, variant):
         """Parse a single AVP from binary data"""
@@ -257,7 +306,7 @@ class EricssonCDRParser:
             )
 
         # Extract vendor ID if present
-        vendor_id = None
+        vendor_id = EricssonAVPDatabase.VENDOR_DIAMETER
         header_size = 8
         if flags & 0x80:  # Vendor flag set
             if avp_length < 12:
@@ -277,6 +326,10 @@ class EricssonCDRParser:
                 "type": "OctetString",
                 "value": binary_data[header_size:avp_length],
             }, binary_data[avp_length:]
+
+        assert is_avp_flag_valid(flags, avp_def["flags"]), (
+            f"Invalid AVP flags: {bin(flags)}"
+        )
 
         # Parse value based on type
         value_data = binary_data[header_size:avp_length]
@@ -367,6 +420,7 @@ class EricssonCDRParser:
         """Parse complete Diameter message"""
         # Parse header
         header, data = self.parse_header(binary_data)
+        print(header)
 
         # Detect variant based on first AVP
         variant = self.detect_variant(data)
@@ -398,23 +452,35 @@ class EricssonCDRParser:
 
 if __name__ == "__main__":
     import gzip
+    from rich.progress import Progress
 
-    file = Path("/home/rsilva/volte_claro/").ls()[0]
+    file = Path("/home/rsilva/volte_claro/").ls().shuffle()[0]
     # Read CDR file
     with gzip.open(file, "rb") as f:
         binary_data = f.read()
 
     # Parse CDR
-    parser = EricssonCDRParser()
-    parsed_cdr = parser.parse_message(binary_data)
+    parser = EricssonCDRParser(binary_data)
+    with Progress(transient=True) as progress:
+        task = progress.add_task("[red]Reading Headers...", total=len(binary_data))
+        i = 0
+        header = parser.parse_header(i)
 
-    # Print results
-    print(f"Session ID: {parsed_cdr['header']['session_id']}")
-    print(f"Record Type: {parsed_cdr['header']['record_type']}")
-    print(f"Variant: {parsed_cdr['variant']}")
+        while i < len(parser.binary_data):
+            i = parser.index + header["length"]
+            parser.binary_data[i : i + 22]
+            header = parser.parse_header(i)
+            progress.update(task, description=f"[green]Position: {i}", advance=i)
 
-    for avp in parsed_cdr["avps"]:
-        if avp["name"] == "IMS-Charging-Identifier":
-            print(f"ICID: {avp['value']}")
-        elif avp["name"] == "Calling-Party-Address":
-            print(f"Caller: {avp['value']}")
+    # parsed_cdr = parser.parse_message(binary_data)
+
+    # # Print results
+    # print(f"Session ID: {parsed_cdr['header']['session_id']}")
+    # print(f"Record Type: {parsed_cdr['header']['record_type']}")
+    # print(f"Variant: {parsed_cdr['variant']}")
+
+    # for avp in parsed_cdr["avps"]:
+    #     if avp["name"] == "IMS-Charging-Identifier":
+    #         print(f"ICID: {avp['value']}")
+    #     elif avp["name"] == "Calling-Party-Address":
+    #         print(f"Caller: {avp['value']}")
