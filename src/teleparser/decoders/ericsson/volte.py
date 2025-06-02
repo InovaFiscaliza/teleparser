@@ -104,118 +104,6 @@ class EricssonAVPDatabase:
         return self.avp_db.get((code, vendor_id))
 
 
-# class CommandFlags:
-#     """Command Flags parser for Diameter protocol messages
-
-#     Parses an 8-bit byte according to the following rules:
-#     Bit 0: R - Set to 1 if ACR message, 0 if ACA message
-#     Bit 1: P - Set to 1 if message is proxiable (always 1 for ACR/ACA)
-#     Bit 2: E - Set to 1 if ACA contains Protocol Error 3xxx, 0 otherwise
-#     Bit 3: T - Set to 1 if retransmitted message, 0 otherwise
-#     Bits 4-7: Reserved (must be 0)
-#     """
-
-#     def __init__(self, flags_byte: int):
-#         """Initialize with a single byte (0-255) or hex value"""
-#         if not (0 <= flags_byte <= 255):
-#             raise ValueError(
-#                 f"Command flags must be a single byte (0-255), got: {flags_byte}"
-#             )
-
-#         self.flags_byte = flags_byte
-#         self._parse_flags()
-
-#     def _parse_flags(self):
-#         """Parse individual flag bits from the byte"""
-#         # Extract individual bits (bit 0 is MSB, bit 7 is LSB)
-#         self.R = bool(self.flags_byte & 0x80)  # Bit 0 (MSB)
-#         self.P = bool(self.flags_byte & 0x40)  # Bit 1
-#         self.E = bool(self.flags_byte & 0x20)  # Bit 2
-#         self.T = bool(self.flags_byte & 0x10)  # Bit 3
-
-#         if self.E and self.R:
-#             raise ValueError(
-#                 "Protocol Error 3xxx flag (E=1) is only valid for ACA messages, got R=1 which marks an ACR message"
-#             )
-
-#         # Check reserved bits (bits 4-7) should be 0
-#         reserved_bits = self.flags_byte & 0x0F
-#         if reserved_bits != 0:
-#             raise ValueError(f"Reserved bits 4-7 must be 0, got: {bin(reserved_bits)}")
-
-#     @property
-#     def is_acr_message(self) -> bool:
-#         """Returns True if this is an ACR message (R=1), False if ACA (R=0)"""
-#         return self.R
-
-#     @property
-#     def is_aca_message(self) -> bool:
-#         """Returns True if this is an ACA message (R=0, P=1), False if ACR (R=1)"""
-#         return not self.R and self.P
-
-#     @property
-#     def is_proxiable(self) -> bool:
-#         """Returns True if message is proxiable (should always be True for ACR/ACA)"""
-#         return self.P
-
-#     @property
-#     def has_protocol_error(self) -> bool:
-#         """Returns True if ACA contains Protocol Error 3xxx"""
-#         return self.E
-
-#     @property
-#     def is_retransmitted(self) -> bool:
-#         """Returns True if this is a retransmitted message"""
-#         return self.T
-
-#     @property
-#     def value(self) -> dict:
-#         """Returns a dictionary with all flag values"""
-#         return {
-#             "R": self.R,
-#             "P": self.P,
-#             "E": self.E,
-#             "T": self.T,
-#             "isACR": self.is_acr_message,
-#             "isACA": self.is_aca_message,
-#         }
-
-#     def __str__(self) -> str:
-#         """String representation showing flag states"""
-#         msg_type = "ACR" if self.is_acr_message else "ACA"
-#         flags = []
-#         if self.P:
-#             flags.append("Proxiable")
-#         if self.E:
-#             flags.append("Protocol Error")
-#         if self.T:
-#             flags.append("Retransmitted")
-
-#         flag_str = ", ".join(flags) if flags else "None"
-#         return f"{msg_type} message - Flags: {flag_str}"
-
-#     def __repr__(self) -> str:
-#         return f"CommandFlags(0x{self.flags_byte:02X}) - R:{int(self.R)} P:{int(self.P)} E:{int(self.E)} T:{int(self.T)}"
-
-
-# def parse_command_flags(flags_byte: int) -> CommandFlags:
-#     """Parse command flags from a single byte
-
-#     Args:
-#         flags_byte: Integer value (0-255) representing the 8-bit command flags
-
-#     Returns:
-#         CommandFlags object with parsed flag values
-
-#     Example:
-#         >>> flags = parse_command_flags(0xC0)  # R=1, P=1, E=0, T=0
-#         >>> print(flags.is_acr_message)  # True
-#         >>> print(flags.is_proxiable)    # True
-#         >>> print(flags)                 # ACR message - Flags: Proxiable
-#     """
-#     return CommandFlags(flags_byte)
-
-
 class EricssonCDRParser:
     DIAMETER_HEADER_FORMAT = ">B3sB3sIII"  # Big-endian format
     HEADER_SIZE = 20  # Fixed 20-byte header
@@ -383,40 +271,42 @@ class EricssonCDRParser:
 
     def parse_simple_value(self, binary_data, avp_type):
         """Parse simple AVP types"""
-        if avp_type == EricssonAVPDatabase.TYPE_INTEGER_32:
-            return struct.unpack(">i", binary_data)[0]
+        match avp_type:
+            case EricssonAVPDatabase.TYPE_INTEGER_32:
+                return struct.unpack(">i", binary_data)[0]
 
-        elif avp_type == EricssonAVPDatabase.TYPE_UNSIGNED_32:
-            return struct.unpack(">I", binary_data)[0]
+            case EricssonAVPDatabase.TYPE_UNSIGNED_32:
+                return struct.unpack(">I", binary_data)[0]
 
-        elif avp_type == EricssonAVPDatabase.TYPE_UTF8_STRING:
-            return binary_data.decode("utf-8")
+            case EricssonAVPDatabase.TYPE_UTF8_STRING:
+                return binary_data.decode("utf-8")
 
-        elif avp_type == EricssonAVPDatabase.TYPE_OCTET_STRING:
-            return binary_data
+            case EricssonAVPDatabase.TYPE_OCTET_STRING:
+                return binary_data
 
-        elif avp_type == EricssonAVPDatabase.TYPE_TIME:
-            seconds = struct.unpack(">I", binary_data)[0]
-            return self.NTP_EPOCH + timedelta(seconds=seconds)
+            case EricssonAVPDatabase.TYPE_TIME:
+                seconds = struct.unpack(">I", binary_data)[0]
+                return self.NTP_EPOCH + timedelta(seconds=seconds)
 
-        elif avp_type == EricssonAVPDatabase.TYPE_ENUMERATED:
-            return struct.unpack(">i", binary_data)[0]
+            case EricssonAVPDatabase.TYPE_ENUMERATED:
+                return struct.unpack(">i", binary_data)[0]
 
-        elif avp_type == EricssonAVPDatabase.TYPE_DIAMETER_IDENTITY:
-            return binary_data.decode("utf-8")
+            case EricssonAVPDatabase.TYPE_DIAMETER_IDENTITY:
+                return binary_data.decode("utf-8")
 
-        elif avp_type == EricssonAVPDatabase.TYPE_ADDRESS:
-            # Address format: 1 byte family + address bytes
-            family = binary_data[0]
-            address_bytes = binary_data[1:]
-            if family == 1:  # IPv4
-                return socket.inet_ntoa(address_bytes)
-            elif family == 2:  # IPv6
-                return socket.inet_ntop(socket.AF_INET6, address_bytes)
-            else:
-                return address_bytes  # Unknown format
+            case EricssonAVPDatabase.TYPE_ADDRESS:
+                # Address format: 1 byte family + address bytes
+                family = binary_data[0]
+                address_bytes = binary_data[1:]
+                if family == 1:  # IPv4
+                    return socket.inet_ntoa(address_bytes)
+                elif family == 2:  # IPv6
+                    return socket.inet_ntop(socket.AF_INET6, address_bytes)
+                else:
+                    return address_bytes  # Unknown format
 
-        return binary_data  # Fallback for unknown types
+            case _:
+                return binary_data  # Fallback for unknown types
 
     def parse_message(self, binary_data):
         """Parse complete Diameter message"""
