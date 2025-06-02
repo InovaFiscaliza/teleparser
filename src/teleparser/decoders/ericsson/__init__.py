@@ -1,4 +1,4 @@
-from .parser import TlvVozEricsson
+from .voz import TlvVozEricsson
 from .ber import BerDecoder
 
 

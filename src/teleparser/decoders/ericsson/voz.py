@@ -1,5 +1,5 @@
 from typing import Mapping
-from . import modules
+from teleparser.decoders.ericsson import modules
 
 
 class TlvVozEricsson:
