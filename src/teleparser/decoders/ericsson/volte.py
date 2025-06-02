@@ -227,7 +227,7 @@ class EricssonCDRParser:
         self.binary_data = binary_data
         self.index = 0
 
-    def parse_header(self, index: int) -> dict:
+    def parse_header(self, index: int) -> dict | None:
         """Parse Diameter header (version 1 only)
         The format string ">B3sB3sIII" defines how to interpret the 20-byte Diameter protocol header:
         Format Components:
@@ -242,23 +242,27 @@ class EricssonCDRParser:
         Total: 1 + 3 + 1 + 3 + 4 + 4 + 4 = 20 bytes
         """
         self.index = index + 2  # Skip first 2 bytes
-
-        block_data = self.binary_data[self.index :]
+        i = self.index
+        j = i + self.HEADER_SIZE
+        if not (header := self.binary_data[i:j]):
+            return None
 
         # Validate minimum length
-        if len(block_data) < self.HEADER_SIZE:
+        if len(header) < self.HEADER_SIZE:
             raise ValueError(
-                f"Header requires {self.HEADER_SIZE} bytes, got {len(block_data)}"
+                f"Header requires {self.HEADER_SIZE} bytes, got {len(header)}"
             )
 
         # Unpack all header fields
         (version, msg_len_bytes, flags, cmd_bytes, app_id, hbh_id, e2e_id) = (
-            struct.unpack(self.DIAMETER_HEADER_FORMAT, block_data[: self.HEADER_SIZE])
+            struct.unpack(
+                self.DIAMETER_HEADER_FORMAT,
+                header,
+            )
         )
 
         # Convert 24-bit fields
         msg_length = int.from_bytes(msg_len_bytes)
-        command_code = int.from_bytes(cmd_bytes)
 
         # Validate version (MUST be 1)
         if version != 1:
@@ -273,17 +277,15 @@ class EricssonCDRParser:
         }
 
         # Validate message type
-        if command_code != 271:
+        if cmd_bytes != b"\x00\x01\x0f":
             raise ValueError(
-                f"Invalid Command-Code: {command_code} (expected 271 for accounting)"
+                f"Invalid Command-Code: {int.from_bytes(cmd_bytes)} (expected 271 for accounting)"
             )
 
         # Build header dictionary
         return {
-            "version": version,
             "length": msg_length,
-            "flags": flag_bits,
-            "command_code": command_code,
+            "flags": "".join(k for k, v in flag_bits.items() if v),
             "application_id": app_id,
             "hop_by_hop_id": hbh_id,
             "end_to_end_id": e2e_id,
@@ -454,7 +456,7 @@ if __name__ == "__main__":
     import gzip
     from rich.progress import Progress
 
-    file = Path("/home/rsilva/volte_claro/").ls().shuffle()[0]
+    file = Path("/home/rsilva/volte_claro/").ls()[0]
     # Read CDR file
     with gzip.open(file, "rb") as f:
         binary_data = f.read()
@@ -462,17 +464,19 @@ if __name__ == "__main__":
     # Parse CDR
     parser = EricssonCDRParser(binary_data)
     with Progress(transient=True) as progress:
-        task = progress.add_task("[red]Reading Headers...", total=len(binary_data))
+        total = len(binary_data)
+        task = progress.add_task("[red]Reading Headers...", total=total)
         i = 0
         header = parser.parse_header(i)
 
-        while i < len(parser.binary_data):
+        while header is not None:
             i = parser.index + header["length"]
-            parser.binary_data[i : i + 22]
-            header = parser.parse_header(i)
             progress.update(
-                task, description=f"[green]Position: {i}, Header: {header}", advance=i
+                task,
+                description=f"[green]Position: {i}, Header: {header}",
+                completed=i,
             )
+            header = parser.parse_header(i)
 
     # parsed_cdr = parser.parse_message(binary_data)
 
