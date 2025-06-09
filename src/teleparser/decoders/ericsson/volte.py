@@ -1,8 +1,243 @@
 import struct
+from collections import namedtuple
 from datetime import datetime, timedelta
 from typing import Tuple
 import socket
 from fastcore.xtras import Path
+
+# Vendor IDs
+VENDOR_3GPP = 10415
+VENDOR_ERICSSON = 193
+# Type constants (as provided)
+TYPE_OCTET_STRING = 0
+TYPE_INTEGER_32 = 1
+TYPE_UNSIGNED_32 = 2
+TYPE_UTF8_STRING = 4
+TYPE_GROUPED = 8
+TYPE_TIME = 9
+TYPE_ENUMERATED = 10
+TYPE_DIAMETER_IDENTITY = 11
+TYPE_ADDRESS = 12
+
+VendorID = namedtuple(
+    "VendorID",
+    ["avp", "avp_code", "type", "acr_flag", "vendor_id"],
+    defaults=(None, None),
+)
+
+AVP_DB = {
+    1: VendorID("User-Name", 1, TYPE_UTF8_STRING),
+    23: VendorID("3GPP-MS-TimeZone", 23, TYPE_OCTET_STRING, "V", VENDOR_3GPP),
+    55: VendorID("Event-Timestamp", 55, TYPE_TIME, "M"),
+    85: VendorID("Acct-Interim-Interval", 85, TYPE_UNSIGNED_32, "M"),
+    259: VendorID("Acct-Application-Id", 259, TYPE_UNSIGNED_32, "M"),
+    263: VendorID("Session-Id", 263, TYPE_UTF8_STRING, "M"),
+    264: VendorID("Origin-Host", 264, TYPE_DIAMETER_IDENTITY),
+    266: VendorID("Vendor-Id", 266, TYPE_UNSIGNED_32),
+    268: VendorID("Result-Code", 268, TYPE_UNSIGNED_32, "M"),
+    283: VendorID("Destination-Realm", 283, TYPE_DIAMETER_IDENTITY),
+    293: VendorID("Destination-Host", 293, TYPE_DIAMETER_IDENTITY, "M"),
+    296: VendorID("Origin-Realm", 296, TYPE_DIAMETER_IDENTITY),
+    297: VendorID("Experimental-Result", 297, TYPE_GROUPED),
+    298: VendorID("Experimental-Result-Code", 298, TYPE_UNSIGNED_32),
+    420: VendorID("CC-Time", 420, TYPE_UNSIGNED_32, "M"),
+    443: VendorID("Subscription-Id", 443, TYPE_GROUPED, "M"),
+    444: VendorID("Subscription-Id-Data", 444, TYPE_UTF8_STRING, "M"),
+    450: VendorID("Subscription-Id-Type", 450, TYPE_ENUMERATED, "M"),
+    458: VendorID("User-Equipment-Info", 458, TYPE_GROUPED, "M"),
+    459: VendorID("User-Equipment-Info-Type", 459, TYPE_ENUMERATED, "M"),
+    460: VendorID("User-Equipment-Info-Value", 460, TYPE_OCTET_STRING, "M"),
+    461: VendorID("Service-Context-Id", 461, TYPE_UTF8_STRING, "M"),
+    480: VendorID("Accounting-Record-Type", 480, TYPE_ENUMERATED, "M"),
+    485: VendorID("Accounting-Record-Number", 485, TYPE_UNSIGNED_32, "M"),
+    650: VendorID("Session-Priority", 650, TYPE_ENUMERATED, "V", VENDOR_3GPP),
+    701: VendorID("MSISDN", 701, TYPE_OCTET_STRING, "VM", VENDOR_3GPP),
+    823: VendorID("Event-Type", 823, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    824: VendorID("SIP-Method", 824, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    826: VendorID("Content-Type", 826, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    827: VendorID("Content-Length", 827, TYPE_UNSIGNED_32, "VM", VENDOR_3GPP),
+    828: VendorID("Content-Disposition", 828, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    829: VendorID("Role-of-Node", 829, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
+    830: VendorID("User-Session-Id", 830, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    831: VendorID("Calling-Party-Address", 831, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    832: VendorID("Called-Party-Address", 832, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    833: VendorID("Time-Stamps", 833, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    834: VendorID("SIP-Request-Timestamp", 834, TYPE_TIME, "VM", VENDOR_3GPP),
+    835: VendorID("SIP-Response-Timestamp", 835, TYPE_TIME, "VM", VENDOR_3GPP),
+    838: VendorID("Inter-Operator-Identifier", 838, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    839: VendorID("Originating-IOI", 839, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    840: VendorID("Terminating-IOI", 840, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    841: VendorID("IMS-Charging-Identifier", 841, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    842: VendorID("SDP-Session-Description", 842, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    843: VendorID("SDP-Media-Component", 843, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    844: VendorID("SDP-Media-Name", 844, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    845: VendorID("SDP-Media-Description", 845, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    861: VendorID("Cause-Code", 861, TYPE_INTEGER_32, "VM", VENDOR_3GPP),
+    862: VendorID("Node-Functionality", 862, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
+    863: VendorID("Service-Specific-Data", 863, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    864: VendorID("Originator", 864, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
+    876: VendorID("IMS-Information", 876, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    878: VendorID("LCS-Information", 878, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    882: VendorID("Media-Initiator-Flag", 882, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
+    889: VendorID("Message-Body", 889, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    1061: VendorID(
+        "MMT-Information", 1061, TYPE_GROUPED, "V", 193
+    ),  # Ericsson vendor ID is 193
+    1127: VendorID("Conference-Id", 1127, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1128: VendorID("Related-ICID", 1128, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1129: VendorID(
+        "Supplementary-Service-Information", 1129, TYPE_GROUPED, "V", VENDOR_ERICSSON
+    ),
+    1130: VendorID(
+        "Supplementary-Service-Identity", 1130, TYPE_ENUMERATED, "V", VENDOR_ERICSSON
+    ),
+    1131: VendorID(
+        "Supplementary-Service-Action", 1131, TYPE_ENUMERATED, "V", VENDOR_ERICSSON
+    ),
+    1133: VendorID(
+        "Redirecting-Party-Address", 1133, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1141: VendorID(
+        "Calling-Party-Address-Presentation-Status", 1141, TYPE_ENUMERATED, "V", 193
+    ),
+    1142: VendorID(
+        "Called-Asserted-Identity-Presentation-Status", 1142, TYPE_ENUMERATED, "V", 193
+    ),
+    1153: VendorID("From-Header", 1153, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1160: VendorID(
+        "Dial-Around-Indicator", 1160, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1206: VendorID(
+        "GSM-Call-Reference-Number", 1206, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1207: VendorID("MSC-Address", 1207, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1249: VendorID("Service-Specific-Info", 1249, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    1250: VendorID(
+        "Called-Asserted-Identity", 1250, TYPE_UTF8_STRING, "VM", VENDOR_3GPP
+    ),
+    1251: VendorID(
+        "Requested-Party-Address", 1251, TYPE_UTF8_STRING, "VM", VENDOR_3GPP
+    ),
+    1256: VendorID(
+        "SIP-Ringing-Timestamp-Fraction", 1256, TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON
+    ),
+    1257: VendorID("Service-Specific-Type", 1257, TYPE_UNSIGNED_32, "VM", VENDOR_3GPP),
+    1262: VendorID(
+        "From-Header-Presentation-Status", 1262, TYPE_ENUMERATED, "V", VENDOR_ERICSSON
+    ),
+    1263: VendorID(
+        "Access-Network-Information", 1263, TYPE_OCTET_STRING, "VM", VENDOR_3GPP
+    ),
+    1264: VendorID("Transaction-Info", 1264, TYPE_GROUPED, "V", VENDOR_ERICSSON),
+    1265: VendorID("Transaction-Type", 1265, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1266: VendorID(
+        "Transaction-Data-Name", 1266, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1267: VendorID(
+        "Transaction-Data-Value", 1267, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1302: VendorID("Routing-Call-Type", 1302, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1303: VendorID("Analyzed-Call-Type", 1303, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1307: VendorID("Service-Number-Type", 1307, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1308: VendorID(
+        "Common-Policy-Rule-Identity", 1308, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1314: VendorID("SCC-Service-Identity", 1314, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1315: VendorID("SCC-TADS-Decision", 1315, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1330: VendorID("Served-User", 1330, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1346: VendorID("XCON-Id", 1346, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1357: VendorID("Party-To-Charge", 1357, TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON),
+    1371: VendorID(
+        "Service-Suppression-Info", 1371, TYPE_GROUPED, "V", VENDOR_ERICSSON
+    ),
+    1372: VendorID(
+        "Matched-Regular-Expression", 1372, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1373: VendorID(
+        "Services-To-Suppress", 1373, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1380: VendorID("Tenant", 1380, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1384: VendorID("CCMP-User-Info", 1384, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1388: VendorID("UHTZ-Offset", 1388, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1389: VendorID(
+        "Participants-Involved", 1389, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1390: VendorID("Participants-List", 1390, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1393: VendorID(
+        "Forward-TTC-Charging-Headers", 1393, TYPE_GROUPED, "V", VENDOR_ERICSSON
+    ),
+    1394: VendorID(
+        "Backward-TTC-Charging-Headers", 1394, TYPE_GROUPED, "V", VENDOR_ERICSSON
+    ),
+    1395: VendorID("Charging-Area", 1395, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1396: VendorID(
+        "Carrier-Information", 1396, TYPE_OCTET_STRING, "V", VENDOR_ERICSSON
+    ),
+    1397: VendorID(
+        "Additional-User-Category", 1397, TYPE_OCTET_STRING, "V", VENDOR_ERICSSON
+    ),
+    1398: VendorID(
+        "Flexible-Charging-Info", 1398, TYPE_OCTET_STRING, "V", VENDOR_ERICSSON
+    ),
+    1406: VendorID(
+        "Forward-TTC-Charging-Parameters", 1406, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1407: VendorID(
+        "Backward-TTC-Charging-Parameters", 1407, TYPE_UTF8_STRING, "V", 193
+    ),
+    1433: VendorID("AS-Type", 1433, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1460: VendorID(
+        "Transaction-SIP-Message", 1460, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1463: VendorID("Subscriber-Type", 1463, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1464: VendorID("UC-Mobility-Call-Leg", 1464, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1465: VendorID("Interim-Reason", 1465, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1477: VendorID("Ro-Status", 1477, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1478: VendorID("Ro-Information", 1478, TYPE_GROUPED, "V", VENDOR_ERICSSON),
+    1527: VendorID(
+        "Analyzed-B-Number-Type", 1527, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1531: VendorID("Caller-Category", 1531, TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON),
+    1532: VendorID("Caller-Sub-Category", 1532, TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON),
+    1533: VendorID("Caller-Treatment", 1533, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1536: VendorID(
+        "Caller-Category-Presentation", 1536, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    2023: VendorID(
+        "Carrier-Select-Routing-Information", 2023, TYPE_UTF8_STRING, "VM", 10415
+    ),
+    2024: VendorID(
+        "Number-Portability-Routing-Information", 2024, TYPE_UTF8_STRING, "VM", 10415
+    ),
+    2030: VendorID("MMTel-Information", 2030, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    2035: VendorID(
+        "Associated-Party-Address", 2035, TYPE_UTF8_STRING, "VM", VENDOR_3GPP
+    ),
+    2036: VendorID("SDP-Type", 2036, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
+    2048: VendorID("Supplementary-Service", 2048, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    2301: VendorID(
+        "SIP-Request-Timestamp-Fraction", 2301, TYPE_UNSIGNED_32, "VM", 10415
+    ),
+    2302: VendorID(
+        "SIP-Response-Timestamp-Fraction", 2302, TYPE_UNSIGNED_32, "VM", 10415
+    ),
+    2304: VendorID("CUG-Information", 2304, TYPE_OCTET_STRING, "VM", VENDOR_3GPP),
+    2320: VendorID("Outgoing-Session-Id", 2320, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    2713: VendorID(
+        "IMS-Visited-Network-Identifier", 2713, TYPE_UTF8_STRING, "VM", 10415
+    ),
+    285: VendorID(
+        "Ericsson-Service-Information", 285, TYPE_GROUPED, "V", VENDOR_ERICSSON
+    ),
+    284: VendorID(
+        "IMS-Service-Identification", 284, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    338: VendorID("SIP-Ringing-Timestamp", 338, TYPE_TIME, "V", VENDOR_ERICSSON),
+    3401: VendorID("Reason-Header", 3401, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    3402: VendorID("Instance-id", 3402, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    873: VendorID("Service-Information", 873, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    874: VendorID("PS-Information", 874, TYPE_GROUPED, "VM", VENDOR_3GPP),
+}
 
 
 def is_avp_flag_valid(flags_byte: int, parameter_flag: str | None = None) -> bool:
@@ -44,22 +279,6 @@ def is_avp_flag_valid(flags_byte: int, parameter_flag: str | None = None) -> boo
 
 
 class EricssonAVPDatabase:
-    # Vendor IDs
-    VENDOR_DIAMETER = 0
-    VENDOR_3GPP = 10415
-    VENDOR_ERICSSON = 193
-
-    # AVP Type Codes
-    TYPE_OCTET_STRING = 0
-    TYPE_INTEGER_32 = 1
-    TYPE_UNSIGNED_32 = 2
-    TYPE_UTF8_STRING = 4
-    TYPE_GROUPED = 8
-    TYPE_TIME = 9
-    TYPE_ENUMERATED = 10
-    TYPE_DIAMETER_IDENTITY = 11
-    TYPE_ADDRESS = 12
-
     def __init__(self):
         self.avp_db = {}
         self._build_avp_database()
@@ -170,6 +389,18 @@ class EricssonCDRParser:
                 f"Invalid Command-Code: {int.from_bytes(cmd_bytes)} (expected 271 for accounting)"
             )
 
+        # end_idx = self.index + msg_length  # msg_length includes the header
+        # self.index += self.HEADER_SIZE
+        # code, vendor_id, name, value = [], [], [], []
+        # while self.index < end_idx:
+        #     if (avp := self.parse_avp(self.binary_data[self.index : end_idx])) is None:
+        #         self.index = end_idx  # Reject message
+        #         return None
+        #     code.append(avp[0])
+        #     vendor_id.append(avp[1])
+        #     name.append(avp[2])
+        #     value.append(avp[3])
+
         # Build header dictionary
         return {
             "length": msg_length,
@@ -178,22 +409,33 @@ class EricssonCDRParser:
             "hop_by_hop_id": hbh_id,
             "end_to_end_id": e2e_id,
             "message_type": "ACR" if flag_bits["R"] else "ACA",
+            # "code": code,
+            # "vendor_id": vendor_id,
+            # "name": name,
+            # "value": value,
         }
 
-    def parse_avp(self, binary_data, variant):
+    def parse_avp(self, binary_data) -> Tuple | None:
         """Parse a single AVP from binary data"""
         if len(binary_data) < 8:
             raise ValueError("Insufficient data for AVP header")
 
-        # Parse AVP header (8 bytes)
-        avp_code, flags, avp_length = struct.unpack(">IBB", binary_data[0:6])
-        avp_length = (avp_length << 16) | struct.unpack(">H", binary_data[6:8])[0]
+        i = 0
+        while (avp_code := int.from_bytes(binary_data[i : i + 4])) == 0:
+            i += 1
+
+        # Parse the rest of AVP header (8 bytes)
+        flags = binary_data[i + 4]
+        avp_length = int.from_bytes(binary_data[i + 5 : i + 8])
 
         # Check if we have enough data
         if len(binary_data) < avp_length:
-            raise ValueError(
-                f"AVP length {avp_length} exceeds available data {len(binary_data)}"
-            )
+            print(
+                f"AVP length {avp_length} differs from available data {len(binary_data)}"
+            )  # TODO: log this
+            return None
+
+        self.index += i + avp_length
 
         # Extract vendor ID if present
         vendor_id = EricssonAVPDatabase.VENDOR_DIAMETER
@@ -201,7 +443,7 @@ class EricssonCDRParser:
         if flags & 0x80:  # Vendor flag set
             if avp_length < 12:
                 raise ValueError("AVP with vendor flag requires at least 12 bytes")
-            vendor_id = struct.unpack(">I", binary_data[8:12])[0]
+            vendor_id = struct.unpack(">I", binary_data[i + 8 : i + 12])[0]
             header_size = 12
 
         # Get AVP definition
@@ -209,56 +451,52 @@ class EricssonCDRParser:
 
         # Handle unknown AVP
         if not avp_def:
-            return {
-                "code": avp_code,
-                "vendor_id": vendor_id,
-                "name": f"Unknown_{avp_code}",
-                "type": "OctetString",
-                "value": binary_data[header_size:avp_length],
-            }, binary_data[avp_length:]
+            return (
+                avp_code,
+                vendor_id,
+                f"Unknown_{avp_code}",
+                binary_data[i + header_size : i + avp_length],
+            )
 
         assert is_avp_flag_valid(flags, avp_def["flags"]), (
             f"Invalid AVP flags: {bin(flags)}"
         )
 
         # Parse value based on type
-        value_data = binary_data[header_size:avp_length]
+        value_data = binary_data[i + header_size : i + avp_length]
         avp_type = avp_def["type"]
 
         if avp_type == EricssonAVPDatabase.TYPE_GROUPED:
-            value = self.parse_grouped_avp(value_data, variant, avp_def["name"])
+            value = self.parse_grouped_avp(value_data, avp_def["name"])
         else:
             value = self.parse_simple_value(value_data, avp_type)
 
-        return {
-            "code": avp_code,
-            "vendor_id": vendor_id,
-            "name": avp_def["name"],
-            "type": avp_type,
-            "value": value,
-        }, binary_data[avp_length:]
+        return (
+            avp_code,
+            vendor_id,
+            avp_def["name"],
+            value,
+        )
 
-    def parse_grouped_avp(self, binary_data, variant, grouped_name):
+    def parse_grouped_avp(self, binary_data, grouped_name):
         """Parse a grouped AVP (recursive)"""
         avps = []
         data = binary_data
 
         # Handle variant-specific grouping rules
-        if grouped_name == "Ericsson-Service-Information" and variant == 1:
+        if grouped_name == "Ericsson-Service-Information":
             # Variant-1 specific structure
             while data:
-                avp, data = self.parse_avp(data, variant)
+                avp, data = self.parse_avp(data)
                 avps.append(avp)
 
-        elif grouped_name == "IMS-Information" and variant == 2:
+        elif grouped_name == "IMS-Information":
             # Variant-2 specific structure
             while data:
-                avp, data = self.parse_avp(data, variant)
+                avp, data = self.parse_avp(data)
                 # Special handling for Event-Type subgroup
                 if avp["name"] == "Event-Type":
-                    avp["value"] = self.parse_grouped_avp(
-                        avp["value"], variant, "Event-Type"
-                    )
+                    avp["value"] = self.parse_grouped_avp(avp["value"], "Event-Type")
                 avps.append(avp)
 
         else:
@@ -342,11 +580,11 @@ class EricssonCDRParser:
         return 2
 
 
-if __name__ == "__main__":
+def run():
     import gzip
     from rich.progress import Progress
 
-    file = Path("/home/rsilva/volte_claro/").ls()[0]
+    file = Path("/home/rsilva/volte_claro/").ls().shuffle()[0]
     # Read CDR file
     with gzip.open(file, "rb") as f:
         binary_data = f.read()
@@ -357,16 +595,21 @@ if __name__ == "__main__":
         total = len(binary_data)
         task = progress.add_task("[red]Reading Headers...", total=total)
         i = 0
-        header = parser.parse_header(i)
 
-        while header is not None:
-            i = parser.index + header["length"]
-            progress.update(
-                task,
-                description=f"[green]Position: {i}, Header: {header}",
-                completed=i,
-            )
-            header = parser.parse_header(i)
+        while parser.index < total:
+            if (header := parser.parse_header(i)) is not None:
+                i = parser.index + header["length"]
+                progress.update(
+                    task,
+                    description=f"[green]Position: {i}, Header: {header}",
+                    completed=i,
+                )
+
+
+if __name__ == "__main__":
+    import typer
+
+    typer.run(run)
 
     # parsed_cdr = parser.parse_message(binary_data)
 
