@@ -278,51 +278,6 @@ def is_avp_flag_valid(flags_byte: int, parameter_flag: str | None = None) -> boo
     return flags_string == parameter_flag
 
 
-class EricssonAVPDatabase:
-    def __init__(self):
-        self.avp_db = {}
-        self._build_avp_database()
-
-    def _build_avp_database(self):
-        def add_avp(code, vendor, name, avp_type, flags=None, variant=None):
-            """Helper function to add AVP definitions
-            Flags are only applicable to ACR messages, None indicates ACA messages
-            """
-            key = (code, vendor)
-            self.avp_db[key] = {
-                "name": name,
-                "type": avp_type,
-                "flags": flags,
-                "variant": variant,
-            }
-
-        # Common AVPs (both variants)
-        add_avp(1, self.VENDOR_DIAMETER, "User-Name", self.TYPE_UTF8_STRING)
-        add_avp(263, self.VENDOR_DIAMETER, "Session-Id", self.TYPE_UTF8_STRING, "M")
-        add_avp(264, self.VENDOR_DIAMETER, "Origin-Host", self.TYPE_DIAMETER_IDENTITY)
-        add_avp(296, self.VENDOR_DIAMETER, "Origin-Realm", self.TYPE_DIAMETER_IDENTITY)
-        # ... (add all common AVPs from Tables 3/4)
-
-        # Variant-1 specific AVPs (Table 3)
-        add_avp(
-            285,
-            self.VENDOR_ERICSSON,
-            "Ericsson-Service-Information",
-            self.TYPE_GROUPED,
-            1,
-        )
-        add_avp(1264, self.VENDOR_ERICSSON, "Transaction-Info", self.TYPE_GROUPED, 1)
-        # ... (add all Variant-1 specific AVPs)
-
-        # Variant-2 specific AVPs (Table 4)
-        add_avp(876, self.VENDOR_3GPP, "IMS-Information", self.TYPE_GROUPED, 2)
-        add_avp(873, self.VENDOR_3GPP, "Service-Information", self.TYPE_GROUPED, 2)
-        # ... (add all Variant-2 specific AVPs)
-
-    def get_avp_definition(self, code, vendor_id):
-        return self.avp_db.get((code, vendor_id))
-
-
 class EricssonCDRParser:
     DIAMETER_HEADER_FORMAT = ">B3sB3sIII"  # Big-endian format
     HEADER_SIZE = 20  # Fixed 20-byte header
@@ -330,7 +285,6 @@ class EricssonCDRParser:
     PREFIX_HEADER_LENGTH = 2
 
     def __init__(self, binary_data: bytes):
-        self.avp_db = EricssonAVPDatabase()
         self.binary_data = binary_data
         self.index = 0
 
@@ -389,18 +343,15 @@ class EricssonCDRParser:
                 f"Invalid Command-Code: {int.from_bytes(cmd_bytes)} (expected 271 for accounting)"
             )
 
-        # end_idx = self.index + msg_length  # msg_length includes the header
-        # self.index += self.HEADER_SIZE
-        # code, vendor_id, name, value = [], [], [], []
-        # while self.index < end_idx:
-        #     if (avp := self.parse_avp(self.binary_data[self.index : end_idx])) is None:
-        #         self.index = end_idx  # Reject message
-        #         return None
-        #     code.append(avp[0])
-        #     vendor_id.append(avp[1])
-        #     name.append(avp[2])
-        #     value.append(avp[3])
-
+        end_idx = self.index + msg_length  # msg_length includes the header
+        self.index += self.HEADER_SIZE
+        avps = {}
+        current_block = self.binary_data[self.index : end_idx]
+        while current_block:
+            name, value, current_block = self.parse_avp(current_block)
+            if value is None:
+                break
+            avps[name] = value
         # Build header dictionary
         return {
             "length": msg_length,
@@ -409,142 +360,100 @@ class EricssonCDRParser:
             "hop_by_hop_id": hbh_id,
             "end_to_end_id": e2e_id,
             "message_type": "ACR" if flag_bits["R"] else "ACA",
-            # "code": code,
-            # "vendor_id": vendor_id,
-            # "name": name,
-            # "value": value,
+            "avps": avps,
         }
 
-    def parse_avp(self, binary_data) -> Tuple | None:
+    def parse_avp(self, binary_data) -> Tuple:
         """Parse a single AVP from binary data"""
         if len(binary_data) < 8:
-            raise ValueError("Insufficient data for AVP header")
+            self.index += len(binary_data)
+            return (
+                None,
+                None,
+                binary_data[self.index :],
+            )  # Not enough data for AVP header
 
         i = 0
-        while (avp_code := int.from_bytes(binary_data[i : i + 4])) == 0:
-            i += 1
 
-        # Parse the rest of AVP header (8 bytes)
-        flags = binary_data[i + 4]
-        avp_length = int.from_bytes(binary_data[i + 5 : i + 8])
-
-        # Check if we have enough data
-        if len(binary_data) < avp_length:
-            print(
-                f"AVP length {avp_length} differs from available data {len(binary_data)}"
-            )  # TODO: log this
-            return None
+        while True:
+            # Parse AVP header (8 bytes)
+            avp_code, flags, avp_length = struct.unpack(">IBB", binary_data[i : i + 6])
+            avp_length = (avp_length << 16) | struct.unpack(
+                ">H", binary_data[i + 6 : i + 8]
+            )[0]
+            if not (avp_def := AVP_DB.get(avp_code)) or len(binary_data) < avp_length:
+                i += 1
+                continue  # Skip unknown AVPs
+            break
 
         self.index += i + avp_length
 
         # Extract vendor ID if present
-        vendor_id = EricssonAVPDatabase.VENDOR_DIAMETER
         header_size = 8
         if flags & 0x80:  # Vendor flag set
             if avp_length < 12:
                 raise ValueError("AVP with vendor flag requires at least 12 bytes")
-            vendor_id = struct.unpack(">I", binary_data[i + 8 : i + 12])[0]
+            # vendor_id = struct.unpack(">I", binary_data[i + 8 : i + 12])[0] #just for debug
             header_size = 12
 
-        # Get AVP definition
-        avp_def = self.avp_db.get_avp_definition(avp_code, vendor_id)
-
-        # Handle unknown AVP
-        if not avp_def:
-            return (
-                avp_code,
-                vendor_id,
-                f"Unknown_{avp_code}",
-                binary_data[i + header_size : i + avp_length],
-            )
-
-        assert is_avp_flag_valid(flags, avp_def["flags"]), (
+        assert is_avp_flag_valid(flags, avp_def.acr_flag), (
             f"Invalid AVP flags: {bin(flags)}"
         )
 
-        # Parse value based on type
         value_data = binary_data[i + header_size : i + avp_length]
-        avp_type = avp_def["type"]
 
-        if avp_type == EricssonAVPDatabase.TYPE_GROUPED:
-            value = self.parse_grouped_avp(value_data, avp_def["name"])
+        if (avp_type := avp_def.type) == TYPE_GROUPED:
+            value = self.parse_grouped_avp(value_data, avp_def.avp)
         else:
             value = self.parse_simple_value(value_data, avp_type)
 
-        return (
-            avp_code,
-            vendor_id,
-            avp_def["name"],
-            value,
-        )
+        return avp_def.avp, value, binary_data[i + avp_length :]
+        # Return tuple of (AVP code, AVP name, AVP value) and remaining data
 
     def parse_grouped_avp(self, binary_data, grouped_name):
         """Parse a grouped AVP (recursive)"""
-        avps = []
-        data = binary_data
-
-        # Handle variant-specific grouping rules
-        if grouped_name == "Ericsson-Service-Information":
-            # Variant-1 specific structure
-            while data:
-                avp, data = self.parse_avp(data)
-                avps.append(avp)
-
-        elif grouped_name == "IMS-Information":
-            # Variant-2 specific structure
-            while data:
-                avp, data = self.parse_avp(data)
-                # Special handling for Event-Type subgroup
-                if avp["name"] == "Event-Type":
-                    avp["value"] = self.parse_grouped_avp(avp["value"], "Event-Type")
-                avps.append(avp)
-
-        else:
-            # Default grouping behavior
-            while data:
-                avp, data = self.parse_avp(data, variant)
-                avps.append(avp)
-
+        avps = {}
+        current_block = binary_data
+        # Default grouping behavior
+        while True:
+            name, value, current_block = self.parse_avp(current_block)
+            if value is not None:
+                avps[name] = value
+            if not current_block:
+                break
         return avps
 
     def parse_simple_value(self, binary_data, avp_type):
         """Parse simple AVP types"""
-        match avp_type:
-            case EricssonAVPDatabase.TYPE_INTEGER_32:
-                return struct.unpack(">i", binary_data)[0]
+        if avp_type in (TYPE_UTF8_STRING, TYPE_DIAMETER_IDENTITY):
+            return binary_data.decode("utf-8")
+        elif avp_type == TYPE_OCTET_STRING:
+            return binary_data
+        elif avp_type == TYPE_TIME:
+            seconds = struct.unpack(">I", binary_data)[0]
+            return self.NTP_EPOCH + timedelta(seconds=seconds)
+        elif avp_type in (TYPE_ENUMERATED, TYPE_INTEGER_32):
+            # Enumerated and Integer 32 are both 4-byte signed integers
+            if len(binary_data) != 4:
+                raise ValueError(
+                    f"Expected 4 bytes for {avp_type}, got {len(binary_data)}"
+                )
+            return struct.unpack(">i", binary_data)[0]
+        elif avp_type == TYPE_ADDRESS:
+            # Address format: 1 byte family + address bytes
+            family = binary_data[0]
+            address_bytes = binary_data[1:]
+            if family == 1:  # IPv4
+                return socket.inet_ntoa(address_bytes)
+            elif family == 2:  # IPv6
+                return socket.inet_ntop(socket.AF_INET6, address_bytes)
+            else:
+                return address_bytes
+        elif avp_type == TYPE_UNSIGNED_32:
+            return struct.unpack(">I", binary_data)[0]
 
-            case EricssonAVPDatabase.TYPE_UNSIGNED_32:
-                return struct.unpack(">I", binary_data)[0]
-
-            case EricssonAVPDatabase.TYPE_UTF8_STRING:
-                return binary_data.decode("utf-8")
-
-            case EricssonAVPDatabase.TYPE_OCTET_STRING:
-                return binary_data
-
-            case EricssonAVPDatabase.TYPE_TIME:
-                seconds = struct.unpack(">I", binary_data)[0]
-                return self.NTP_EPOCH + timedelta(seconds=seconds)
-
-            case EricssonAVPDatabase.TYPE_ENUMERATED:
-                return struct.unpack(">i", binary_data)[0]
-
-            case EricssonAVPDatabase.TYPE_DIAMETER_IDENTITY:
-                return binary_data.decode("utf-8")
-
-            case EricssonAVPDatabase.TYPE_ADDRESS:
-                # Address format: 1 byte family + address bytes
-                family = binary_data[0]
-                address_bytes = binary_data[1:]
-                if family == 1:  # IPv4
-                    return socket.inet_ntoa(address_bytes)
-                elif family == 2:  # IPv6
-                    return socket.inet_ntop(socket.AF_INET6, address_bytes)
-                else:
-                    return address_bytes  # Unknown format
-
-            case _:
-                return binary_data  # Fallback for unknown types
+        else:
+            return binary_data  # Fallback for unknown types
 
     def parse_message(self, binary_data):
         """Parse complete Diameter message"""
@@ -558,7 +467,7 @@ class EricssonCDRParser:
         # Parse all AVPs
         avps = []
         while data:
-            avp, data = self.parse_avp(data, variant)
+            avp, data = self.parse_avp(data)
             avps.append(avp)
 
         return {"header": header, "variant": variant, "avps": avps}
@@ -584,7 +493,7 @@ def run():
     import gzip
     from rich.progress import Progress
 
-    file = Path("/home/rsilva/volte_claro/").ls().shuffle()[0]
+    file = Path("/home/rsilva/volte_claro/").ls()[0]
     # Read CDR file
     with gzip.open(file, "rb") as f:
         binary_data = f.read()
