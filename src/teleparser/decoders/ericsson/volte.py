@@ -1,6 +1,8 @@
+
 import struct
 from collections import namedtuple
 from datetime import datetime, timedelta
+from dataclasses import dataclass
 from typing import Tuple
 import socket
 from fastcore.xtras import Path
@@ -19,11 +21,22 @@ TYPE_ENUMERATED = 10
 TYPE_DIAMETER_IDENTITY = 11
 TYPE_ADDRESS = 12
 
-VendorID = namedtuple(
-    "VendorID",
-    ["avp", "avp_code", "type", "acr_flag", "vendor_id"],
-    defaults=(None, None),
-)
+counter = 0
+
+@dataclass
+class VendorID:
+    """Data class to represent a Diameter AVP with vendor information"""
+    avp: str
+    avp_code: int
+    type: int
+    acr_flag: str | None = None
+    vendor_id: int | None = None
+
+MTAS = {
+    1, 18, 55, 259, 263, 264, 283, 286, 293, 296, 333, 336, 337, 338, 340, 444, 450, 461, 480, 485,
+    824, 827, 828, 829, 830, 831, 832, 834, 835, 839, 840, 841, 842, 844, 845, 848, 861, 862, 864,
+    1160, 1250, 1261, 1263, 1265, 1266, 1267, 1305, 2023, 2024, 2301, 2302, 2711, 2712, 2713, 3402
+}
 
 AVP_DB = {
     1: VendorID("User-Name", 1, TYPE_UTF8_STRING),
@@ -33,7 +46,7 @@ AVP_DB = {
     259: VendorID("Acct-Application-Id", 259, TYPE_UNSIGNED_32, "M"),
     263: VendorID("Session-Id", 263, TYPE_UTF8_STRING, "M"),
     264: VendorID("Origin-Host", 264, TYPE_DIAMETER_IDENTITY),
-    266: VendorID("Vendor-Id", 266, TYPE_UNSIGNED_32),
+    266: VendorID("Vendor-Id", 266, TYPE_UNSIGNED_32), 
     268: VendorID("Result-Code", 268, TYPE_UNSIGNED_32, "M"),
     283: VendorID("Destination-Realm", 283, TYPE_DIAMETER_IDENTITY),
     293: VendorID("Destination-Host", 293, TYPE_DIAMETER_IDENTITY, "M"),
@@ -287,8 +300,11 @@ class EricssonCDRParser:
     def __init__(self, binary_data: bytes):
         self.binary_data = binary_data
         self.index = 0
+        self.avp_map = {k: v for k, v in AVP_DB.items() if k in MTAS}
+        self.fail = 0
+        self.success = 0
 
-    def parse_header(self, index: int) -> dict | None:
+    def parse_next_block(self) -> dict | None:
         """Parse Diameter header (version 1 only)
         The format string ">B3sB3sIII" defines how to interpret the 20-byte Diameter protocol header:
         Format Components:
@@ -302,17 +318,18 @@ class EricssonCDRParser:
         I - Unsigned int (4 bytes) → End-to-End Identifier
         Total: 1 + 3 + 1 + 3 + 4 + 4 + 4 = 20 bytes
         """
-        self.index = index + 2  # Skip first 2 bytes
+        self.index += 2  # Skip first 2 bytes
         i = self.index
         j = i + self.HEADER_SIZE
-        if not (header := self.binary_data[i:j]):
-            return None
-
+        header = self.binary_data[i:j]
+        
         # Validate minimum length
         if len(header) < self.HEADER_SIZE:
-            raise ValueError(
-                f"Header requires {self.HEADER_SIZE} bytes, got {len(header)}"
-            )
+            # raise ValueError(
+            #     f"Header requires {self.HEADER_SIZE} bytes, got {len(header)}"
+            # )
+            self.index += len(header)  # Skip this block
+            return None
 
         # Unpack all header fields
         (version, msg_len_bytes, flags, cmd_bytes, app_id, hbh_id, e2e_id) = (
@@ -345,16 +362,18 @@ class EricssonCDRParser:
 
         end_idx = self.index + msg_length  # msg_length includes the header
         self.index += self.HEADER_SIZE
-        avps = {}
+        avps: dict[str, int | str] = {}
         current_block = self.binary_data[self.index : end_idx]
         while current_block:
-            name, value, current_block = self.parse_avp(current_block)
-            if value is None:
-                break
-            avps[name] = value
+            name, value, current_block, offset = self.parse_avp(current_block)
+            if value is not None:
+                avps[name] = value
+                self.success += 1
+            else:
+                self.fail += 1
+            self.index += offset  # Move index forward by the size of the parsed AVP
         # Build header dictionary
         return {
-            "length": msg_length,
             "flags": "".join(k for k, v in flag_bits.items() if v),
             "application_id": app_id,
             "hop_by_hop_id": hbh_id,
@@ -363,30 +382,43 @@ class EricssonCDRParser:
             "avps": avps,
         }
 
-    def parse_avp(self, binary_data) -> Tuple:
+    def parse_avp(self, current_block) -> Tuple:
         """Parse a single AVP from binary data"""
-        if len(binary_data) < 8:
-            self.index += len(binary_data)
-            return (
-                None,
-                None,
-                binary_data[self.index :],
-            )  # Not enough data for AVP header
-
+        
         i = 0
 
         while True:
             # Parse AVP header (8 bytes)
-            avp_code, flags, avp_length = struct.unpack(">IBB", binary_data[i : i + 6])
-            avp_length = (avp_length << 16) | struct.unpack(
-                ">H", binary_data[i + 6 : i + 8]
-            )[0]
-            if not (avp_def := AVP_DB.get(avp_code)) or len(binary_data) < avp_length:
+            if (offset:= len(current_block[i:])) < 8:
+                return (
+                    None,
+                    None,
+                    current_block[offset:],
+                    offset
+                )  # Not enough data for AVP header
+
+            avp_code, flags, avp_length = struct.unpack(
+                ">IBB", current_block[i : i + 6]
+            )
+            if not (avp_def := self.avp_map.get(avp_code)):
                 i += 1
                 continue  # Skip unknown AVPs
+            avp_length = (avp_length << 16) | struct.unpack(
+                ">H", current_block[i + 6 : i + 8]
+            )[0]
+            if len(current_block[i:]) < avp_length or avp_length < 8:
+                i += 1
+                continue  # Skip unknown AVPs
+                # offset = len(current_block[i:])
+                # return (
+                #     None,
+                #     None,
+                #     current_block[offset :],
+                #     offset
+                # )
             break
 
-        self.index += i + avp_length
+        offset = i + avp_length
 
         # Extract vendor ID if present
         header_size = 8
@@ -396,42 +428,57 @@ class EricssonCDRParser:
             # vendor_id = struct.unpack(">I", binary_data[i + 8 : i + 12])[0] #just for debug
             header_size = 12
 
-        assert is_avp_flag_valid(flags, avp_def.acr_flag), (
-            f"Invalid AVP flags: {bin(flags)}"
-        )
+        if not is_avp_flag_valid(flags, avp_def.acr_flag):
+            # print(f"Invalid AVP binary flag: {bin(flags)}")
+            return (
+                    None,
+                    None,
+                    current_block[offset :],
+                    offset
+                )  # Invalid AVP flags, skip this AVP
 
-        value_data = binary_data[i + header_size : i + avp_length]
+        value_data = current_block[i + header_size : i + avp_length]
 
-        if (avp_type := avp_def.type) == TYPE_GROUPED:
-            value = self.parse_grouped_avp(value_data, avp_def.avp)
-        else:
-            value = self.parse_simple_value(value_data, avp_type)
-
-        return avp_def.avp, value, binary_data[i + avp_length :]
+        try:
+            if (avp_type := avp_def.type) == TYPE_GROUPED:
+                value, offset = self.parse_grouped_avp(value_data)
+            else:
+                value = self.parse_simple_value(value_data, avp_type)
+        except UnicodeDecodeError as e:
+            # print(f"Error parsing AVP {avp_def.avp} with code {avp_code}: {value_data}")
+            return (
+                None,
+                None,
+                current_block[offset :],
+                offset
+            )
+        return avp_def.avp, value, current_block[offset :], offset
         # Return tuple of (AVP code, AVP name, AVP value) and remaining data
 
-    def parse_grouped_avp(self, binary_data, grouped_name):
+    def parse_grouped_avp(self, binary_data):
         """Parse a grouped AVP (recursive)"""
         avps = {}
         current_block = binary_data
-        # Default grouping behavior
-        while True:
-            name, value, current_block = self.parse_avp(current_block)
+        total_offset = 0
+        while current_block:
+            name, value, current_block, offset = self.parse_avp(current_block)
             if value is not None:
                 avps[name] = value
-            if not current_block:
-                break
-        return avps
+            total_offset += offset
+        return avps, total_offset
 
-    def parse_simple_value(self, binary_data, avp_type):
+    def parse_simple_value(self, binary_view, avp_type):
         """Parse simple AVP types"""
-        if avp_type in (TYPE_UTF8_STRING, TYPE_DIAMETER_IDENTITY):
+        binary_data = binary_view.tobytes()
+        if avp_type in (TYPE_OCTET_STRING, TYPE_UTF8_STRING, TYPE_DIAMETER_IDENTITY):
             return binary_data.decode("utf-8")
-        elif avp_type == TYPE_OCTET_STRING:
-            return binary_data
+        # elif avp_type == TYPE_OCTET_STRING:
+        #     return binary_data
         elif avp_type == TYPE_TIME:
             seconds = struct.unpack(">I", binary_data)[0]
-            return self.NTP_EPOCH + timedelta(seconds=seconds)
+            return (self.NTP_EPOCH + timedelta(seconds=seconds)).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )  # Convert to human-readable format
         elif avp_type in (TYPE_ENUMERATED, TYPE_INTEGER_32):
             # Enumerated and Integer 32 are both 4-byte signed integers
             if len(binary_data) != 4:
@@ -453,16 +500,13 @@ class EricssonCDRParser:
             return struct.unpack(">I", binary_data)[0]
 
         else:
-            return binary_data  # Fallback for unknown types
+            return binary_data.decode("utf-8")  # Fallback for unknown types
 
     def parse_message(self, binary_data):
         """Parse complete Diameter message"""
         # Parse header
-        header, data = self.parse_header(binary_data)
+        header, data = self.parse_next_block(binary_data)
         print(header)
-
-        # Detect variant based on first AVP
-        variant = self.detect_variant(data)
 
         # Parse all AVPs
         avps = []
@@ -472,47 +516,35 @@ class EricssonCDRParser:
 
         return {"header": header, "variant": variant, "avps": avps}
 
-    def detect_variant(self, avp_data):
-        """Detect charging variant from AVP structure"""
-        # Try to parse the first AVP without knowing variant
-        first_avp, _ = self.parse_avp(avp_data, None)
-
-        # Variant-1 uses Ericsson-specific grouped AVPs
-        if first_avp["name"] == "Ericsson-Service-Information":
-            return 1
-
-        # Variant-2 uses standard 3GPP grouped AVPs
-        if first_avp["name"] in ["Service-Information", "IMS-Information"]:
-            return 2
-
-        # Default to Variant-2 (more recent standard)
-        return 2
-
 
 def run():
     import gzip
+    import json
     from rich.progress import Progress
 
     file = Path("/home/rsilva/volte_claro/").ls()[0]
     # Read CDR file
     with gzip.open(file, "rb") as f:
-        binary_data = f.read()
-
+        binary_data = memoryview(f.read())
+    blocks = []
     # Parse CDR
     parser = EricssonCDRParser(binary_data)
     with Progress(transient=True) as progress:
         total = len(binary_data)
         task = progress.add_task("[red]Reading Headers...", total=total)
-        i = 0
 
         while parser.index < total:
-            if (header := parser.parse_header(i)) is not None:
-                i = parser.index + header["length"]
-                progress.update(
-                    task,
-                    description=f"[green]Position: {i}, Header: {header}",
-                    completed=i,
-                )
+            if (block := parser.parse_next_block()) is not None:
+                blocks.append(block)
+            progress.update(
+                task,
+                description=f"[green]Position: {parser.index}", #, Block: {block}",
+                advance=parser.index / total,
+            )
+            
+    json.dump(blocks, (Path(__file__).parent / f'{file.stem}.json').open("w"), ensure_ascii=False, indent=4)
+    print(f"Blocos ignorados: {parser.fail}")
+    print(f"Blocos com sucesso: {parser.success}")
 
 
 if __name__ == "__main__":
