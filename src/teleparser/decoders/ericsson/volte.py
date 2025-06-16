@@ -584,10 +584,6 @@ class EricssonCDRParser:
             )  # Convert to human-readable format
         elif avp_type in (TYPE_ENUMERATED, TYPE_INTEGER_32):
             # Enumerated and Integer 32 are both 4-byte signed integers
-            if len(binary_data) != 4:
-                raise ValueError(
-                    f"Expected 4 bytes for {avp_type}, got {len(binary_data)}"
-                )
             return struct.unpack(">i", binary_data)[0]
         elif avp_type == TYPE_ADDRESS:
             # Address format: 1 byte family + address bytes
