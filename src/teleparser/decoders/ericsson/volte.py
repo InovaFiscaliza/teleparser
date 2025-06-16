@@ -1,11 +1,10 @@
-
 import struct
-from collections import namedtuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from typing import Tuple
 import socket
 from fastcore.xtras import Path
+from binascii import hexlify
 
 # Vendor IDs
 VENDOR_3GPP = 10415
@@ -23,21 +22,144 @@ TYPE_ADDRESS = 12
 
 counter = 0
 
+
 @dataclass
 class VendorID:
     """Data class to represent a Diameter AVP with vendor information"""
+
     avp: str
     avp_code: int
     type: int
     acr_flag: str | None = None
     vendor_id: int | None = None
 
-MTAS = {
-    1, 18, 55, 259, 263, 264, 283, 286, 293, 296, 333, 336, 337, 338, 340, 444, 450, 461, 480, 485,
-    824, 827, 828, 829, 830, 831, 832, 834, 835, 839, 840, 841, 842, 844, 845, 848, 861, 862, 864,
-    1160, 1250, 1261, 1263, 1265, 1266, 1267, 1305, 2023, 2024, 2301, 2302, 2711, 2712, 2713, 3402
-}
 
+MTAS = {
+    1,
+    23,
+    55,
+    85,
+    259,
+    263,
+    264,
+    268,
+    283,
+    284,
+    293,
+    296,
+    338,
+    420,
+    443,
+    444,
+    450,
+    459,
+    460,
+    461,
+    480,
+    485,
+    650,
+    701,
+    701,
+    824,
+    826,
+    827,
+    828,
+    829,
+    830,
+    831,
+    832,
+    834,
+    835,
+    839,
+    840,
+    841,
+    842,
+    844,
+    845,
+    861,
+    862,
+    863,
+    864,
+    874,
+    876,
+    878,
+    882,
+    1061,
+    1127,
+    1128,
+    1129,
+    1130,
+    1131,
+    1133,
+    1141,
+    1142,
+    1153,
+    1160,
+    1206,
+    1207,
+    1250,
+    1251,
+    1256,
+    1257,
+    1262,
+    1263,
+    1264,
+    1265,
+    1266,
+    1267,
+    1302,
+    1303,
+    1307,
+    1308,
+    1314,
+    1315,
+    1330,
+    1346,
+    1357,
+    1371,
+    1372,
+    1373,
+    1380,
+    1384,
+    1388,
+    1389,
+    1390,
+    1393,
+    1394,
+    1395,
+    1395,
+    1396,
+    1396,
+    1397,
+    1397,
+    1398,
+    1406,
+    1407,
+    1433,
+    1460,
+    1463,
+    1464,
+    1465,
+    1477,
+    1478,
+    1527,
+    1531,
+    1532,
+    1533,
+    1536,
+    2023,
+    2023,
+    2024,
+    2035,
+    2036,
+    2301,
+    2302,
+    2304,
+    2320,
+    2713,
+    3401,
+    3402,
+}
 AVP_DB = {
     1: VendorID("User-Name", 1, TYPE_UTF8_STRING),
     23: VendorID("3GPP-MS-TimeZone", 23, TYPE_OCTET_STRING, "V", VENDOR_3GPP),
@@ -46,7 +168,7 @@ AVP_DB = {
     259: VendorID("Acct-Application-Id", 259, TYPE_UNSIGNED_32, "M"),
     263: VendorID("Session-Id", 263, TYPE_UTF8_STRING, "M"),
     264: VendorID("Origin-Host", 264, TYPE_DIAMETER_IDENTITY),
-    266: VendorID("Vendor-Id", 266, TYPE_UNSIGNED_32), 
+    266: VendorID("Vendor-Id", 266, TYPE_UNSIGNED_32),
     268: VendorID("Result-Code", 268, TYPE_UNSIGNED_32, "M"),
     283: VendorID("Destination-Realm", 283, TYPE_DIAMETER_IDENTITY),
     293: VendorID("Destination-Host", 293, TYPE_DIAMETER_IDENTITY, "M"),
@@ -303,6 +425,7 @@ class EricssonCDRParser:
         self.avp_map = {k: v for k, v in AVP_DB.items() if k in MTAS}
         self.fail = 0
         self.success = 0
+        self.max_i = 0  # Track maximum index reached during parsing
 
     def parse_next_block(self) -> dict | None:
         """Parse Diameter header (version 1 only)
@@ -322,7 +445,7 @@ class EricssonCDRParser:
         i = self.index
         j = i + self.HEADER_SIZE
         header = self.binary_data[i:j]
-        
+
         # Validate minimum length
         if len(header) < self.HEADER_SIZE:
             # raise ValueError(
@@ -365,9 +488,10 @@ class EricssonCDRParser:
         avps: dict[str, int | str] = {}
         current_block = self.binary_data[self.index : end_idx]
         while current_block:
-            name, value, current_block, offset = self.parse_avp(current_block)
-            if value is not None:
-                avps[name] = value
+            avp, offset = self.parse_avp(current_block)
+            current_block = current_block[offset:]  # Move to next AVP
+            if avp is not None:
+                avps.update(avp)
                 self.success += 1
             else:
                 self.fail += 1
@@ -375,50 +499,43 @@ class EricssonCDRParser:
         # Build header dictionary
         return {
             "flags": "".join(k for k, v in flag_bits.items() if v),
-            "application_id": app_id,
+            # "application_id": app_id,
             "hop_by_hop_id": hbh_id,
             "end_to_end_id": e2e_id,
-            "message_type": "ACR" if flag_bits["R"] else "ACA",
-            "avps": avps,
+            # "message_type": "ACR" if flag_bits["R"] else "ACA",
+            **avps,
         }
 
     def parse_avp(self, current_block) -> Tuple:
         """Parse a single AVP from binary data"""
-        
+
         i = 0
 
         while True:
             # Parse AVP header (8 bytes)
-            if (offset:= len(current_block[i:])) < 8:
-                return (
-                    None,
-                    None,
-                    current_block[offset:],
-                    offset
-                )  # Not enough data for AVP header
+            if (offset := len(current_block[i:])) < 8:
+                return None, offset  # Not enough data for AVP header
 
-            avp_code, flags, avp_length = struct.unpack(
-                ">IBB", current_block[i : i + 6]
-            )
+            # avp_code, flags, avp_length = struct.unpack(
+            #     ">IBB", current_block[i : i + 6]
+            # )
+            avp_code = int.from_bytes(current_block[i : i + 4], byteorder="big")
             if not (avp_def := self.avp_map.get(avp_code)):
                 i += 1
                 continue  # Skip unknown AVPs
-            avp_length = (avp_length << 16) | struct.unpack(
-                ">H", current_block[i + 6 : i + 8]
-            )[0]
+            flags = current_block[i + 4]
+            avp_length = int.from_bytes(current_block[i + 5 : i + 8], byteorder="big")
+            # avp_length = (avp_length << 16) | struct.unpack(
+            #     ">H", current_block[i + 6 : i + 8]
+            # )[0]
             if len(current_block[i:]) < avp_length or avp_length < 8:
                 i += 1
                 continue  # Skip unknown AVPs
-                # offset = len(current_block[i:])
-                # return (
-                #     None,
-                #     None,
-                #     current_block[offset :],
-                #     offset
-                # )
             break
 
-        offset = i + avp_length
+        self.max_i = max(self.max_i, i)
+
+        offset: int = i + avp_length
 
         # Extract vendor ID if present
         header_size = 8
@@ -430,30 +547,13 @@ class EricssonCDRParser:
 
         if not is_avp_flag_valid(flags, avp_def.acr_flag):
             # print(f"Invalid AVP binary flag: {bin(flags)}")
-            return (
-                    None,
-                    None,
-                    current_block[offset :],
-                    offset
-                )  # Invalid AVP flags, skip this AVP
+            return None, offset  # Invalid AVP flags, skip this AVP
 
         value_data = current_block[i + header_size : i + avp_length]
 
-        try:
-            if (avp_type := avp_def.type) == TYPE_GROUPED:
-                value, offset = self.parse_grouped_avp(value_data)
-            else:
-                value = self.parse_simple_value(value_data, avp_type)
-        except UnicodeDecodeError as e:
-            # print(f"Error parsing AVP {avp_def.avp} with code {avp_code}: {value_data}")
-            return (
-                None,
-                None,
-                current_block[offset :],
-                offset
-            )
-        return avp_def.avp, value, current_block[offset :], offset
-        # Return tuple of (AVP code, AVP name, AVP value) and remaining data
+        if (avp_type := avp_def.type) == TYPE_GROUPED:
+            return self.parse_grouped_avp(value_data)
+        return {avp_def.avp: self.parse_simple_value(value_data, avp_type)}, offset
 
     def parse_grouped_avp(self, binary_data):
         """Parse a grouped AVP (recursive)"""
@@ -461,9 +561,10 @@ class EricssonCDRParser:
         current_block = binary_data
         total_offset = 0
         while current_block:
-            name, value, current_block, offset = self.parse_avp(current_block)
-            if value is not None:
-                avps[name] = value
+            avp, offset = self.parse_avp(current_block)
+            current_block = current_block[offset:]  # Move to next AVP
+            if avp is not None:
+                avps.update(avp)
             total_offset += offset
         return avps, total_offset
 
@@ -471,9 +572,11 @@ class EricssonCDRParser:
         """Parse simple AVP types"""
         binary_data = binary_view.tobytes()
         if avp_type in (TYPE_OCTET_STRING, TYPE_UTF8_STRING, TYPE_DIAMETER_IDENTITY):
-            return binary_data.decode("utf-8")
-        # elif avp_type == TYPE_OCTET_STRING:
-        #     return binary_data
+            try:
+                return binary_data.decode("utf-8")
+            except UnicodeDecodeError:
+                # If decoding fails, return string representation of raw bytes
+                return binary_data.hex()
         elif avp_type == TYPE_TIME:
             seconds = struct.unpack(">I", binary_data)[0]
             return (self.NTP_EPOCH + timedelta(seconds=seconds)).strftime(
@@ -500,7 +603,7 @@ class EricssonCDRParser:
             return struct.unpack(">I", binary_data)[0]
 
         else:
-            return binary_data.decode("utf-8")  # Fallback for unknown types
+            return binary_data.hex()  # Fallback for unknown types
 
     def parse_message(self, binary_data):
         """Parse complete Diameter message"""
@@ -519,10 +622,12 @@ class EricssonCDRParser:
 
 def run():
     import gzip
-    import json
+    import pandas as pd
     from rich.progress import Progress
 
-    file = Path("/home/rsilva/volte_claro/").ls()[0]
+    file = sorted(
+        Path("/home/rsilva/volte_claro/").ls(), key=lambda f: f.stat().st_size
+    )[0]
     # Read CDR file
     with gzip.open(file, "rb") as f:
         binary_data = memoryview(f.read())
@@ -538,13 +643,18 @@ def run():
                 blocks.append(block)
             progress.update(
                 task,
-                description=f"[green]Position: {parser.index}", #, Block: {block}",
-                advance=parser.index / total,
+                completed=parser.index,
+                total=total,
             )
-            
-    json.dump(blocks, (Path(__file__).parent / f'{file.stem}.json').open("w"), ensure_ascii=False, indent=4)
+
+    # json.dump(blocks, (Path(__file__).parent / f'{file.stem}.json').open("w"), ensure_ascii=False, indent=4)
+    pd.DataFrame(blocks, dtype="string").set_index("hop_by_hop_id").to_csv(
+        (Path(__file__).parent / f"{file.stem}.csv"),
+        # compression="gzip",
+    )
     print(f"Blocos ignorados: {parser.fail}")
     print(f"Blocos com sucesso: {parser.success}")
+    print(f"Max index reached: {parser.max_i}")
 
 
 if __name__ == "__main__":
