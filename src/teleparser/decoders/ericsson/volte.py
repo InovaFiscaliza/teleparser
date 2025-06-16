@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Tuple
 import socket
 from fastcore.xtras import Path
-from binascii import hexlify
 
 # Vendor IDs
 VENDOR_3GPP = 10415
@@ -160,8 +159,140 @@ MTAS = {
     3401,
     3402,
 }
+
+SBG = {
+    1,
+    2,
+    55,
+    259,
+    263,
+    264,
+    283,
+    293,
+    296,
+    336,
+    337,
+    363,
+    364,
+    365,
+    366,
+    444,
+    450,
+    480,
+    485,
+    518,
+    650,
+    824,
+    826,
+    827,
+    828,
+    829,
+    830,
+    831,
+    832,
+    834,
+    835,
+    839,
+    840,
+    841,
+    842,
+    844,
+    845,
+    847,
+    848,
+    861,
+    862,
+    864,
+    882,
+    1087,
+    1088,
+    1089,
+    1090,
+    1091,
+    1092,
+    1093,
+    1094,
+    1095,
+    1096,
+    1178,
+    1182,
+    1252,
+    1253,
+    1263,
+    1265,
+    1266,
+    1267,
+    1298,
+    1305,
+    1436,
+    2301,
+    2302,
+    2713,
+    2819,
+    3402,
+}
+
+CSCF = {
+    1,
+    18,
+    55,
+    259,
+    263,
+    264,
+    283,
+    286,
+    293,
+    296,
+    333,
+    336,
+    337,
+    338,
+    340,
+    444,
+    450,
+    461,
+    480,
+    485,
+    824,
+    827,
+    828,
+    829,
+    830,
+    831,
+    832,
+    834,
+    835,
+    839,
+    840,
+    841,
+    842,
+    844,
+    845,
+    848,
+    861,
+    862,
+    864,
+    1160,
+    1250,
+    1261,
+    1263,
+    1265,
+    1266,
+    1267,
+    1305,
+    2023,
+    2024,
+    2301,
+    2302,
+    2711,
+    2712,
+    2713,
+    3402,
+}
 AVP_DB = {
     1: VendorID("User-Name", 1, TYPE_UTF8_STRING),
+    2: VendorID("3GPP-Charging-Id", 2, TYPE_OCTET_STRING, "V"),
+    18: VendorID("3GPP-SGSN-MCC-MNC", 18, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
     23: VendorID("3GPP-MS-TimeZone", 23, TYPE_OCTET_STRING, "V", VENDOR_3GPP),
     55: VendorID("Event-Timestamp", 55, TYPE_TIME, "M"),
     85: VendorID("Acct-Interim-Interval", 85, TYPE_UNSIGNED_32, "M"),
@@ -171,10 +302,20 @@ AVP_DB = {
     266: VendorID("Vendor-Id", 266, TYPE_UNSIGNED_32),
     268: VendorID("Result-Code", 268, TYPE_UNSIGNED_32, "M"),
     283: VendorID("Destination-Realm", 283, TYPE_DIAMETER_IDENTITY),
+    284: VendorID(
+        "IMS-Service-Identification", 284, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    285: VendorID(
+        "Ericsson-Service-Information", 285, TYPE_GROUPED, "V", VENDOR_ERICSSON
+    ),
+    286: VendorID(
+        "Called-Party-Original-Address", 286, TYPE_UTF8_STRING, "VM", VENDOR_ERICSSON
+    ),
     293: VendorID("Destination-Host", 293, TYPE_DIAMETER_IDENTITY, "M"),
     296: VendorID("Origin-Realm", 296, TYPE_DIAMETER_IDENTITY),
     297: VendorID("Experimental-Result", 297, TYPE_GROUPED),
     298: VendorID("Experimental-Result-Code", 298, TYPE_UNSIGNED_32),
+    338: VendorID("SIP-Ringing-Timestamp", 338, TYPE_TIME, "V", VENDOR_ERICSSON),
     420: VendorID("CC-Time", 420, TYPE_UNSIGNED_32, "M"),
     443: VendorID("Subscription-Id", 443, TYPE_GROUPED, "M"),
     444: VendorID("Subscription-Id-Data", 444, TYPE_UTF8_STRING, "M"),
@@ -211,6 +352,8 @@ AVP_DB = {
     862: VendorID("Node-Functionality", 862, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
     863: VendorID("Service-Specific-Data", 863, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
     864: VendorID("Originator", 864, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
+    873: VendorID("Service-Information", 873, TYPE_GROUPED, "VM", VENDOR_3GPP),
+    874: VendorID("PS-Information", 874, TYPE_GROUPED, "VM", VENDOR_3GPP),
     876: VendorID("IMS-Information", 876, TYPE_GROUPED, "VM", VENDOR_3GPP),
     878: VendorID("LCS-Information", 878, TYPE_GROUPED, "VM", VENDOR_3GPP),
     882: VendorID("Media-Initiator-Flag", 882, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
@@ -361,17 +504,8 @@ AVP_DB = {
     2713: VendorID(
         "IMS-Visited-Network-Identifier", 2713, TYPE_UTF8_STRING, "VM", 10415
     ),
-    285: VendorID(
-        "Ericsson-Service-Information", 285, TYPE_GROUPED, "V", VENDOR_ERICSSON
-    ),
-    284: VendorID(
-        "IMS-Service-Identification", 284, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    338: VendorID("SIP-Ringing-Timestamp", 338, TYPE_TIME, "V", VENDOR_ERICSSON),
     3401: VendorID("Reason-Header", 3401, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
     3402: VendorID("Instance-id", 3402, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    873: VendorID("Service-Information", 873, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    874: VendorID("PS-Information", 874, TYPE_GROUPED, "VM", VENDOR_3GPP),
 }
 
 
@@ -422,10 +556,10 @@ class EricssonCDRParser:
     def __init__(self, binary_data: bytes):
         self.binary_data = binary_data
         self.index = 0
-        self.avp_map = {k: v for k, v in AVP_DB.items() if k in MTAS}
-        self.fail = 0
-        self.success = 0
-        self.max_i = 0  # Track maximum index reached during parsing
+        self.avp_map = {k: v for k, v in AVP_DB.items() if k in MTAS.union(SBG)}
+        self.valid_avps = 0
+        self.invalid_flags = 0  # Track invalid AVP flags
+        self.invalid_size = 0  # Track invalid AVPs
 
     def parse_next_block(self) -> dict | None:
         """Parse Diameter header (version 1 only)
@@ -448,9 +582,6 @@ class EricssonCDRParser:
 
         # Validate minimum length
         if len(header) < self.HEADER_SIZE:
-            # raise ValueError(
-            #     f"Header requires {self.HEADER_SIZE} bytes, got {len(header)}"
-            # )
             self.index += len(header)  # Skip this block
             return None
 
@@ -492,17 +623,12 @@ class EricssonCDRParser:
             current_block = current_block[offset:]  # Move to next AVP
             if avp is not None:
                 avps.update(avp)
-                self.success += 1
-            else:
-                self.fail += 1
             self.index += offset  # Move index forward by the size of the parsed AVP
         # Build header dictionary
         return {
             "flags": "".join(k for k, v in flag_bits.items() if v),
-            # "application_id": app_id,
             "hop_by_hop_id": hbh_id,
             "end_to_end_id": e2e_id,
-            # "message_type": "ACR" if flag_bits["R"] else "ACA",
             **avps,
         }
 
@@ -514,28 +640,21 @@ class EricssonCDRParser:
         while True:
             # Parse AVP header (8 bytes)
             if (offset := len(current_block[i:])) < 8:
+                self.invalid_size += 1
                 return None, offset  # Not enough data for AVP header
 
-            # avp_code, flags, avp_length = struct.unpack(
-            #     ">IBB", current_block[i : i + 6]
-            # )
             avp_code = int.from_bytes(current_block[i : i + 4], byteorder="big")
             if not (avp_def := self.avp_map.get(avp_code)):
+                if avp_code != 0:
+                    breakpoint()
                 i += 1
                 continue  # Skip unknown AVPs
             flags = current_block[i + 4]
             avp_length = int.from_bytes(current_block[i + 5 : i + 8], byteorder="big")
-            # avp_length = (avp_length << 16) | struct.unpack(
-            #     ">H", current_block[i + 6 : i + 8]
-            # )[0]
             if len(current_block[i:]) < avp_length or avp_length < 8:
                 i += 1
                 continue  # Skip unknown AVPs
             break
-
-        self.max_i = max(self.max_i, i)
-
-        offset: int = i + avp_length
 
         # Extract vendor ID if present
         header_size = 8
@@ -545,15 +664,21 @@ class EricssonCDRParser:
             # vendor_id = struct.unpack(">I", binary_data[i + 8 : i + 12])[0] #just for debug
             header_size = 12
 
+        offset: int = i + avp_length
+
         if not is_avp_flag_valid(flags, avp_def.acr_flag):
-            # print(f"Invalid AVP binary flag: {bin(flags)}")
+            self.invalid_flags += 1
             return None, offset  # Invalid AVP flags, skip this AVP
 
         value_data = current_block[i + header_size : i + avp_length]
 
         if (avp_type := avp_def.type) == TYPE_GROUPED:
             return self.parse_grouped_avp(value_data)
-        return {avp_def.avp: self.parse_simple_value(value_data, avp_type)}, offset
+        self.valid_avps += 1
+        return {
+            avp_def.avp: self.parse_simple_value(value_data, avp_type),
+            "start_idx": i,
+        }, offset
 
     def parse_grouped_avp(self, binary_data):
         """Parse a grouped AVP (recursive)"""
@@ -601,29 +726,15 @@ class EricssonCDRParser:
         else:
             return binary_data.hex()  # Fallback for unknown types
 
-    def parse_message(self, binary_data):
-        """Parse complete Diameter message"""
-        # Parse header
-        header, data = self.parse_next_block(binary_data)
-        print(header)
-
-        # Parse all AVPs
-        avps = []
-        while data:
-            avp, data = self.parse_avp(data)
-            avps.append(avp)
-
-        return {"header": header, "variant": variant, "avps": avps}
-
 
 def run():
     import gzip
     import pandas as pd
     from rich.progress import Progress
 
-    file = sorted(
-        Path("/home/rsilva/volte_claro/").ls(), key=lambda f: f.stat().st_size
-    )[0]
+    files = Path("/home/rsilva/volte_claro/").ls().filter(lambda f: f.suffix == ".gz")
+    file = sorted(files, key=lambda f: f.stat().st_size)[0]
+
     # Read CDR file
     with gzip.open(file, "rb") as f:
         binary_data = memoryview(f.read())
@@ -633,7 +744,6 @@ def run():
     with Progress(transient=True) as progress:
         total = len(binary_data)
         task = progress.add_task("[red]Reading Headers...", total=total)
-
         while parser.index < total:
             if (block := parser.parse_next_block()) is not None:
                 blocks.append(block)
@@ -644,18 +754,31 @@ def run():
             )
 
     # json.dump(blocks, (Path(__file__).parent / f'{file.stem}.json').open("w"), ensure_ascii=False, indent=4)
-    pd.DataFrame(blocks, dtype="string").set_index("hop_by_hop_id").to_csv(
-        (Path(__file__).parent / f"{file.stem}.csv"),
-        # compression="gzip",
+    # pd.DataFrame(blocks, dtype="category").set_index(["hop_by_hop_id", "end_to_end_id"]).to_parquet(
+    #     file.with_suffix(".parquet.gzip"),
+    #     compression="gzip",
+    # )
+    pd.DataFrame(blocks, dtype="category").set_index(
+        ["hop_by_hop_id", "end_to_end_id"]
+    ).to_csv(
+        Path(__file__).parent / file.with_suffix(".csv").name,
     )
-    print(f"Blocos ignorados: {parser.fail}")
-    print(f"Blocos com sucesso: {parser.success}")
-    print(f"Max index reached: {parser.max_i}")
+
+    print(f"Blocos com sucesso: {parser.valid_avps}")
+    print(f"Blocos com flag inválido: {parser.invalid_flags}")
+    print(f"Blocos com tamanho inválido: {parser.invalid_size}")
 
 
 if __name__ == "__main__":
+    import os
     import typer
 
+    # from fastcore.parallel import parallel
+    # files = Path("/home/rsilva/volte_claro/").ls().filter(lambda f: f.suffix == ".gz")
+    # file = sorted(
+    #     files, key=lambda f: f.stat().st_size
+    # )[1]
+    # parallel(run, files, n_workers=os.cpu_count()//2, progress=True)
     typer.run(run)
 
     # parsed_cdr = parser.parse_message(binary_data)
