@@ -315,7 +315,11 @@ AVP_DB = {
     296: VendorID("Origin-Realm", 296, TYPE_DIAMETER_IDENTITY),
     297: VendorID("Experimental-Result", 297, TYPE_GROUPED),
     298: VendorID("Experimental-Result-Code", 298, TYPE_UNSIGNED_32),
+    333: VendorID("GPRS-Roaming-Status ", 333, TYPE_ENUMERATED, "VM", VENDOR_ERICSSON),
+    336: VendorID("SIP-Reason-Cause", 336, TYPE_UNSIGNED_32, "VM", VENDOR_ERICSSON),
+    337: VendorID("SIP-Reason-Text", 337, TYPE_UTF8_STRING, "VM", VENDOR_ERICSSON),
     338: VendorID("SIP-Ringing-Timestamp", 338, TYPE_TIME, "V", VENDOR_ERICSSON),
+    340: VendorID("Event-NTP-Timestamp", 340, TYPE_OCTET_STRING, "VM", VENDOR_ERICSSON),
     420: VendorID("CC-Time", 420, TYPE_UNSIGNED_32, "M"),
     443: VendorID("Subscription-Id", 443, TYPE_GROUPED, "M"),
     444: VendorID("Subscription-Id-Data", 444, TYPE_UTF8_STRING, "M"),
@@ -348,6 +352,7 @@ AVP_DB = {
     843: VendorID("SDP-Media-Component", 843, TYPE_GROUPED, "VM", VENDOR_3GPP),
     844: VendorID("SDP-Media-Name", 844, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
     845: VendorID("SDP-Media-Description", 845, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    848: VendorID("Served-Party-IP-Address", 848, TYPE_ADDRESS, "VM", VENDOR_3GPP),
     861: VendorID("Cause-Code", 861, TYPE_INTEGER_32, "VM", VENDOR_3GPP),
     862: VendorID("Node-Functionality", 862, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
     863: VendorID("Service-Specific-Data", 863, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
@@ -400,6 +405,9 @@ AVP_DB = {
         "SIP-Ringing-Timestamp-Fraction", 1256, TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON
     ),
     1257: VendorID("Service-Specific-Type", 1257, TYPE_UNSIGNED_32, "VM", VENDOR_3GPP),
+    1261: VendorID(
+        "Authentication-Method", 1241, TYPE_ENUMERATED, "VM", VENDOR_ERICSSON
+    ),
     1262: VendorID(
         "From-Header-Presentation-Status", 1262, TYPE_ENUMERATED, "V", VENDOR_ERICSSON
     ),
@@ -416,6 +424,9 @@ AVP_DB = {
     ),
     1302: VendorID("Routing-Call-Type", 1302, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
     1303: VendorID("Analyzed-Call-Type", 1303, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1305: VendorID(
+        "Disconnect-Direction", 1305, TYPE_ENUMERATED, "VM", VENDOR_ERICSSON
+    ),
     1307: VendorID("Service-Number-Type", 1307, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
     1308: VendorID(
         "Common-Policy-Rule-Identity", 1308, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
@@ -501,6 +512,12 @@ AVP_DB = {
     ),
     2304: VendorID("CUG-Information", 2304, TYPE_OCTET_STRING, "VM", VENDOR_3GPP),
     2320: VendorID("Outgoing-Session-Id", 2320, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    2711: VendorID(
+        "Related-IMS-Charging-Identifier", 2711, TYPE_UTF8_STRING, "VM", VENDOR_3GPP
+    ),
+    2712: VendorID(
+        "Related-IMS-Charging-Identifier-Node", 2712, TYPE_ADDRESS, "VM", VENDOR_3GPP
+    ),
     2713: VendorID(
         "IMS-Visited-Network-Identifier", 2713, TYPE_UTF8_STRING, "VM", 10415
     ),
