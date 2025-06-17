@@ -796,6 +796,8 @@ class EricssonCDRParser:
                 return address_bytes
         elif avp_type == TYPE_UNSIGNED_32:
             return struct.unpack(">I", binary_data)[0]
+        elif avp_type == TYPE_UNSIGNED_64:
+            return struct.unpack(">Q", binary_data)[0]
 
         else:
             return binary_data.hex()  # Fallback for unknown types
