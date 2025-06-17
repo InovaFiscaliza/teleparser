@@ -12,6 +12,7 @@ VENDOR_ERICSSON = 193
 TYPE_OCTET_STRING = 0
 TYPE_INTEGER_32 = 1
 TYPE_UNSIGNED_32 = 2
+TYPE_UNSIGNED_64 = 3
 TYPE_UTF8_STRING = 4
 TYPE_GROUPED = 8
 TYPE_TIME = 9
@@ -289,6 +290,7 @@ CSCF = {
     2713,
     3402,
 }
+
 AVP_DB = {
     1: VendorID("User-Name", 1, TYPE_UTF8_STRING),
     2: VendorID("3GPP-Charging-Id", 2, TYPE_OCTET_STRING, "V"),
@@ -523,6 +525,61 @@ AVP_DB = {
     ),
     3401: VendorID("Reason-Header", 3401, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
     3402: VendorID("Instance-id", 3402, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    # SBG
+    363: VendorID("Accounting-Input-Octets", 363, TYPE_UNSIGNED_64, "M"),
+    364: VendorID("Accounting-Output-Octets", 364, TYPE_UNSIGNED_64, "M"),
+    365: VendorID("Accounting-Input-Packets", 365, TYPE_UNSIGNED_64, "M"),
+    366: VendorID("Accounting-Output-Packets", 366, TYPE_UNSIGNED_64, "M"),
+    # 3GPP AVPs
+    518: VendorID("Media-Component-Number", 518, TYPE_UNSIGNED_32, "VM", VENDOR_3GPP),
+    847: VendorID("GGSN-Address", 847, TYPE_ADDRESS, "VM", VENDOR_3GPP),
+    2819: VendorID("RAN-NAS-Relapse-Cause", 2819, TYPE_OCTET_STRING, "V", VENDOR_3GPP),
+    # Ericsson Statistics AVPs
+    1087: VendorID(
+        "Pockets-Discarded-Filtering", 1087, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+    ),
+    1088: VendorID(
+        "Octets-Discarded-Filtering", 1088, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+    ),
+    1089: VendorID(
+        "Pockets-Discarded-Policing", 1089, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+    ),
+    1090: VendorID(
+        "Octets-Discarded-Policing", 1090, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+    ),
+    1091: VendorID(
+        "Pockets-Out-Of-Sequence", 1091, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+    ),
+    1092: VendorID("Pockets-Lost", 1092, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON),
+    1093: VendorID(
+        "RTCP-Reported-Average-Jitter", 1093, TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON
+    ),
+    1094: VendorID(
+        "RTCP-Reported-Packets-Lost", 1094, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+    ),
+    1095: VendorID(
+        "Accepted-MSRP-Chunks", 1095, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+    ),
+    1096: VendorID(
+        "Discarded-MSRP-Chunks", 1096, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+    ),
+    # Ericsson Timestamp and Session AVPs
+    1178: VendorID("Occurrence-Timestamp", 1178, TYPE_TIME, "V", VENDOR_ERICSSON),
+    1182: VendorID("Session-Priority", 1182, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    # Ericsson User Agent AVPs
+    1252: VendorID(
+        "Originating-User-Agent", 1252, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1253: VendorID(
+        "Terminating-User-Agent", 1253, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    # Ericsson Charging AVPs
+    1298: VendorID(
+        "Additional-Charging-Information", 1298, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1436: VendorID(
+        "Last-Access-Network-Information", 1436, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
 }
 
 
@@ -573,7 +630,7 @@ class EricssonCDRParser:
     def __init__(self, binary_data: bytes):
         self.binary_data = binary_data
         self.index = 0
-        self.avp_map = {k: v for k, v in AVP_DB.items() if k in MTAS.union(SBG)}
+        self.avp_map = AVP_DB
         self.valid_avps = 0
         self.invalid_flags = 0  # Track invalid AVP flags
         self.invalid_size = 0  # Track invalid AVPs
@@ -662,8 +719,8 @@ class EricssonCDRParser:
 
             avp_code = int.from_bytes(current_block[i : i + 4], byteorder="big")
             if not (avp_def := self.avp_map.get(avp_code)):
-                if avp_code != 0:
-                    breakpoint()
+                # if avp_code != 0:
+                #     breakpoint()
                 i += 1
                 continue  # Skip unknown AVPs
             flags = current_block[i + 4]
