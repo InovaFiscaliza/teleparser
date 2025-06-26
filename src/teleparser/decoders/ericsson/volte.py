@@ -10,6 +10,7 @@ from tqdm.auto import tqdm
 # Vendor IDs
 VENDOR_3GPP = 10415
 VENDOR_ERICSSON = 193
+VENDOR_HUAWEI = 2011
 # Type constants (as provided)
 TYPE_OCTET_STRING = 0
 TYPE_INTEGER_32 = 1
@@ -35,7 +36,6 @@ class VendorID:
     """Data class to represent a Diameter AVP with vendor information"""
 
     avp: str
-    avp_code: int
     type: int
     acr_flag: str | None = None
     vendor_id: int | None = None
@@ -299,293 +299,338 @@ CSCF = {
 }
 
 AVP_DB = {
-    1: VendorID("User-Name", 1, TYPE_UTF8_STRING),
-    2: VendorID("3GPP-Charging-Id", 2, TYPE_OCTET_STRING, "V"),
-    18: VendorID("3GPP-SGSN-MCC-MNC", 18, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    23: VendorID("3GPP-MS-TimeZone", 23, TYPE_OCTET_STRING, "V", VENDOR_3GPP),
-    55: VendorID("Event-Timestamp", 55, TYPE_TIME, "M"),
-    85: VendorID("Acct-Interim-Interval", 85, TYPE_UNSIGNED_32, "M"),
-    259: VendorID("Acct-Application-Id", 259, TYPE_UNSIGNED_32, "M"),
-    263: VendorID("Session-Id", 263, TYPE_UTF8_STRING, "M"),
-    264: VendorID("Origin-Host", 264, TYPE_DIAMETER_IDENTITY),
-    266: VendorID("Vendor-Id", 266, TYPE_UNSIGNED_32),
-    268: VendorID("Result-Code", 268, TYPE_UNSIGNED_32, "M"),
-    283: VendorID("Destination-Realm", 283, TYPE_DIAMETER_IDENTITY),
-    284: VendorID(
-        "IMS-Service-Identification", 284, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    285: VendorID(
-        "Ericsson-Service-Information", 285, TYPE_GROUPED, "V", VENDOR_ERICSSON
-    ),
+    1: VendorID("User-Name", TYPE_UTF8_STRING),
+    2: VendorID("3GPP-Charging-Id", TYPE_OCTET_STRING, "V"),
+    18: VendorID("3GPP-SGSN-MCC-MNC", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    23: VendorID("3GPP-MS-TimeZone", TYPE_OCTET_STRING, "V", VENDOR_3GPP),
+    55: VendorID("Event-Timestamp", TYPE_TIME, "M"),
+    85: VendorID("Acct-Interim-Interval", TYPE_UNSIGNED_32, "M"),
+    259: VendorID("Acct-Application-Id", TYPE_UNSIGNED_32, "M"),
+    263: VendorID("Session-Id", TYPE_UTF8_STRING, "M"),
+    264: VendorID("Origin-Host", TYPE_DIAMETER_IDENTITY),
+    266: VendorID("Vendor-Id", TYPE_UNSIGNED_32),
+    268: VendorID("Result-Code", TYPE_UNSIGNED_32, "M"),
+    283: VendorID("Destination-Realm", TYPE_DIAMETER_IDENTITY),
+    284: VendorID("IMS-Service-Identification", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    285: VendorID("Ericsson-Service-Information", TYPE_GROUPED, "V", VENDOR_ERICSSON),
     286: VendorID(
-        "Called-Party-Original-Address", 286, TYPE_UTF8_STRING, "VM", VENDOR_ERICSSON
+        "Called-Party-Original-Address", TYPE_UTF8_STRING, "VM", VENDOR_ERICSSON
     ),
-    293: VendorID("Destination-Host", 293, TYPE_DIAMETER_IDENTITY, "M"),
-    296: VendorID("Origin-Realm", 296, TYPE_DIAMETER_IDENTITY),
-    297: VendorID("Experimental-Result", 297, TYPE_GROUPED),
-    298: VendorID("Experimental-Result-Code", 298, TYPE_UNSIGNED_32),
-    333: VendorID("GPRS-Roaming-Status ", 333, TYPE_ENUMERATED, "VM", VENDOR_ERICSSON),
-    336: VendorID("SIP-Reason-Cause", 336, TYPE_UNSIGNED_32, "VM", VENDOR_ERICSSON),
-    337: VendorID("SIP-Reason-Text", 337, TYPE_UTF8_STRING, "VM", VENDOR_ERICSSON),
-    338: VendorID("SIP-Ringing-Timestamp", 338, TYPE_TIME, "V", VENDOR_ERICSSON),
-    340: VendorID("Event-NTP-Timestamp", 340, TYPE_OCTET_STRING, "VM", VENDOR_ERICSSON),
-    420: VendorID("CC-Time", 420, TYPE_UNSIGNED_32, "M"),
-    443: VendorID("Subscription-Id", 443, TYPE_GROUPED, "M"),
-    444: VendorID("Subscription-Id-Data", 444, TYPE_UTF8_STRING, "M"),
-    450: VendorID("Subscription-Id-Type", 450, TYPE_ENUMERATED, "M"),
-    458: VendorID("User-Equipment-Info", 458, TYPE_GROUPED, "M"),
-    459: VendorID("User-Equipment-Info-Type", 459, TYPE_ENUMERATED, "M"),
-    460: VendorID("User-Equipment-Info-Value", 460, TYPE_OCTET_STRING, "M"),
-    461: VendorID("Service-Context-Id", 461, TYPE_UTF8_STRING, "M"),
-    480: VendorID("Accounting-Record-Type", 480, TYPE_ENUMERATED, "M"),
-    485: VendorID("Accounting-Record-Number", 485, TYPE_UNSIGNED_32, "M"),
-    650: VendorID("Session-Priority", 650, TYPE_ENUMERATED, "V", VENDOR_3GPP),
-    701: VendorID("MSISDN", 701, TYPE_OCTET_STRING, "VM", VENDOR_3GPP),
-    823: VendorID("Event-Type", 823, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    824: VendorID("SIP-Method", 824, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    826: VendorID("Content-Type", 826, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    827: VendorID("Content-Length", 827, TYPE_UNSIGNED_32, "VM", VENDOR_3GPP),
-    828: VendorID("Content-Disposition", 828, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    829: VendorID("Role-of-Node", 829, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
-    830: VendorID("User-Session-Id", 830, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    831: VendorID("Calling-Party-Address", 831, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    832: VendorID("Called-Party-Address", 832, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    833: VendorID("Time-Stamps", 833, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    834: VendorID("SIP-Request-Timestamp", 834, TYPE_TIME, "VM", VENDOR_3GPP),
-    835: VendorID("SIP-Response-Timestamp", 835, TYPE_TIME, "VM", VENDOR_3GPP),
-    838: VendorID("Inter-Operator-Identifier", 838, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    839: VendorID("Originating-IOI", 839, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    840: VendorID("Terminating-IOI", 840, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    841: VendorID("IMS-Charging-Identifier", 841, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    842: VendorID("SDP-Session-Description", 842, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    843: VendorID("SDP-Media-Component", 843, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    844: VendorID("SDP-Media-Name", 844, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    845: VendorID("SDP-Media-Description", 845, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    848: VendorID("Served-Party-IP-Address", 848, TYPE_ADDRESS, "VM", VENDOR_3GPP),
-    861: VendorID("Cause-Code", 861, TYPE_INTEGER_32, "VM", VENDOR_3GPP),
-    862: VendorID("Node-Functionality", 862, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
-    863: VendorID("Service-Specific-Data", 863, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    864: VendorID("Originator", 864, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
-    873: VendorID("Service-Information", 873, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    874: VendorID("PS-Information", 874, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    876: VendorID("IMS-Information", 876, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    878: VendorID("LCS-Information", 878, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    882: VendorID("Media-Initiator-Flag", 882, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
-    889: VendorID("Message-Body", 889, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    1061: VendorID(
-        "MMT-Information", 1061, TYPE_GROUPED, "V", 193
-    ),  # Ericsson vendor ID is 193
-    1127: VendorID("Conference-Id", 1127, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1128: VendorID("Related-ICID", 1128, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1129: VendorID(
-        "Supplementary-Service-Information", 1129, TYPE_GROUPED, "V", VENDOR_ERICSSON
-    ),
-    1130: VendorID(
-        "Supplementary-Service-Identity", 1130, TYPE_ENUMERATED, "V", VENDOR_ERICSSON
-    ),
-    1131: VendorID(
-        "Supplementary-Service-Action", 1131, TYPE_ENUMERATED, "V", VENDOR_ERICSSON
-    ),
-    1133: VendorID(
-        "Redirecting-Party-Address", 1133, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1141: VendorID(
-        "Calling-Party-Address-Presentation-Status", 1141, TYPE_ENUMERATED, "V", 193
-    ),
-    1142: VendorID(
-        "Called-Asserted-Identity-Presentation-Status", 1142, TYPE_ENUMERATED, "V", 193
-    ),
-    1153: VendorID("From-Header", 1153, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1160: VendorID(
-        "Dial-Around-Indicator", 1160, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1206: VendorID(
-        "GSM-Call-Reference-Number", 1206, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1207: VendorID("MSC-Address", 1207, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1249: VendorID("Service-Specific-Info", 1249, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    1250: VendorID(
-        "Called-Asserted-Identity", 1250, TYPE_UTF8_STRING, "VM", VENDOR_3GPP
-    ),
-    1251: VendorID(
-        "Requested-Party-Address", 1251, TYPE_UTF8_STRING, "VM", VENDOR_3GPP
-    ),
-    1256: VendorID(
-        "SIP-Ringing-Timestamp-Fraction", 1256, TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON
-    ),
-    1257: VendorID("Service-Specific-Type", 1257, TYPE_UNSIGNED_32, "VM", VENDOR_3GPP),
-    1261: VendorID(
-        "Authentication-Method", 1241, TYPE_ENUMERATED, "VM", VENDOR_ERICSSON
-    ),
-    1262: VendorID(
-        "From-Header-Presentation-Status", 1262, TYPE_ENUMERATED, "V", VENDOR_ERICSSON
-    ),
-    1263: VendorID(
-        "Access-Network-Information", 1263, TYPE_OCTET_STRING, "VM", VENDOR_3GPP
-    ),
-    1264: VendorID("Transaction-Info", 1264, TYPE_GROUPED, "V", VENDOR_ERICSSON),
-    1265: VendorID("Transaction-Type", 1265, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
-    1266: VendorID(
-        "Transaction-Data-Name", 1266, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1267: VendorID(
-        "Transaction-Data-Value", 1267, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1302: VendorID("Routing-Call-Type", 1302, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1303: VendorID("Analyzed-Call-Type", 1303, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1305: VendorID(
-        "Disconnect-Direction", 1305, TYPE_ENUMERATED, "VM", VENDOR_ERICSSON
-    ),
-    1307: VendorID("Service-Number-Type", 1307, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
-    1308: VendorID(
-        "Common-Policy-Rule-Identity", 1308, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1314: VendorID("SCC-Service-Identity", 1314, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
-    1315: VendorID("SCC-TADS-Decision", 1315, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
-    1330: VendorID("Served-User", 1330, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1346: VendorID("XCON-Id", 1346, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1357: VendorID("Party-To-Charge", 1357, TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON),
-    1371: VendorID(
-        "Service-Suppression-Info", 1371, TYPE_GROUPED, "V", VENDOR_ERICSSON
-    ),
-    1372: VendorID(
-        "Matched-Regular-Expression", 1372, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1373: VendorID(
-        "Services-To-Suppress", 1373, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1380: VendorID("Tenant", 1380, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1384: VendorID("CCMP-User-Info", 1384, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1388: VendorID("UHTZ-Offset", 1388, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1389: VendorID(
-        "Participants-Involved", 1389, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1390: VendorID("Participants-List", 1390, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1393: VendorID(
-        "Forward-TTC-Charging-Headers", 1393, TYPE_GROUPED, "V", VENDOR_ERICSSON
-    ),
-    1394: VendorID(
-        "Backward-TTC-Charging-Headers", 1394, TYPE_GROUPED, "V", VENDOR_ERICSSON
-    ),
-    1395: VendorID("Charging-Area", 1395, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
-    1396: VendorID(
-        "Carrier-Information", 1396, TYPE_OCTET_STRING, "V", VENDOR_ERICSSON
-    ),
-    1397: VendorID(
-        "Additional-User-Category", 1397, TYPE_OCTET_STRING, "V", VENDOR_ERICSSON
-    ),
-    1398: VendorID(
-        "Flexible-Charging-Info", 1398, TYPE_OCTET_STRING, "V", VENDOR_ERICSSON
-    ),
-    1406: VendorID(
-        "Forward-TTC-Charging-Parameters", 1406, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1407: VendorID(
-        "Backward-TTC-Charging-Parameters", 1407, TYPE_UTF8_STRING, "V", 193
-    ),
-    1433: VendorID("AS-Type", 1433, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
-    1460: VendorID(
-        "Transaction-SIP-Message", 1460, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1463: VendorID("Subscriber-Type", 1463, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
-    1464: VendorID("UC-Mobility-Call-Leg", 1464, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
-    1465: VendorID("Interim-Reason", 1465, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
-    1477: VendorID("Ro-Status", 1477, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
-    1478: VendorID("Ro-Information", 1478, TYPE_GROUPED, "V", VENDOR_ERICSSON),
-    1527: VendorID(
-        "Analyzed-B-Number-Type", 1527, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1531: VendorID("Caller-Category", 1531, TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON),
-    1532: VendorID("Caller-Sub-Category", 1532, TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON),
-    1533: VendorID("Caller-Treatment", 1533, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
-    1536: VendorID(
-        "Caller-Category-Presentation", 1536, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    2023: VendorID(
-        "Carrier-Select-Routing-Information", 2023, TYPE_UTF8_STRING, "VM", 10415
-    ),
-    2024: VendorID(
-        "Number-Portability-Routing-Information", 2024, TYPE_UTF8_STRING, "VM", 10415
-    ),
-    2030: VendorID("MMTel-Information", 2030, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    2035: VendorID(
-        "Associated-Party-Address", 2035, TYPE_UTF8_STRING, "VM", VENDOR_3GPP
-    ),
-    2036: VendorID("SDP-Type", 2036, TYPE_ENUMERATED, "VM", VENDOR_3GPP),
-    2048: VendorID("Supplementary-Service", 2048, TYPE_GROUPED, "VM", VENDOR_3GPP),
-    2301: VendorID(
-        "SIP-Request-Timestamp-Fraction", 2301, TYPE_UNSIGNED_32, "VM", 10415
-    ),
-    2302: VendorID(
-        "SIP-Response-Timestamp-Fraction", 2302, TYPE_UNSIGNED_32, "VM", 10415
-    ),
-    2304: VendorID("CUG-Information", 2304, TYPE_OCTET_STRING, "VM", VENDOR_3GPP),
-    2320: VendorID("Outgoing-Session-Id", 2320, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    2711: VendorID(
-        "Related-IMS-Charging-Identifier", 2711, TYPE_UTF8_STRING, "VM", VENDOR_3GPP
-    ),
-    2712: VendorID(
-        "Related-IMS-Charging-Identifier-Node", 2712, TYPE_ADDRESS, "VM", VENDOR_3GPP
-    ),
-    2713: VendorID(
-        "IMS-Visited-Network-Identifier", 2713, TYPE_UTF8_STRING, "VM", 10415
-    ),
-    3401: VendorID("Reason-Header", 3401, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
-    3402: VendorID("Instance-id", 3402, TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    293: VendorID("Destination-Host", TYPE_DIAMETER_IDENTITY, "M"),
+    296: VendorID("Origin-Realm", TYPE_DIAMETER_IDENTITY),
+    297: VendorID("Experimental-Result", TYPE_GROUPED),
+    298: VendorID("Experimental-Result-Code", TYPE_UNSIGNED_32),
+    333: VendorID("GPRS-Roaming-Status ", TYPE_ENUMERATED, "VM", VENDOR_ERICSSON),
+    336: VendorID("SIP-Reason-Cause", TYPE_UNSIGNED_32, "VM", VENDOR_ERICSSON),
+    337: VendorID("SIP-Reason-Text", TYPE_UTF8_STRING, "VM", VENDOR_ERICSSON),
+    338: VendorID("SIP-Ringing-Timestamp", TYPE_TIME, "V", VENDOR_ERICSSON),
+    340: VendorID("Event-NTP-Timestamp", TYPE_OCTET_STRING, "VM", VENDOR_ERICSSON),
     # SBG
-    363: VendorID("Accounting-Input-Octets", 363, TYPE_UNSIGNED_64, "M"),
-    364: VendorID("Accounting-Output-Octets", 364, TYPE_UNSIGNED_64, "M"),
-    365: VendorID("Accounting-Input-Packets", 365, TYPE_UNSIGNED_64, "M"),
-    366: VendorID("Accounting-Output-Packets", 366, TYPE_UNSIGNED_64, "M"),
-    # 3GPP AVPs
-    518: VendorID("Media-Component-Number", 518, TYPE_UNSIGNED_32, "VM", VENDOR_3GPP),
-    847: VendorID("GGSN-Address", 847, TYPE_ADDRESS, "VM", VENDOR_3GPP),
-    2819: VendorID("RAN-NAS-Relapse-Cause", 2819, TYPE_OCTET_STRING, "V", VENDOR_3GPP),
+    363: VendorID("Accounting-Input-Octets", TYPE_UNSIGNED_64, "M"),
+    364: VendorID("Accounting-Output-Octets", TYPE_UNSIGNED_64, "M"),
+    365: VendorID("Accounting-Input-Packets", TYPE_UNSIGNED_64, "M"),
+    366: VendorID("Accounting-Output-Packets", TYPE_UNSIGNED_64, "M"),
+    420: VendorID("CC-Time", TYPE_UNSIGNED_32, "M"),
+    443: VendorID("Subscription-Id", TYPE_GROUPED, "M"),
+    444: VendorID("Subscription-Id-Data", TYPE_UTF8_STRING, "M"),
+    450: VendorID("Subscription-Id-Type", TYPE_ENUMERATED, "M"),
+    458: VendorID("User-Equipment-Info", TYPE_GROUPED, "M"),
+    459: VendorID("User-Equipment-Info-Type", TYPE_ENUMERATED, "M"),
+    460: VendorID("User-Equipment-Info-Value", TYPE_OCTET_STRING, "M"),
+    461: VendorID("Service-Context-Id", TYPE_UTF8_STRING, "M"),
+    480: VendorID("Accounting-Record-Type", TYPE_ENUMERATED, "M"),
+    485: VendorID("Accounting-Record-Number", TYPE_UNSIGNED_32, "M"),
+    518: VendorID("Media-Component-Number", TYPE_UNSIGNED_32, "VM", VENDOR_3GPP),
+    650: VendorID("Session-Priority", TYPE_ENUMERATED, "V", VENDOR_3GPP),
+    701: VendorID("MSISDN", TYPE_OCTET_STRING, "VM", VENDOR_3GPP),
+    823: VendorID("Event-Type", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    824: VendorID("SIP-Method", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    826: VendorID("Content-Type", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    827: VendorID("Content-Length", TYPE_UNSIGNED_32, "VM", VENDOR_3GPP),
+    828: VendorID("Content-Disposition", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    829: VendorID("Role-of-Node", TYPE_ENUMERATED, "VM", VENDOR_3GPP),
+    830: VendorID("User-Session-Id", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    831: VendorID("Calling-Party-Address", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    832: VendorID("Called-Party-Address", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    833: VendorID("Time-Stamps", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    834: VendorID("SIP-Request-Timestamp", TYPE_TIME, "VM", VENDOR_3GPP),
+    835: VendorID("SIP-Response-Timestamp", TYPE_TIME, "VM", VENDOR_3GPP),
+    838: VendorID("Inter-Operator-Identifier", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    839: VendorID("Originating-IOI", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    840: VendorID("Terminating-IOI", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    841: VendorID("IMS-Charging-Identifier", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    842: VendorID("SDP-Session-Description", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    843: VendorID("SDP-Media-Component", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    844: VendorID("SDP-Media-Name", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    845: VendorID("SDP-Media-Description", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    847: VendorID("GGSN-Address", TYPE_ADDRESS, "VM", VENDOR_3GPP),
+    848: VendorID("Served-Party-IP-Address", TYPE_ADDRESS, "VM", VENDOR_3GPP),
+    861: VendorID("Cause-Code", TYPE_INTEGER_32, "VM", VENDOR_3GPP),
+    862: VendorID("Node-Functionality", TYPE_ENUMERATED, "VM", VENDOR_3GPP),
+    863: VendorID("Service-Specific-Data", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    864: VendorID("Originator", TYPE_ENUMERATED, "VM", VENDOR_3GPP),
+    873: VendorID("Service-Information", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    874: VendorID("PS-Information", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    876: VendorID("IMS-Information", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    878: VendorID("LCS-Information", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    882: VendorID("Media-Initiator-Flag", TYPE_ENUMERATED, "VM", VENDOR_3GPP),
+    889: VendorID("Message-Body", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    1061: VendorID(
+        "MMT-Information", TYPE_GROUPED, "V", 193
+    ),  # Ericsson vendor ID is 193
     # Ericsson Statistics AVPs
     1087: VendorID(
-        "Pockets-Discarded-Filtering", 1087, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+        "Pockets-Discarded-Filtering", TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
     ),
     1088: VendorID(
-        "Octets-Discarded-Filtering", 1088, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+        "Octets-Discarded-Filtering", TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
     ),
     1089: VendorID(
-        "Pockets-Discarded-Policing", 1089, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+        "Pockets-Discarded-Policing", TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
     ),
-    1090: VendorID(
-        "Octets-Discarded-Policing", 1090, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
-    ),
-    1091: VendorID(
-        "Pockets-Out-Of-Sequence", 1091, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
-    ),
-    1092: VendorID("Pockets-Lost", 1092, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON),
+    1090: VendorID("Octets-Discarded-Policing", TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON),
+    1091: VendorID("Pockets-Out-Of-Sequence", TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON),
+    1092: VendorID("Pockets-Lost", TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON),
     1093: VendorID(
-        "RTCP-Reported-Average-Jitter", 1093, TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON
+        "RTCP-Reported-Average-Jitter", TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON
     ),
     1094: VendorID(
-        "RTCP-Reported-Packets-Lost", 1094, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
+        "RTCP-Reported-Packets-Lost", TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
     ),
-    1095: VendorID(
-        "Accepted-MSRP-Chunks", 1095, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
-    ),
-    1096: VendorID(
-        "Discarded-MSRP-Chunks", 1096, TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON
-    ),
+    1095: VendorID("Accepted-MSRP-Chunks", TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON),
+    1096: VendorID("Discarded-MSRP-Chunks", TYPE_UNSIGNED_64, "V", VENDOR_ERICSSON),
     # Ericsson Timestamp and Session AVPs
-    1178: VendorID("Occurrence-Timestamp", 1178, TYPE_TIME, "V", VENDOR_ERICSSON),
-    1182: VendorID("Session-Priority", 1182, TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1127: VendorID("Conference-Id", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1128: VendorID("Related-ICID", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1129: VendorID(
+        "Supplementary-Service-Information", TYPE_GROUPED, "V", VENDOR_ERICSSON
+    ),
+    1130: VendorID(
+        "Supplementary-Service-Identity", TYPE_ENUMERATED, "V", VENDOR_ERICSSON
+    ),
+    1131: VendorID(
+        "Supplementary-Service-Action", TYPE_ENUMERATED, "V", VENDOR_ERICSSON
+    ),
+    1133: VendorID("Redirecting-Party-Address", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1141: VendorID(
+        "Calling-Party-Address-Presentation-Status", TYPE_ENUMERATED, "V", 193
+    ),
+    1142: VendorID(
+        "Called-Asserted-Identity-Presentation-Status", TYPE_ENUMERATED, "V", 193
+    ),
+    1153: VendorID("From-Header", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1160: VendorID("Dial-Around-Indicator", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1178: VendorID("Occurrence-Timestamp", TYPE_TIME, "V", VENDOR_ERICSSON),
+    1182: VendorID("Session-Priority", TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
     # Ericsson User Agent AVPs
-    1252: VendorID(
-        "Originating-User-Agent", 1252, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
-    1253: VendorID(
-        "Terminating-User-Agent", 1253, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
-    ),
     # Ericsson Charging AVPs
-    1298: VendorID(
-        "Additional-Charging-Information", 1298, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    1206: VendorID("GSM-Call-Reference-Number", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1207: VendorID("MSC-Address", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1249: VendorID("Service-Specific-Info", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    1250: VendorID("Called-Asserted-Identity", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    1251: VendorID("Requested-Party-Address", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    1252: VendorID("Originating-User-Agent", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1253: VendorID("Terminating-User-Agent", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1256: VendorID(
+        "SIP-Ringing-Timestamp-Fraction", TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON
     ),
+    1257: VendorID("Service-Specific-Type", TYPE_UNSIGNED_32, "VM", VENDOR_3GPP),
+    1261: VendorID("Authentication-Method", TYPE_ENUMERATED, "VM", VENDOR_ERICSSON),
+    1262: VendorID(
+        "From-Header-Presentation-Status", TYPE_ENUMERATED, "V", VENDOR_ERICSSON
+    ),
+    1263: VendorID("Access-Network-Information", TYPE_OCTET_STRING, "VM", VENDOR_3GPP),
+    1264: VendorID("Transaction-Info", TYPE_GROUPED, "V", VENDOR_ERICSSON),
+    1265: VendorID("Transaction-Type", TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1266: VendorID("Transaction-Data-Name", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1267: VendorID("Transaction-Data-Value", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1298: VendorID(
+        "Additional-Charging-Information", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1302: VendorID("Routing-Call-Type", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1303: VendorID("Analyzed-Call-Type", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1305: VendorID("Disconnect-Direction", TYPE_ENUMERATED, "VM", VENDOR_ERICSSON),
+    1307: VendorID("Service-Number-Type", TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1308: VendorID(
+        "Common-Policy-Rule-Identity", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1314: VendorID("SCC-Service-Identity", TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1315: VendorID("SCC-TADS-Decision", TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1330: VendorID("Served-User", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1346: VendorID("XCON-Id", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1357: VendorID("Party-To-Charge", TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON),
+    1371: VendorID("Service-Suppression-Info", TYPE_GROUPED, "V", VENDOR_ERICSSON),
+    1372: VendorID(
+        "Matched-Regular-Expression", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1373: VendorID("Services-To-Suppress", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1380: VendorID("Tenant", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1384: VendorID("CCMP-User-Info", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1388: VendorID("UHTZ-Offset", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1389: VendorID("Participants-Involved", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1390: VendorID("Participants-List", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1393: VendorID("Forward-TTC-Charging-Headers", TYPE_GROUPED, "V", VENDOR_ERICSSON),
+    1394: VendorID("Backward-TTC-Charging-Headers", TYPE_GROUPED, "V", VENDOR_ERICSSON),
+    1395: VendorID("Charging-Area", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1396: VendorID("Carrier-Information", TYPE_OCTET_STRING, "V", VENDOR_ERICSSON),
+    1397: VendorID("Additional-User-Category", TYPE_OCTET_STRING, "V", VENDOR_ERICSSON),
+    1398: VendorID("Flexible-Charging-Info", TYPE_OCTET_STRING, "V", VENDOR_ERICSSON),
+    1406: VendorID(
+        "Forward-TTC-Charging-Parameters", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1407: VendorID("Backward-TTC-Charging-Parameters", TYPE_UTF8_STRING, "V", 193),
+    1433: VendorID("AS-Type", TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
     1436: VendorID(
-        "Last-Access-Network-Information", 1436, TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+        "Last-Access-Network-Information", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    1460: VendorID("Transaction-SIP-Message", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1463: VendorID("Subscriber-Type", TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1464: VendorID("UC-Mobility-Call-Leg", TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1465: VendorID("Interim-Reason", TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1477: VendorID("Ro-Status", TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1478: VendorID("Ro-Information", TYPE_GROUPED, "V", VENDOR_ERICSSON),
+    1527: VendorID("Analyzed-B-Number-Type", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON),
+    1531: VendorID("Caller-Category", TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON),
+    1532: VendorID("Caller-Sub-Category", TYPE_UNSIGNED_32, "V", VENDOR_ERICSSON),
+    1533: VendorID("Caller-Treatment", TYPE_ENUMERATED, "V", VENDOR_ERICSSON),
+    1536: VendorID(
+        "Caller-Category-Presentation", TYPE_UTF8_STRING, "V", VENDOR_ERICSSON
+    ),
+    2023: VendorID("Carrier-Select-Routing-Information", TYPE_UTF8_STRING, "VM", 10415),
+    2024: VendorID(
+        "Number-Portability-Routing-Information", TYPE_UTF8_STRING, "VM", 10415
+    ),
+    2030: VendorID("MMTel-Information", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    2035: VendorID("Associated-Party-Address", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    2036: VendorID("SDP-Type", TYPE_ENUMERATED, "VM", VENDOR_3GPP),
+    2048: VendorID("Supplementary-Service", TYPE_GROUPED, "VM", VENDOR_3GPP),
+    2301: VendorID("SIP-Request-Timestamp-Fraction", TYPE_UNSIGNED_32, "VM", 10415),
+    2302: VendorID("SIP-Response-Timestamp-Fraction", TYPE_UNSIGNED_32, "VM", 10415),
+    2304: VendorID("CUG-Information", TYPE_OCTET_STRING, "VM", VENDOR_3GPP),
+    2320: VendorID("Outgoing-Session-Id", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    2711: VendorID(
+        "Related-IMS-Charging-Identifier", TYPE_UTF8_STRING, "VM", VENDOR_3GPP
+    ),
+    2712: VendorID(
+        "Related-IMS-Charging-Identifier-Node", TYPE_ADDRESS, "VM", VENDOR_3GPP
+    ),
+    2713: VendorID("IMS-Visited-Network-Identifier", TYPE_UTF8_STRING, "VM", 10415),
+    2819: VendorID("RAN-NAS-Relapse-Cause", TYPE_OCTET_STRING, "V", VENDOR_3GPP),
+    3401: VendorID("Reason-Header", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    3402: VendorID("Instance-id", TYPE_UTF8_STRING, "VM", VENDOR_3GPP),
+    # Huawei vendor-specific AVPs
+    6103: VendorID("User-Agent-Value", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6104: VendorID("IN-Information", TYPE_GROUPED, "VMP", VENDOR_HUAWEI),
+    6105: VendorID("Service-Key", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    6106: VendorID("IN-Service-Number", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6107: VendorID("Session-Release-Mode", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    6109: VendorID("Fci-Free-Format-Data", TYPE_OCTET_STRING, "VMP", VENDOR_HUAWEI),
+    6110: VendorID(
+        "Fci-Free-Format-Data-Manner", TYPE_ENUMERATED, "VMP", VENDOR_HUAWEI
+    ),
+    6111: VendorID("Default-Call-Handling", TYPE_ENUMERATED, "VMP", VENDOR_HUAWEI),
+    6114: VendorID("Initial-Location", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6115: VendorID("Change-of-Location", TYPE_GROUPED, "VMP", VENDOR_HUAWEI),
+    6116: VendorID("Location-Info", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6117: VendorID("Scf-Address", TYPE_OCTET_STRING, "VMP", VENDOR_HUAWEI),
+    6118: VendorID("Level-Of-Camel-Service", TYPE_OCTET_STRING, "VMP", VENDOR_HUAWEI),
+    6119: VendorID("Charge-Class", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    6120: VendorID("Substituted-Location-Info", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6121: VendorID("Message-Reference", TYPE_OCTET_STRING, "VMP", VENDOR_HUAWEI),
+    6122: VendorID("Call-Reference-Number", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6123: VendorID("VMSC-Address", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6124: VendorID("SMS-Result", TYPE_ENUMERATED, "VMP", VENDOR_HUAWEI),
+    6125: VendorID("Map-Fail-Cause", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    6126: VendorID(
+        "Maximum-Of-Concatenated-SMS", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI
+    ),
+    6127: VendorID(
+        "Concatenated-SMS-Reference-Number", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI
+    ),
+    6128: VendorID(
+        "Sequence-Number-Of-Current-SMS", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI
+    ),
+    6129: VendorID("IN-Generic-Number", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6130: VendorID("End-Of-In", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6131: VendorID("Triggered_IN_Flag", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    6132: VendorID("Routing-Category", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    6133: VendorID("Routing-Category-Ext", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    6134: VendorID("IN-Bypass", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    6135: VendorID("Network-Call-Reference", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6136: VendorID("Ut-Operate-Result", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    6137: VendorID("SCI-Charge-Number", TYPE_OCTET_STRING, "VMP", VENDOR_HUAWEI),
+    6138: VendorID("FCI-Charge-Number", TYPE_OCTET_STRING, "VMP", VENDOR_HUAWEI),
+    6139: VendorID("FCI-Charged-Party-ID", TYPE_OCTET_STRING, "VMP", VENDOR_HUAWEI),
+    6140: VendorID("Camel-Destination-Number", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6141: VendorID(
+        "Camel-Destination-Number-Type", TYPE_ENUMERATED, "VMP", VENDOR_HUAWEI
+    ),
+    6142: VendorID("Sip-From-Uri", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6143: VendorID("User-Time-Zone", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6144: VendorID("Call-Transfer-Info", TYPE_GROUPED, "VMP", VENDOR_HUAWEI),
+    6145: VendorID("Call-Transfer-Type", TYPE_ENUMERATED, "VMP", VENDOR_HUAWEI),
+    6146: VendorID("Call-Transfer-Data", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6147: VendorID("Recording-Entity-ID", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    6148: VendorID("Service-Operate-Result", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    6149: VendorID(
+        "Number-Of-Video-Participants", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI
+    ),
+    6150: VendorID("aOCParameters", TYPE_OCTET_STRING, "VMP", VENDOR_HUAWEI),
+    6151: VendorID("Account-Code", TYPE_OCTET_STRING, "VMP", VENDOR_HUAWEI),
+    20820: VendorID("SDP-Media-Identifier", TYPE_ENUMERATED, "VMP", VENDOR_HUAWEI),
+    22661: VendorID("Group-ID", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22662: VendorID("Private-Number", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22663: VendorID("VPN-Call-Property", TYPE_ENUMERATED, "VMP", VENDOR_HUAWEI),
+    22664: VendorID("MscNumer", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22681: VendorID("Drvcc-Info", TYPE_GROUPED, "VMP", VENDOR_HUAWEI),
+    22682: VendorID("Drvcc-Type", TYPE_ENUMERATED, "VMP", VENDOR_HUAWEI),
+    22683: VendorID("Drvcc-Request-Time", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22684: VendorID("Drvcc-Transfer-Number", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22685: VendorID("Drvcc-Transfer-Identity", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22686: VendorID("Peer-Subgroup-ID", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22700: VendorID("Interim-Time-Stamps", TYPE_GROUPED, "VMP", VENDOR_HUAWEI),
+    22701: VendorID("Interim-Start-Time-Stamps", TYPE_TIME, "VMP", VENDOR_HUAWEI),
+    22702: VendorID("Interim-End-Time-Stamps", TYPE_TIME, "VMP", VENDOR_HUAWEI),
+    22703: VendorID("Special-CDR-flag", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22704: VendorID("UserDataLength-SMS", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22705: VendorID(
+        "Call-Identification-Number", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI
+    ),
+    22706: VendorID("Interruption-Time", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22707: VendorID("Origin-For-Charging", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22708: VendorID("Outgoing-Route", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22709: VendorID("Incoming-Route", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22710: VendorID("Initial-Visit-CGI", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22711: VendorID("Called-MNP-Info", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22712: VendorID("Subscription-Type", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22713: VendorID("Translated-Number", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22714: VendorID("MTC-Roaming-Number", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22715: VendorID("Redirecting-Number", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22716: VendorID("RCF-Roaming-Number", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22717: VendorID("RCF-Indication", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22718: VendorID(
+        "Finish-P-Access-Network-Information", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI
+    ),
+    22720: VendorID("Fail-AS-Addr", TYPE_GROUPED, "VMP", VENDOR_HUAWEI),
+    22721: VendorID("iFCSeq", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22722: VendorID("ASPriority", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22723: VendorID("iFCAddr", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22724: VendorID("Acct-Interaction-With-IP", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22735: VendorID(
+        "Acct-Resource-Charge-IP-number", TYPE_OCTET_STRING, "VMP", VENDOR_HUAWEI
+    ),
+    22736: VendorID("Trigger-Detection-Point", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22737: VendorID("Time-For-TH-EOS", TYPE_TIME, "VMP", VENDOR_HUAWEI),
+    22738: VendorID("IN-Service-Trigger", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22739: VendorID("SSF-Charging-Case", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22740: VendorID("Global-Title-Subsystem", TYPE_OCTET_STRING, "VMP", VENDOR_HUAWEI),
+    22741: VendorID("IN-Composite-CDR", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22743: VendorID("P-Cellular-Network-Info", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22745: VendorID("SCP-Connection", TYPE_ENUMERATED, "VMP", VENDOR_HUAWEI),
+    22752: VendorID("Secondary-Party-Address", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI),
+    22753: VendorID("Group-Id-Of-Other-Party", TYPE_UNSIGNED_32, "VMP", VENDOR_HUAWEI),
+    22754: VendorID(
+        "Private-Number-Of-Other-Party", TYPE_UTF8_STRING, "VMP", VENDOR_HUAWEI
     ),
 }
 
@@ -759,10 +804,13 @@ class EricssonCDRParser:
 
         # Extract vendor ID if present
         header_size = 8
+        vendor_id = None
         if flags & 0x80:  # Vendor flag set
             if avp_length < 12:
                 raise ValueError("AVP with vendor flag requires at least 12 bytes")
-            # vendor_id = struct.unpack(">I", current_block[i + 8 : i + 12])[0]  # just for debug
+            vendor_id = STRUCT_UNSIGNED_32.unpack(current_block[i + 8 : i + 12])[
+                0
+            ]  # just for debug
             header_size = 12
 
         offset: int = i + avp_length
@@ -778,7 +826,10 @@ class EricssonCDRParser:
                 return {}, offset
             return EricssonCDRParser.flatten_avp(avp_def.avp, avps), offset
         else:
-            return {avp_def.avp: self.parse_simple_value(value_data, avp_type)}, offset
+            return {
+                avp_def.avp: self.parse_simple_value(value_data, avp_type),
+                "AVPVendor-Id": vendor_id,
+            }, offset
 
     @staticmethod
     def flatten_avp(prefix: str, avp: dict | list) -> dict:
@@ -786,18 +837,14 @@ class EricssonCDRParser:
         if isinstance(avp, dict):
             for key, value in avp.items():
                 if not isinstance(value, (dict, list)):
-                    if previous_value := flattened_avp.get(f"{prefix}.{key}"):
+                    if previous_value := flattened_avp.get(key):
                         value = f"{previous_value};{value}"  # Concatenate values
-                    flattened_avp[f"{prefix}.{key}"] = value
+                    flattened_avp[key] = value
                 if isinstance(value, dict):
-                    flattened_avp.update(
-                        EricssonCDRParser.flatten_avp(f"{prefix}.{key}", value)
-                    )
+                    flattened_avp.update(EricssonCDRParser.flatten_avp(key, value))
                 elif isinstance(value, list):
                     for item in value:
-                        flattened_avp.update(
-                            EricssonCDRParser.flatten_avp(f"{prefix}.{key}", item)
-                        )
+                        flattened_avp.update(EricssonCDRParser.flatten_avp(key, item))
         elif isinstance(avp, list):
             for item in avp:
                 flattened_avp.update(EricssonCDRParser.flatten_avp(prefix, item))
@@ -870,18 +917,19 @@ def run():
         binary_data = memoryview(f.read())
     # Parse CDR
     parser = EricssonCDRParser(binary_data)
+    blocks = list(parser.avps)
     json.dump(
-        list(parser.avps),
+        blocks,
         file.with_suffix("._flat.json").open("w"),
         ensure_ascii=False,
         indent=4,
     )
-    # pd.DataFrame(list(parser.avps), dtype="category").set_index(
-    #     ["hop_by_hop_id", "end_to_end_id"]
-    # ).to_parquet(
-    #     file.with_suffix(".parquet.gzip"),
-    #     compression="gzip",
-    # )
+    pd.DataFrame(blocks, dtype="category").set_index(
+        ["hop_by_hop_id", "end_to_end_id"]
+    ).to_parquet(
+        file.with_suffix(".parquet.gzip"),
+        compression="gzip",
+    )
 
     # pd.DataFrame(list(parser.avps), copy=False).to_csv(
     #     file.parent / file.with_suffix(".csv").name,
