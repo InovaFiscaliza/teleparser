@@ -774,12 +774,34 @@ class EricssonCDRParser:
 
         if (avp_type := avp_def.type) == TYPE_GROUPED:
             avps, offset = self.parse_grouped_avp(value_data)
+            if not avps:
+                return {}, offset
+            return EricssonCDRParser.flatten_avp(avp_def.avp, avps), offset
         else:
-            avps = self.parse_simple_value(value_data, avp_type)
-        return {
-            avp_def.avp: avps,
-            # "offset": i,
-        }, offset
+            return {avp_def.avp: self.parse_simple_value(value_data, avp_type)}, offset
+
+    @staticmethod
+    def flatten_avp(prefix: str, avp: dict | list) -> dict:
+        flattened_avp = {}
+        if isinstance(avp, dict):
+            for key, value in avp.items():
+                if not isinstance(value, (dict, list)):
+                    if previous_value := flattened_avp.get(f"{prefix}.{key}"):
+                        value = f"{previous_value};{value}"  # Concatenate values
+                    flattened_avp[f"{prefix}.{key}"] = value
+                if isinstance(value, dict):
+                    flattened_avp.update(
+                        EricssonCDRParser.flatten_avp(f"{prefix}.{key}", value)
+                    )
+                elif isinstance(value, list):
+                    for item in value:
+                        flattened_avp.update(
+                            EricssonCDRParser.flatten_avp(f"{prefix}.{key}", item)
+                        )
+        elif isinstance(avp, list):
+            for item in avp:
+                flattened_avp.update(EricssonCDRParser.flatten_avp(prefix, item))
+        return flattened_avp
 
     def parse_grouped_avp(self, binary_data):
         """Parse a grouped AVP (recursive)"""
@@ -792,6 +814,8 @@ class EricssonCDRParser:
             if avp:
                 avps.append(avp)
             total_offset += offset
+        if len(avps) == 1:
+            avps = avps[0]  # If only one AVP, return it directly
         return avps, total_offset
 
     def parse_simple_value(self, binary_view, avp_type):
@@ -833,7 +857,6 @@ def run():
     import json
     import gzip
     import pandas as pd
-    from rich.progress import Progress
 
     files = (
         Path("/home/rsilva/repositorios/teleparser/data")
@@ -849,11 +872,13 @@ def run():
     parser = EricssonCDRParser(binary_data)
     json.dump(
         list(parser.avps),
-        (file.parent / f"{file.stem}.json").open("w"),
+        file.with_suffix("._flat.json").open("w"),
         ensure_ascii=False,
         indent=4,
     )
-    # pd.DataFrame(blocks, dtype="category").set_index(["hop_by_hop_id", "end_to_end_id"]).to_parquet(
+    # pd.DataFrame(list(parser.avps), dtype="category").set_index(
+    #     ["hop_by_hop_id", "end_to_end_id"]
+    # ).to_parquet(
     #     file.with_suffix(".parquet.gzip"),
     #     compression="gzip",
     # )
