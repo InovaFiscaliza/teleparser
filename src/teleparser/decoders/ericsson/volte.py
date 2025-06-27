@@ -38,263 +38,6 @@ class VendorID:
     vendor_id: int | None = None
 
 
-MTAS = {
-    1,
-    23,
-    55,
-    85,
-    259,
-    263,
-    264,
-    268,
-    283,
-    284,
-    293,
-    296,
-    338,
-    420,
-    443,
-    444,
-    450,
-    459,
-    460,
-    461,
-    480,
-    485,
-    650,
-    701,
-    701,
-    824,
-    826,
-    827,
-    828,
-    829,
-    830,
-    831,
-    832,
-    834,
-    835,
-    839,
-    840,
-    841,
-    842,
-    844,
-    845,
-    861,
-    862,
-    863,
-    864,
-    874,
-    876,
-    878,
-    882,
-    1061,
-    1127,
-    1128,
-    1129,
-    1130,
-    1131,
-    1133,
-    1141,
-    1142,
-    1153,
-    1160,
-    1206,
-    1207,
-    1250,
-    1251,
-    1256,
-    1257,
-    1262,
-    1263,
-    1264,
-    1265,
-    1266,
-    1267,
-    1302,
-    1303,
-    1307,
-    1308,
-    1314,
-    1315,
-    1330,
-    1346,
-    1357,
-    1371,
-    1372,
-    1373,
-    1380,
-    1384,
-    1388,
-    1389,
-    1390,
-    1393,
-    1394,
-    1395,
-    1395,
-    1396,
-    1396,
-    1397,
-    1397,
-    1398,
-    1406,
-    1407,
-    1433,
-    1460,
-    1463,
-    1464,
-    1465,
-    1477,
-    1478,
-    1527,
-    1531,
-    1532,
-    1533,
-    1536,
-    2023,
-    2023,
-    2024,
-    2035,
-    2036,
-    2301,
-    2302,
-    2304,
-    2320,
-    2713,
-    3401,
-    3402,
-}
-
-SBG = {
-    1,
-    2,
-    55,
-    259,
-    263,
-    264,
-    283,
-    293,
-    296,
-    336,
-    337,
-    363,
-    364,
-    365,
-    366,
-    444,
-    450,
-    480,
-    485,
-    518,
-    650,
-    824,
-    826,
-    827,
-    828,
-    829,
-    830,
-    831,
-    832,
-    834,
-    835,
-    839,
-    840,
-    841,
-    842,
-    844,
-    845,
-    847,
-    848,
-    861,
-    862,
-    864,
-    882,
-    1087,
-    1088,
-    1089,
-    1090,
-    1091,
-    1092,
-    1093,
-    1094,
-    1095,
-    1096,
-    1178,
-    1182,
-    1252,
-    1253,
-    1263,
-    1265,
-    1266,
-    1267,
-    1298,
-    1305,
-    1436,
-    2301,
-    2302,
-    2713,
-    2819,
-    3402,
-}
-
-CSCF = {
-    1,
-    18,
-    55,
-    259,
-    263,
-    264,
-    283,
-    286,
-    293,
-    296,
-    333,
-    336,
-    337,
-    338,
-    340,
-    444,
-    450,
-    461,
-    480,
-    485,
-    824,
-    827,
-    828,
-    829,
-    830,
-    831,
-    832,
-    834,
-    835,
-    839,
-    840,
-    841,
-    842,
-    844,
-    845,
-    848,
-    861,
-    862,
-    864,
-    1160,
-    1250,
-    1261,
-    1263,
-    1265,
-    1266,
-    1267,
-    1305,
-    2023,
-    2024,
-    2301,
-    2302,
-    2711,
-    2712,
-    2713,
-    3402,
-}
-
 AVP_DB = {
     1: VendorID("User-Name", TYPE_UTF8_STRING),
     2: VendorID("3GPP-Charging-Id", TYPE_OCTET_STRING, "V"),
@@ -685,12 +428,13 @@ class EricssonCDRParser:
         self.length = len(binary_data)
         self.index = 0
 
-    def parse_block(self, block: bytes) -> dict[str, int | str | bool]:
+    @staticmethod
+    def parse_block(block: bytes) -> dict[str, int | str | bool]:
         parsed_block = {}
         parsed_block["error"] = False
         try:
             while block:
-                avp, offset = self.parse_avp(block)
+                avp, offset = EricssonCDRParser.parse_avp(block)
                 block = block[offset:]
                 parsed_block.update(avp)
         except Exception:
@@ -704,16 +448,16 @@ class EricssonCDRParser:
             yield self.parse_block(block)
 
     def blocks(self) -> Generator[bytes]:
-        """Generator to yield parsed blocks from binary data"""
+        """Generator to yield sliced blocks from binary data to"""
         idx = 0
         length = self.length
         while idx < length:
-            block = self.slice_next_block(idx)
-            if not block["error"]:
-                yield self.binary_data[block["start_idx"] : block["end_idx"]]
-            idx = block["end_idx"]
+            start_idx, stop_idx, error = self.slice_next_block(idx)
+            if not error:
+                yield self.binary_data[start_idx:stop_idx]
+            idx = stop_idx
 
-    def slice_next_block(self, index: int) -> dict[str, int | bool]:
+    def slice_next_block(self, index: int) -> Tuple[int, int, bool]:
         """Parse Diameter header
         The format string ">B3sB3sIII" defines how to interpret the 20-byte Diameter protocol header:
         Format Components:
@@ -734,7 +478,7 @@ class EricssonCDRParser:
         # Validate minimum length
         if len(header) < EricssonCDRParser.HEADER_SIZE:
             index += len(header)  # Skip this block
-            return {"end_idx": index, "error": True}
+            return index, index, True
 
         # Unpack all header fields
         (version, msg_len_bytes, flag_int, cmd_bytes, app_id, hbh_id, e2e_id) = (
@@ -768,14 +512,7 @@ class EricssonCDRParser:
         start_idx = index + EricssonCDRParser.HEADER_SIZE
         index = index + msg_length  # msg_length includes the header
         # Build header dictionary
-        return {
-            # "flags": flags,
-            # "hop_by_hop_id": hbh_id,
-            # "end_to_end_id": e2e_id,
-            "start_idx": start_idx,
-            "end_idx": index,
-            "error": False,
-        }
+        return start_idx, index, False
 
     @staticmethod
     def parse_avp(current_block: memoryview | bytes) -> Tuple:
@@ -938,26 +675,6 @@ def run():
 
 
 if __name__ == "__main__":
-    import os
     import typer
 
-    # from fastcore.parallel import parallel
-    # files = Path("/home/rsilva/volte_claro/").ls().filter(lambda f: f.suffix == ".gz")
-    # file = sorted(
-    #     files, key=lambda f: f.stat().st_size
-    # )[1]
-    # parallel(run, files, n_workers=os.cpu_count()//2, progress=True)
     typer.run(run)
-
-    # parsed_cdr = parser.parse_message(binary_data)
-
-    # # Print results
-    # print(f"Session ID: {parsed_cdr['header']['session_id']}")
-    # print(f"Record Type: {parsed_cdr['header']['record_type']}")
-    # print(f"Variant: {parsed_cdr['variant']}")
-
-    # for avp in parsed_cdr["avps"]:
-    #     if avp["name"] == "IMS-Charging-Identifier":
-    #         print(f"ICID: {avp['value']}")
-    #     elif avp["name"] == "Calling-Party-Address":
-    #         print(f"Caller: {avp['value']}")
