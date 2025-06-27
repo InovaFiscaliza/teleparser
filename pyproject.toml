@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "fastcore>=1.8.2",
+    "fastprogress>=1.0.3",
     "pandas>=2.3.0",
     "pyarrow>=20.0.0",
     "tqdm>=4.67.1",

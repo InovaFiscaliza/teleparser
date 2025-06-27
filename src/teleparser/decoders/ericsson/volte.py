@@ -27,6 +27,12 @@ STRUCT_UNSIGNED_32 = struct.Struct(">I")
 STRUCT_SIGNED_32 = struct.Struct(">i")
 STRUCT_UNSIGNED_64 = struct.Struct(">Q")
 
+KNOWN_SIZES = {
+    TYPE_UNSIGNED_32: 4,
+    TYPE_UNSIGNED_64: 8,
+    TYPE_INTEGER_32: 4,
+}
+
 
 @dataclass
 class VendorID:
@@ -432,13 +438,10 @@ class EricssonCDRParser:
     def parse_block(block: bytes) -> dict[str, int | str | bool]:
         parsed_block = {}
         parsed_block["error"] = False
-        try:
-            while block:
-                avp, offset = EricssonCDRParser.parse_avp(block)
-                block = block[offset:]
-                parsed_block.update(avp)
-        except Exception:
-            parsed_block["error"] = True
+        while block:
+            avp, offset = EricssonCDRParser.parse_avp(block)
+            block = block[offset:]
+            parsed_block.update(avp)
         return parsed_block
 
     @cached_property
@@ -515,9 +518,20 @@ class EricssonCDRParser:
         return start_idx, index, False
 
     @staticmethod
+    def validate_block_structure(block: bytes) -> bool:
+        """Pre-validate that block contains valid Diameter structure"""
+        if len(block) < 8:
+            return False
+
+        # Quick sanity checks before expensive parsing
+        potential_length = int.from_bytes(block[5:8], byteorder="big")
+        return 8 <= potential_length <= len(block)
+
+    @staticmethod
     def parse_avp(current_block: memoryview | bytes) -> Tuple:
         """Parse a single AVP from binary data"""
         i = 0
+        header_size = 8
         while True:
             # Parse AVP header (8 bytes)
             if (offset := len(current_block[i:])) < 8:
@@ -532,18 +546,21 @@ class EricssonCDRParser:
             if len(current_block[i:]) < avp_length or avp_length < 8:
                 i += 1
                 continue  # Slide window if AVP length is invalid
-            break
+            # vendor_id = None
+            if flags & 0x80:  # Vendor flag set
+                if avp_length < 12:
+                    i += 1
+                    continue  # Slide window if AVP length is less than 12 bytes
+                # vendor_id = STRUCT_UNSIGNED_32.unpack(current_block[i + 8 : i + 12])[
+                #     0
+                # ]  # just for debug
+                header_size = 12
 
-        # Extract vendor ID if present
-        header_size = 8
-        vendor_id = None
-        if flags & 0x80:  # Vendor flag set
-            if avp_length < 12:
-                raise ValueError("AVP with vendor flag requires at least 12 bytes")
-            vendor_id = STRUCT_UNSIGNED_32.unpack(current_block[i + 8 : i + 12])[
-                0
-            ]  # just for debug
-            header_size = 12
+            if (known_size := KNOWN_SIZES.get(avp_def.type)) is not None:
+                if avp_length - header_size != known_size:
+                    i += 1
+                    continue  # Slide window if AVP length does not match known size
+            break
 
         offset: int = i + avp_length
 
@@ -560,7 +577,6 @@ class EricssonCDRParser:
         else:
             return {
                 avp_def.avp: EricssonCDRParser.parse_simple_value(value_data, avp_type),
-                "AVPVendor-Id": vendor_id,
             }, offset
 
     @staticmethod
@@ -662,7 +678,7 @@ def parse_file(file_path: Path):
     blocks = list(parser.avps)
 
     pd.DataFrame(blocks, dtype="category", copy=False).to_parquet(
-        file_path.with_suffix(".parquet"),
+        file_path.with_suffix(".parquet"), compression="snappy", index=False
     )
 
 
@@ -671,15 +687,12 @@ def run():
     from fastcore.parallel import parallel
 
     gz = Path("/home/rsilva/volte_claro").ls().filter(lambda f: f.suffix == ".gz")
-    parquet = (
-        Path("/home/rsilva/volte_claro").ls().filter(lambda f: f.suffix == ".parquet")
-    )
     files = []
     for file in gz:
         if not file.with_suffix(".parquet").is_file():
             files.append(file)
 
-    files = sorted(files, key=lambda f: f.stat().st_size)
+    files = sorted(gz, key=lambda f: f.stat().st_size)
     parallel(parse_file, files, progress=True, n_workers=os.cpu_count() // 4, pause=0.1)
 
 
