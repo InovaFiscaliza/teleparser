@@ -650,28 +650,37 @@ class EricssonCDRParser:
             return binary_view.tobytes().hex()  # Fallback for unknown types
 
 
-def run():
+def parse_file(file_path: Path):
     import gzip
     import pandas as pd
 
-    files = (
-        Path("/home/rsilva/repositorios/teleparser/data")
-        .ls()
-        .filter(lambda f: f.suffix == ".gz")
-    )
-    file = sorted(files, key=lambda f: f.stat().st_size)[0]
-
     # Read CDR file
-    with gzip.open(file, "rb") as f:
+    with gzip.open(file_path, "rb") as f:
         binary_data = memoryview(f.read())
     # Parse CDR
     parser = EricssonCDRParser(binary_data)
     blocks = list(parser.avps)
 
     pd.DataFrame(blocks, dtype="category", copy=False).to_parquet(
-        file.with_suffix(".parquet.gzip"),
-        compression="gzip",
+        file_path.with_suffix(".parquet"),
     )
+
+
+def run():
+    import os
+    from fastcore.parallel import parallel
+
+    gz = Path("/home/rsilva/volte_claro").ls().filter(lambda f: f.suffix == ".gz")
+    parquet = (
+        Path("/home/rsilva/volte_claro").ls().filter(lambda f: f.suffix == ".parquet")
+    )
+    files = []
+    for file in gz:
+        if not file.with_suffix(".parquet").is_file():
+            files.append(file)
+
+    files = sorted(files, key=lambda f: f.stat().st_size)
+    parallel(parse_file, files, progress=True, n_workers=os.cpu_count() // 4, pause=0.1)
 
 
 if __name__ == "__main__":
