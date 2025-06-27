@@ -28,9 +28,6 @@ STRUCT_SIGNED_32 = struct.Struct(">i")
 STRUCT_UNSIGNED_64 = struct.Struct(">Q")
 
 
-counter = 0
-
-
 @dataclass
 class VendorID:
     """Data class to represent a Diameter AVP with vendor information"""
@@ -683,23 +680,22 @@ class EricssonCDRParser:
     NTP_EPOCH = datetime(1900, 1, 1)  # For timestamp conversion
     PREFIX_HEADER_LENGTH = 2
 
-    def __init__(self, binary_data: memoryview[bytes] | bytes):
+    def __init__(self, binary_data: bytes | bytes):
         self.binary_data = binary_data
         self.length = len(binary_data)
         self.index = 0
 
-    def parse_block(self, block: dict) -> dict[str, int | str | bool]:
-        start_idx = block["start_idx"]
-        end_idx = block["end_idx"]
-        block["error"] = False
+    def parse_block(self, block: bytes) -> dict[str, int | str | bool]:
+        parsed_block = {}
+        parsed_block["error"] = False
         try:
-            while end_idx > start_idx:
-                avp, offset = self.parse_avp(self.binary_data[start_idx:end_idx])
-                start_idx += offset  # Move to next AVP
-                block.update(avp)
+            while block:
+                avp, offset = self.parse_avp(block)
+                block = block[offset:]
+                parsed_block.update(avp)
         except Exception:
-            block["error"] = True
-        return block
+            parsed_block["error"] = True
+        return parsed_block
 
     @cached_property
     def avps(self) -> Generator[dict[str, int | str | bool]]:
@@ -707,14 +703,14 @@ class EricssonCDRParser:
         for block in tqdm(self.blocks(), desc="Parsing AVPs", unit=" block"):
             yield self.parse_block(block)
 
-    def blocks(self) -> Generator[dict[str, int | bool]]:
+    def blocks(self) -> Generator[bytes]:
         """Generator to yield parsed blocks from binary data"""
         idx = 0
         length = self.length
         while idx < length:
             block = self.slice_next_block(idx)
             if not block["error"]:
-                yield block
+                yield self.binary_data[block["start_idx"] : block["end_idx"]]
             idx = block["end_idx"]
 
     def slice_next_block(self, index: int) -> dict[str, int | bool]:
@@ -781,7 +777,8 @@ class EricssonCDRParser:
             "error": False,
         }
 
-    def parse_avp(self, current_block: memoryview | bytes) -> Tuple:
+    @staticmethod
+    def parse_avp(current_block: memoryview | bytes) -> Tuple:
         """Parse a single AVP from binary data"""
         i = 0
         while True:
@@ -816,16 +813,16 @@ class EricssonCDRParser:
         if not is_avp_flag_valid(flags, avp_def.acr_flag):
             return {}, offset  # Invalid AVP flags, skip this AVP
 
-        value_data: memoryview[bytes] = current_block[i + header_size : i + avp_length]
+        value_data: bytes = current_block[i + header_size : i + avp_length]  # type: ignore
 
         if (avp_type := avp_def.type) == TYPE_GROUPED:
-            avps, offset = self.parse_grouped_avp(value_data)
+            avps, offset = EricssonCDRParser.parse_grouped_avp(value_data)
             if not avps:
                 return {}, offset
             return EricssonCDRParser.flatten_avp(avp_def.avp, avps), offset
         else:
             return {
-                avp_def.avp: self.parse_simple_value(value_data, avp_type),
+                avp_def.avp: EricssonCDRParser.parse_simple_value(value_data, avp_type),
                 "AVPVendor-Id": vendor_id,
             }, offset
 
@@ -848,15 +845,14 @@ class EricssonCDRParser:
                 flattened_avp.update(EricssonCDRParser.flatten_avp(prefix, item))
         return flattened_avp
 
-    def parse_grouped_avp(
-        self, binary_data: memoryview[bytes] | bytes
-    ) -> Tuple[list, int]:
+    @staticmethod
+    def parse_grouped_avp(binary_data: bytes | bytes) -> Tuple[list, int]:
         """Parse a grouped AVP (recursive)"""
         avps = []
         current_block = binary_data
         total_offset = 0
         while current_block:
-            avp, offset = self.parse_avp(current_block)
+            avp, offset = EricssonCDRParser.parse_avp(current_block)
             current_block = current_block[offset:]  # Move to next AVP
             if avp:
                 avps.append(avp)
@@ -865,7 +861,8 @@ class EricssonCDRParser:
             avps = avps[0]  # If only one AVP, return it directly
         return avps, total_offset
 
-    def parse_simple_value(self, binary_view: memoryview, avp_type: int) -> str | int:
+    @staticmethod
+    def parse_simple_value(binary_view: bytes, avp_type: int) -> str | int:
         """
         Parse a simple AVP (Attribute-Value Pair) based on its specified type.
 
@@ -891,7 +888,7 @@ class EricssonCDRParser:
                 return binary_view.tobytes().hex()
         elif avp_type == TYPE_TIME:
             seconds = STRUCT_UNSIGNED_32.unpack(binary_view)[0]
-            return (self.NTP_EPOCH + timedelta(seconds=seconds)).strftime(
+            return (EricssonCDRParser.NTP_EPOCH + timedelta(seconds=seconds)).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )  # Convert to human-readable format
         elif avp_type in (TYPE_ENUMERATED, TYPE_INTEGER_32):
@@ -917,7 +914,6 @@ class EricssonCDRParser:
 
 
 def run():
-    import json
     import gzip
     import pandas as pd
 
@@ -934,23 +930,11 @@ def run():
     # Parse CDR
     parser = EricssonCDRParser(binary_data)
     blocks = list(parser.avps)
-    # json.dump(
-    #     blocks,
-    #     file.with_suffix("._flat.json").open("w"),
-    #     ensure_ascii=False,
-    #     indent=4,
-    # )
-    pd.DataFrame(blocks, dtype="category").set_index(
-        ["hop_by_hop_id", "end_to_end_id"]
-    ).to_parquet(
+
+    pd.DataFrame(blocks, dtype="category", copy=False).to_parquet(
         file.with_suffix(".parquet.gzip"),
         compression="gzip",
     )
-
-    # pd.DataFrame(list(parser.avps), copy=False).to_csv(
-    #     file.parent / file.with_suffix(".csv").name,
-    #     index=False,
-    # )
 
 
 if __name__ == "__main__":
