@@ -9,6 +9,9 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "fastcore>=1.8.2",
+    "pandas>=2.3.0",
+    "pyarrow>=20.0.0",
+    "tqdm>=4.67.1",
     "typer>=0.15.2",
 ]
 
@@ -23,6 +26,8 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "ipykernel>=6.29.5",
+    "ipywidgets>=8.1.7",
+    "line-profiler>=4.2.0",
     "nuitka>=2.6.9",
     "pyinstaller>=6.12.0",
 ]
