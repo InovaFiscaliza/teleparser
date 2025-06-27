@@ -865,8 +865,24 @@ class EricssonCDRParser:
             avps = avps[0]  # If only one AVP, return it directly
         return avps, total_offset
 
-    def parse_simple_value(self, binary_view, avp_type):
-        """Parse simple AVP types"""
+    def parse_simple_value(self, binary_view: memoryview, avp_type: int) -> str | int:
+        """
+        Parse a simple AVP (Attribute-Value Pair) based on its specified type.
+
+        This method handles decoding of various AVP data types, including:
+            - Strings (UTF-8, Octet, Diameter Identity)
+            - Timestamps
+            - Integers and Enumerations
+            - Network Addresses (IPv4/IPv6)
+            - Unsigned 32/64-bit integers
+
+        Args:
+            binary_view (memoryview): Raw binary data to be parsed
+            avp_type (int): The type of AVP to decode
+
+        Returns:
+                Decoded value in an appropriate Python type (str, int, etc.)
+        """
         if avp_type in (TYPE_OCTET_STRING, TYPE_UTF8_STRING, TYPE_DIAMETER_IDENTITY):
             try:
                 return binary_view.tobytes().decode("utf-8")
