@@ -2,7 +2,7 @@ from functools import cached_property
 import struct
 from datetime import datetime, timedelta
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Generator, Tuple
 import socket
 from fastcore.xtras import Path
 from tqdm.auto import tqdm
@@ -683,12 +683,12 @@ class EricssonCDRParser:
     NTP_EPOCH = datetime(1900, 1, 1)  # For timestamp conversion
     PREFIX_HEADER_LENGTH = 2
 
-    def __init__(self, binary_data: bytes):
+    def __init__(self, binary_data: memoryview[bytes] | bytes):
         self.binary_data = binary_data
         self.length = len(binary_data)
         self.index = 0
 
-    def parse_block(self, block: dict) -> dict[str | str, int]:
+    def parse_block(self, block: dict) -> dict[str, int | str | bool]:
         start_idx = block["start_idx"]
         end_idx = block["end_idx"]
         block["error"] = False
@@ -702,12 +702,12 @@ class EricssonCDRParser:
         return block
 
     @cached_property
-    def avps(self):
+    def avps(self) -> Generator[dict[str, int | str | bool]]:
         """Parse all blocks in the binary data"""
         for block in tqdm(self.blocks(), desc="Parsing AVPs", unit=" block"):
             yield self.parse_block(block)
 
-    def blocks(self):
+    def blocks(self) -> Generator[dict[str, int | bool]]:
         """Generator to yield parsed blocks from binary data"""
         idx = 0
         length = self.length
@@ -717,7 +717,7 @@ class EricssonCDRParser:
                 yield block
             idx = block["end_idx"]
 
-    def slice_next_block(self, index) -> dict:
+    def slice_next_block(self, index: int) -> dict[str, int | bool]:
         """Parse Diameter header
         The format string ">B3sB3sIII" defines how to interpret the 20-byte Diameter protocol header:
         Format Components:
@@ -754,15 +754,15 @@ class EricssonCDRParser:
         if version != 1:
             raise ValueError(f"Invalid Diameter version: {version} (must be 1)")
 
-        flags = ""
-        if bool(flag_int & 0x80):
-            flags += "R"  # Request flag
-        if bool(flag_int & 0x40):
-            flags += "P"  # Proxiable flag
-        if bool(flag_int & 0x20):
-            flags += "E"  # Error flag
-        if bool(flag_int & 0x10):
-            flags += "T"  # Re-transmitted flag
+        # flags = ""
+        # if bool(flag_int & 0x80):
+        #     flags += "R"  # Request flag
+        # if bool(flag_int & 0x40):
+        #     flags += "P"  # Proxiable flag
+        # if bool(flag_int & 0x20):
+        #     flags += "E"  # Error flag
+        # if bool(flag_int & 0x10):
+        #     flags += "T"  # Re-transmitted flag
 
         # Validate message type
         if cmd_bytes != b"\x00\x01\x0f":
@@ -773,19 +773,17 @@ class EricssonCDRParser:
         index = index + msg_length  # msg_length includes the header
         # Build header dictionary
         return {
-            "flags": flags,
-            "hop_by_hop_id": hbh_id,
-            "end_to_end_id": e2e_id,
+            # "flags": flags,
+            # "hop_by_hop_id": hbh_id,
+            # "end_to_end_id": e2e_id,
             "start_idx": start_idx,
             "end_idx": index,
             "error": False,
         }
 
-    def parse_avp(self, current_block) -> Tuple:
+    def parse_avp(self, current_block: memoryview | bytes) -> Tuple:
         """Parse a single AVP from binary data"""
-
         i = 0
-
         while True:
             # Parse AVP header (8 bytes)
             if (offset := len(current_block[i:])) < 8:
@@ -794,12 +792,12 @@ class EricssonCDRParser:
             avp_code = int.from_bytes(current_block[i : i + 4], byteorder="big")
             if not (avp_def := AVP_DB.get(avp_code)):
                 i += 1
-                continue  # Skip unknown AVPs
+                continue  # Slide window if AVP code is unknown
             flags = current_block[i + 4]
             avp_length = int.from_bytes(current_block[i + 5 : i + 8], byteorder="big")
             if len(current_block[i:]) < avp_length or avp_length < 8:
                 i += 1
-                continue  # Skip unknown AVPs
+                continue  # Slide window if AVP length is invalid
             break
 
         # Extract vendor ID if present
@@ -818,7 +816,7 @@ class EricssonCDRParser:
         if not is_avp_flag_valid(flags, avp_def.acr_flag):
             return {}, offset  # Invalid AVP flags, skip this AVP
 
-        value_data = current_block[i + header_size : i + avp_length]
+        value_data: memoryview[bytes] = current_block[i + header_size : i + avp_length]
 
         if (avp_type := avp_def.type) == TYPE_GROUPED:
             avps, offset = self.parse_grouped_avp(value_data)
@@ -850,7 +848,9 @@ class EricssonCDRParser:
                 flattened_avp.update(EricssonCDRParser.flatten_avp(prefix, item))
         return flattened_avp
 
-    def parse_grouped_avp(self, binary_data):
+    def parse_grouped_avp(
+        self, binary_data: memoryview[bytes] | bytes
+    ) -> Tuple[list, int]:
         """Parse a grouped AVP (recursive)"""
         avps = []
         current_block = binary_data
@@ -934,12 +934,12 @@ def run():
     # Parse CDR
     parser = EricssonCDRParser(binary_data)
     blocks = list(parser.avps)
-    json.dump(
-        blocks,
-        file.with_suffix("._flat.json").open("w"),
-        ensure_ascii=False,
-        indent=4,
-    )
+    # json.dump(
+    #     blocks,
+    #     file.with_suffix("._flat.json").open("w"),
+    #     ensure_ascii=False,
+    #     indent=4,
+    # )
     pd.DataFrame(blocks, dtype="category").set_index(
         ["hop_by_hop_id", "end_to_end_id"]
     ).to_parquet(
