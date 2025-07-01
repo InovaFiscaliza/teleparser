@@ -8,11 +8,10 @@ import concurrent.futures
 import logging
 import traceback
 from concurrent.futures import ProcessPoolExecutor
-from contextlib import contextmanager
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
-from typing import BinaryIO, List, Optional, Set
+from typing import List, Set
 from time import perf_counter
 
 
@@ -24,7 +23,8 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 from rich import print
-from teleparser.decoders.ericsson import ericsson_voz_decoder
+from teleparser.decoders.ericsson import ericsson_voz_decoder, ericsson_volte_decoder
+from teleparser.buffer import BufferManager
 
 
 # Configure logging
@@ -71,36 +71,8 @@ logger = logging.getLogger("teleparser")
 
 DECODERS = {
     "ericsson_voz": ericsson_voz_decoder,
+    "ericsson_volte": ericsson_volte_decoder,
 }
-
-
-class BufferManager:
-    """Manages CDR file reading and hex conversion"""
-
-    def __init__(self, file_path: Path):
-        self.file_path = file_path
-        self.file_handle: Optional[BinaryIO] = None
-
-    @contextmanager
-    def open(self):
-        with gzip.open(self.file_path, "rb") as self.file_handle:
-            yield self
-
-    def open_file(self):
-        """Opens the gzip file directly"""
-        self.file_handle = gzip.open(self.file_path, "rb")
-        return self
-
-    def close(self):
-        """Closes the file handle if open"""
-        if self.has_data():
-            self.file_handle.close()
-
-    def has_data(self) -> bool:
-        return bool(self.file_handle and not self.file_handle.closed)
-
-    def read(self, size) -> str:
-        return self.file_handle.read(size)
 
 
 class CDRFileManager:
@@ -113,7 +85,7 @@ class CDRFileManager:
         self.temp_dir: Path | None = None
         self.setup()
 
-    def setup(self) -> Path:
+    def setup(self):
         """Create necessary output directories and validate input parameters"""
         if self.cdr_type not in DECODERS:
             logger.error(f"Decoder invalid or not implemented for {self.cdr_type}")
@@ -121,8 +93,8 @@ class CDRFileManager:
                 f"Decoder invalid or not implemented for {self.cdr_type}"
             )
         self.decoder = DECODERS[self.cdr_type]
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        output_dir = self.output_path / f"{timestamp}"
+        # timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        output_dir = self.output_path  # / f"{timestamp}"
         output_dir.mkdir(parents=True, exist_ok=True)
         self.output_path = output_dir
         logger.info(f"Output directory created: {output_dir}")
@@ -220,13 +192,10 @@ class CDRFileManager:
     ):
         blocks = []
         buffer_manager = BufferManager(file_path)
-        decoder = decoder()
+        decoder = decoder(buffer_manager)
 
         try:
-            with buffer_manager.open() as file_buffer:
-                while (tlv := decoder.decode(file_buffer)) is not None:
-                    record, _ = tlv
-                    blocks.append(record)
+            blocks = decoder.process()
             counter = len(blocks)
             # Save the processed data
             output_file = output_path / f"{file_path.stem}.csv"
@@ -444,7 +413,7 @@ def main(
     input_path: Path,
     output_path: Path,
     cdr_type: str,
-    workers: str,
+    workers: int,
     log_level: int = logging.INFO,
 ):
     # Set up logging to file and console

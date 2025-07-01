@@ -165,4 +165,6 @@ class BerDecoder:
 
     def process(self):
         """Process the BER data and return a list of parsed blocks."""
-        return list(tqdm(self.parse_blocks(), desc="Parsing TLVs", unit=" block"))
+        return list(
+            tqdm(self.parse_blocks(), desc="Parsing TLVs", unit=" block", leave=False)
+        )
