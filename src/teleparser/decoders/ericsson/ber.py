@@ -2,6 +2,7 @@ from collections import namedtuple
 from dataclasses import dataclass
 from typing import Optional, Tuple, Callable
 from io import BufferedReader, BytesIO
+from tqdm.auto import tqdm
 
 # Basic ASN.1 Reference
 # https://luca.ntop.org/Teaching/Appunti/asn1.html
@@ -37,6 +38,7 @@ class BerDecoder:
     """Basic Encoding Rules decoder"""
 
     parser: Callable
+    buffer_manager: Optional[BufferedReader] = None
 
     @staticmethod
     def decode_tag(tag_bytes: bytes):
@@ -64,7 +66,7 @@ class BerDecoder:
         stream: BufferedReader | BytesIO,
         offset: int = 0,
         depth: int = 0,
-        schema: dict = None,
+        schema: dict | None = None,
     ):
         if (tag_bytes := self._read_tag(stream)) is None:
             return None
@@ -97,7 +99,7 @@ class BerDecoder:
 
     def unravel_decoded_tlv(
         self, tag_number: int, value: bytes, schema: dict
-    ) -> Tuple[dict, dict]:
+    ) -> Tuple[dict, dict] | None:
         """Unravel TLV tree to a flat dictionary"""
         try:
             tlv = self.parser(tag_number, value, schema)
@@ -154,3 +156,13 @@ class BerDecoder:
             length = (length << SHIFT_8) | b
 
         return length, length_size + 1
+
+    def parse_blocks(self):
+        with self.buffer_manager.open() as file_buffer:
+            while (tlv := self.decode(file_buffer)) is not None:
+                record, _ = tlv
+                yield record
+
+    def process(self):
+        """Process the BER data and return a list of parsed blocks."""
+        return list(tqdm(self.parse_blocks(), desc="Parsing TLVs", unit=" block"))
