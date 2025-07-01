@@ -423,32 +423,35 @@ def is_avp_flag_valid(flags_byte: int, parameter_flag: str | None = None) -> boo
     return flags_string == parameter_flag
 
 
-class EricssonCDRParser:
+class EricssonVolte:
     DIAMETER_HEADER_FORMAT = struct.Struct(">B3sB3sIII")  # Big-endian format
     HEADER_SIZE = 20  # Fixed 20-byte header
     NTP_EPOCH = datetime(1900, 1, 1)  # For timestamp conversion
     PREFIX_HEADER_LENGTH = 2
 
-    def __init__(self, binary_data: bytes | bytes):
-        self.binary_data = binary_data
-        self.length = len(binary_data)
+    def __init__(self, buffer_manager):
+        self.buffer_manager = buffer_manager
+        self._init_handler()
         self.index = 0
+
+    def _init_handler(self) -> None:
+        """Initialize the handler for parsing AVPs"""
+        with self.buffer_manager.open() as file_buffer:
+            self.binary_data = memoryview(file_buffer.read())
+        self.length = len(self.binary_data)
 
     @staticmethod
     def parse_block(block: bytes) -> dict[str, int | str | bool]:
-        parsed_block = {}
-        parsed_block["error"] = False
+        parsed_blocks = []
         while block:
-            avp, offset = EricssonCDRParser.parse_avp(block)
+            avp, offset = EricssonVolte.parse_avp(block)
             block = block[offset:]
-            parsed_block.update(avp)
-        return parsed_block
+            parsed_blocks.append(avp)
+        return {k: v for block in parsed_blocks for k, v in block.items()}
 
-    @cached_property
     def avps(self) -> Generator[dict[str, int | str | bool]]:
         """Parse all blocks in the binary data"""
-        for block in tqdm(self.blocks(), desc="Parsing AVPs", unit=" block"):
-            yield self.parse_block(block)
+        return (self.parse_block(block) for block in self.blocks())
 
     def blocks(self) -> Generator[bytes]:
         """Generator to yield sliced blocks from binary data to"""
@@ -475,17 +478,17 @@ class EricssonCDRParser:
         Total: 1 + 3 + 1 + 3 + 4 + 4 + 4 = 20 bytes
         """
         index += 2  # Skip first 2 bytes
-        end_idx = index + EricssonCDRParser.HEADER_SIZE
+        end_idx = index + EricssonVolte.HEADER_SIZE
         header = self.binary_data[index:end_idx]
 
         # Validate minimum length
-        if len(header) < EricssonCDRParser.HEADER_SIZE:
+        if len(header) < EricssonVolte.HEADER_SIZE:
             index += len(header)  # Skip this block
             return index, index, True
 
         # Unpack all header fields
         (version, msg_len_bytes, flag_int, cmd_bytes, app_id, hbh_id, e2e_id) = (
-            EricssonCDRParser.DIAMETER_HEADER_FORMAT.unpack(
+            EricssonVolte.DIAMETER_HEADER_FORMAT.unpack(
                 header,
             )
         )
@@ -512,7 +515,7 @@ class EricssonCDRParser:
             raise ValueError(
                 f"Invalid Command-Code: {int.from_bytes(cmd_bytes)} (expected 271 for accounting)"
             )
-        start_idx = index + EricssonCDRParser.HEADER_SIZE
+        start_idx = index + EricssonVolte.HEADER_SIZE
         index = index + msg_length  # msg_length includes the header
         # Build header dictionary
         return start_idx, index, False
@@ -570,13 +573,14 @@ class EricssonCDRParser:
         value_data: bytes = current_block[i + header_size : i + avp_length]  # type: ignore
 
         if (avp_type := avp_def.type) == TYPE_GROUPED:
-            avps, offset = EricssonCDRParser.parse_grouped_avp(value_data)
+            avps, offset = EricssonVolte.parse_grouped_avp(value_data)
             if not avps:
                 return {}, offset
-            return EricssonCDRParser.flatten_avp(avp_def.avp, avps), offset
+            # return EricssonCDRParser.flatten_avp(avp_def.avp, avps), offset
+            return {avp_def.avp: avps}, offset
         else:
             return {
-                avp_def.avp: EricssonCDRParser.parse_simple_value(value_data, avp_type),
+                avp_def.avp: EricssonVolte.parse_simple_value(value_data, avp_type),
             }, offset
 
     @staticmethod
@@ -589,13 +593,13 @@ class EricssonCDRParser:
                         value = f"{previous_value};{value}"  # Concatenate values
                     flattened_avp[key] = value
                 if isinstance(value, dict):
-                    flattened_avp.update(EricssonCDRParser.flatten_avp(key, value))
+                    flattened_avp.update(EricssonVolte.flatten_avp(key, value))
                 elif isinstance(value, list):
                     for item in value:
-                        flattened_avp.update(EricssonCDRParser.flatten_avp(key, item))
+                        flattened_avp.update(EricssonVolte.flatten_avp(key, item))
         elif isinstance(avp, list):
             for item in avp:
-                flattened_avp.update(EricssonCDRParser.flatten_avp(prefix, item))
+                flattened_avp.update(EricssonVolte.flatten_avp(prefix, item))
         return flattened_avp
 
     @staticmethod
@@ -605,7 +609,7 @@ class EricssonCDRParser:
         current_block = binary_data
         total_offset = 0
         while current_block:
-            avp, offset = EricssonCDRParser.parse_avp(current_block)
+            avp, offset = EricssonVolte.parse_avp(current_block)
             current_block = current_block[offset:]  # Move to next AVP
             if avp:
                 avps.append(avp)
@@ -641,7 +645,7 @@ class EricssonCDRParser:
                 return binary_view.tobytes().hex()
         elif avp_type == TYPE_TIME:
             seconds = STRUCT_UNSIGNED_32.unpack(binary_view)[0]
-            return (EricssonCDRParser.NTP_EPOCH + timedelta(seconds=seconds)).strftime(
+            return (EricssonVolte.NTP_EPOCH + timedelta(seconds=seconds)).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )  # Convert to human-readable format
         elif avp_type in (TYPE_ENUMERATED, TYPE_INTEGER_32):
@@ -665,38 +669,7 @@ class EricssonCDRParser:
         else:
             return binary_view.tobytes().hex()  # Fallback for unknown types
 
-
-def parse_file(file_path: Path):
-    import gzip
-    import pandas as pd
-
-    # Read CDR file
-    with gzip.open(file_path, "rb") as f:
-        binary_data = memoryview(f.read())
-    # Parse CDR
-    parser = EricssonCDRParser(binary_data)
-    blocks = list(parser.avps)
-
-    pd.DataFrame(blocks, dtype="category", copy=False).to_parquet(
-        file_path.with_suffix(".parquet"), compression="snappy", index=False
-    )
-
-
-def run():
-    import os
-    from fastcore.parallel import parallel
-
-    gz = Path("/home/rsilva/volte_claro").ls().filter(lambda f: f.suffix == ".gz")
-    files = []
-    for file in gz:
-        if not file.with_suffix(".parquet").is_file():
-            files.append(file)
-
-    files = sorted(gz, key=lambda f: f.stat().st_size)
-    parallel(parse_file, files, progress=True, n_workers=os.cpu_count() // 4, pause=0.1)
-
-
-if __name__ == "__main__":
-    import typer
-
-    typer.run(run)
+    def process(self):
+        return list(
+            tqdm(self.avps(), desc="Parsing AVPs", unit=" block", leave=False)
+        )  # Process all AVPs and return as a list
