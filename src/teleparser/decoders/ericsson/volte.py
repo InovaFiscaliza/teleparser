@@ -1,11 +1,10 @@
-from functools import cached_property
 import struct
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from typing import Generator, Tuple
 import socket
-from fastcore.xtras import Path
 from tqdm.auto import tqdm
+from .transform import transform_ericsson_volte
 
 # Vendor IDs
 VENDOR_3GPP = 10415
@@ -639,10 +638,10 @@ class EricssonVolte:
         """
         if avp_type in (TYPE_OCTET_STRING, TYPE_UTF8_STRING, TYPE_DIAMETER_IDENTITY):
             try:
-                return binary_view.tobytes().decode("utf-8")
+                return binary_view.tobytes().decode("utf-8")  # type: ignore
             except UnicodeDecodeError:
                 # If decoding fails, return string representation of raw bytes
-                return binary_view.tobytes().hex()
+                return binary_view.tobytes().hex()  # type: ignore
         elif avp_type == TYPE_TIME:
             seconds = STRUCT_UNSIGNED_32.unpack(binary_view)[0]
             return (EricssonVolte.NTP_EPOCH + timedelta(seconds=seconds)).strftime(
@@ -653,7 +652,7 @@ class EricssonVolte:
             return STRUCT_SIGNED_32.unpack(binary_view)[0]
         elif avp_type == TYPE_ADDRESS:
             # Address format: 1 byte family + address bytes
-            binary_data = binary_view.tobytes()
+            binary_data = binary_view.tobytes()  # type: ignore
             family = int.from_bytes(binary_data[:2])
             address_bytes = binary_data[2:]
             if family == 1:  # IPv4
@@ -667,9 +666,13 @@ class EricssonVolte:
         elif avp_type == TYPE_UNSIGNED_64:
             return STRUCT_UNSIGNED_64.unpack(binary_view)[0]
         else:
-            return binary_view.tobytes().hex()  # Fallback for unknown types
+            return binary_view.tobytes().hex()  # type: ignore # Fallback for unknown types
 
     def process(self):
         return list(
             tqdm(self.avps(), desc="Parsing AVPs", unit=" block", leave=False)
         )  # Process all AVPs and return as a list
+
+    @staticmethod
+    def transform_func(df):
+        return transform_ericsson_volte(df)

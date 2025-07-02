@@ -1,6 +1,4 @@
-import csv
 import gc
-import gzip
 import os
 import shutil
 import zipfile
@@ -11,17 +9,11 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
-from typing import List, Set
+from typing import Callable, List, Set
 from time import perf_counter
+import pandas as pd
 
-
-from rich.progress import (
-    Progress,
-    BarColumn,
-    TaskProgressColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
+from tqdm.auto import tqdm
 from rich import print
 from teleparser.decoders.ericsson import ericsson_voz_decoder, ericsson_volte_decoder
 from teleparser.buffer import BufferManager
@@ -124,29 +116,22 @@ class CDRFileManager:
         logger.info(f"Created temporary directory for ZIP extraction: {self.temp_dir}")
 
         gz_files: List[Path] = []
-        with self.create_progress_bar() as progress:
-            task = progress.add_task(
-                "[cyan]Extracting ZIP files...", total=len(zip_files)
-            )
-            for zip_file in zip_files:
-                try:
-                    with zipfile.ZipFile(zip_file) as zf:
-                        zf.extractall(self.temp_dir)
-                        extracted = [
-                            self.temp_dir / file
-                            for file in zf.namelist()
-                            if file.endswith(".gz")
-                        ]
-                        gz_files.extend(extracted)
-                        logger.info(
-                            f"Extracted {len(extracted)} GZ files from {zip_file}"
-                        )
-                except zipfile.BadZipFile:
-                    logger.error(
-                        f"Failed to extract {zip_file}: Bad ZIP file", exc_info=True
-                    )
-                    self.failed_files.add(Path(zip_file))
-                progress.update(task, advance=1)
+        for zip_file in tqdm(zip_files, desc="Extracting ZIP files", unit="zip"):
+            try:
+                with zipfile.ZipFile(zip_file) as zf:
+                    zf.extractall(self.temp_dir)
+                    extracted = [
+                        self.temp_dir / file
+                        for file in zf.namelist()
+                        if file.endswith(".gz")
+                    ]
+                    gz_files.extend(extracted)
+                    logger.info(f"Extracted {len(extracted)} GZ files from {zip_file}")
+            except zipfile.BadZipFile:
+                logger.error(
+                    f"Failed to extract {zip_file}: Bad ZIP file", exc_info=True
+                )
+                self.failed_files.add(Path(zip_file))
         return gz_files
 
     def cleanup(self):
@@ -155,30 +140,37 @@ class CDRFileManager:
             logger.info(f"Cleaning up temporary directory: {self.temp_dir}")
             shutil.rmtree(self.temp_dir)
 
-    @staticmethod
-    def create_progress_bar():
-        """Create a progress bar for decoding files"""
-        return Progress(
-            TextColumn("[bold blue]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            TimeRemainingColumn(),
-            expand=True,
-            transient=False,  # Keep completed tasks visible
-        )
+    # @staticmethod
+    # def _save_data(blocks: list, output_file: Path):
+    #     # Use a try-finally block to ensure resources are released
+    #     try:
+    #         all_columns = {k for block in blocks for k in block.keys()}
+    #         # Sort columns for consistent output
+    #         columns = sorted(all_columns)
+    #         with gzip.open(output_file, "wt", newline="") as f:
+    #             writer = csv.DictWriter(f, fieldnames=columns)
+    #             writer.writeheader()
+    #             writer.writerows(blocks)
+
+    #     finally:
+    #         # Explicitly clean up resources
+    #         del blocks
+    #         gc.collect()
 
     @staticmethod
-    def _save_data(blocks: list, output_file: Path):
+    def _save_data(
+        blocks: list, output_file: Path, transform_func: Callable | None = None
+    ):
+        df = pd.DataFrame(blocks, copy=False)
+        if transform_func is not None:
+            df = transform_func(df)
         # Use a try-finally block to ensure resources are released
         try:
-            all_columns = {k for block in blocks for k in block.keys()}
-            # Sort columns for consistent output
-            columns = sorted(all_columns)
-            with gzip.open(output_file, "wt", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=columns)
-                writer.writeheader()
-                writer.writerows(blocks)
-
+            df.to_parquet(output_file, index=False, compression="snappy")
+            logger.info(f"Data saved to {output_file} successfully")
+        except Exception as e:
+            logger.error(f"Failed to save data to {output_file}: {e}", exc_info=True)
+            raise
         finally:
             # Explicitly clean up resources
             del blocks
@@ -198,10 +190,12 @@ class CDRFileManager:
             blocks = decoder.process()
             counter = len(blocks)
             # Save the processed data
-            output_file = output_path / f"{file_path.stem}.csv"
-            CDRFileManager._save_data(blocks, output_file)
-            # circumvent bug of not removing .gzip extension after decompression
-            output_file.rename(output_file.with_suffix(".csv.gzip"))
+            output_file = output_path / f"{file_path.stem}.parquet"
+            CDRFileManager._save_data(
+                blocks, output_file, transform_func=decoder.transform_func
+            )
+            # # circumvent bug of not removing .gzip extension after decompression
+            # output_file.rename(output_file.with_suffix(".csv.gzip"))
 
             return {"file": file_path, "records": counter, "status": "success"}
 
@@ -223,66 +217,38 @@ class CDRFileManager:
         """Decode all files sequentially with a progress bar and return results"""
         results = []
         logger.info(f"Starting sequential processing of {len(self.gz_files)} files")
-        with CDRFileManager.create_progress_bar() as progress:
-            # Main task for overall progress
-            main_task = progress.add_task(
-                "[cyan]Decoding CDR files...", total=len(self.gz_files)
-            )
-            for file_path in self.gz_files:
-                try:
-                    logger.info(f"Processing file: {file_path}")
-
-                    # Process the file
-                    result = self.decode_file(
-                        file_path=file_path,
-                        decoder=self.decoder,
-                        output_path=self.output_path,
+        for file_path in tqdm(self.gz_files, desc="Decoding CDR files", unit="file"):
+            try:
+                logger.info(f"Processing file: {file_path}")
+                result = self.decode_file(
+                    file_path=file_path,
+                    decoder=self.decoder,
+                    output_path=self.output_path,
+                )
+                self.processed_files.add(file_path)
+                results.append(result)
+                if result["status"] == "success":
+                    logger.info(
+                        f"Successfully processed {file_path}: {result.get('records', 0)} records"
                     )
-
-                    # Add to processed files
-                    self.processed_files.add(file_path)
-                    results.append(result)
-                    if result["status"] == "success":
-                        logger.info(
-                            f"Successfully processed {file_path}: {result.get('records', 0)} records"
-                        )
-                        progress.update(
-                            main_task,
-                            description=f"[green]Processed: {file_path.name} [cyan]({result['records']} records)",
-                            advance=1,
-                        )
-
-                    else:
-                        logger.error(
-                            f"Failed to process {file_path}: {result.get('error', 'Unknown error')}"
-                        )
-                        progress.update(
-                            main_task,
-                            description=f"[red]Failed: {file_path.name})",
-                            advance=1,
-                        )
-
-                except Exception as e:
-                    # Handle errors
-                    error_details = traceback.format_exc()
+                else:
                     logger.error(
-                        f"Exception while processing {file_path}: {str(e)}\n{error_details}"
+                        f"Failed to process {file_path}: {result.get('error', 'Unknown error')}"
                     )
-                    self.failed_files.add(file_path)
-                    results.append(
-                        {
-                            "file": file_path,
-                            "error": str(e),
-                            "traceback": error_details,
-                            "status": "failed",
-                        }
-                    )
-                    progress.update(
-                        main_task,
-                        description=f"[red]Failed: {file_path.name})",
-                        advance=1,
-                    )
-
+            except Exception as e:
+                error_details = traceback.format_exc()
+                logger.error(
+                    f"Exception while processing {file_path}: {str(e)}\n{error_details}"
+                )
+                self.failed_files.add(file_path)
+                results.append(
+                    {
+                        "file": file_path,
+                        "error": str(e),
+                        "traceback": error_details,
+                        "status": "failed",
+                    }
+                )
         return results
 
     @staticmethod
@@ -311,78 +277,59 @@ class CDRFileManager:
 
     def decode_files_parallel(self, workers: int):
         """Decode files using parallel processing with multiple CPU cores"""
-
-        # Determine the number of workers (use fewer than available cores to avoid overloading)
-        max_workers = min(workers, os.cpu_count(), len(self.gz_files))
+        cpu_count = os.cpu_count() or 1
+        max_workers = min(workers, cpu_count, len(self.gz_files))
         logger.info(
             f"Starting parallel processing with {max_workers} workers for {len(self.gz_files)} files"
         )
-
-        # Create a progress bar for tracking overall progress
-        with CDRFileManager.create_progress_bar() as progress:
-            # Main task for overall progress
-            main_task = progress.add_task(
-                "[cyan]Decoding CDR files...", total=len(self.gz_files)
-            )
-            results = []
-            # Use ProcessPoolExecutor for true parallel processing
-            with ProcessPoolExecutor(max_workers=max_workers) as executor:
-                # Submit all tasks
-                future_to_file = {
-                    executor.submit(
-                        CDRFileManager.process_single_file,
-                        file_path,
-                        self.decoder,
-                        self.output_path,
-                    ): file_path
-                    for file_path in self.gz_files
-                }
-
-                # Process results as they complete
-                for future in concurrent.futures.as_completed(future_to_file):
-                    file_path = future_to_file[future]
-                    try:
-                        logger.info(f"Processing result for file: {file_path}")
-
-                        data = future.result()
-                        result = data.get("result", {})
-                        if "records" in result:
-                            logger.info(
-                                f"Successfully processed {file_path}: {result['records']} records"
-                            )
-                        else:
-                            logger.error(
-                                f"Failed to process {file_path}: {data.get('error', 'Unknown error')}"
-                            )
-                        if "traceback" in data:
-                            logger.debug(
-                                f"Traceback for {file_path}:\n{data['traceback']}"
-                            )
-
-                        # Update main progress
-                        progress.update(
-                            main_task,
-                            description=f"[green]Processed: {file_path.name} [cyan]({result['records']} records)",
-                            advance=1,
+        results = []
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            future_to_file = {
+                executor.submit(
+                    CDRFileManager.process_single_file,
+                    file_path,
+                    self.decoder,
+                    self.output_path,
+                ): file_path
+                for file_path in self.gz_files
+            }
+            for future in tqdm(
+                concurrent.futures.as_completed(future_to_file),
+                total=len(future_to_file),
+                desc="Decoding CDR files (parallel)",
+                unit="file",
+            ):
+                file_path = future_to_file[future]
+                try:
+                    logger.info(f"Processing result for file: {file_path}")
+                    data = future.result()
+                    result = data.get("result", {})
+                    if "records" in result:
+                        logger.info(
+                            f"Successfully processed {file_path}: {result['records']} records"
                         )
-
-                        results.append(result)
-                    except Exception as exc:
-                        error_details = traceback.format_exc()
+                    else:
                         logger.error(
-                            f"Exception processing result for {file_path}: {str(exc)}\n{error_details}"
+                            f"Failed to process {file_path}: {data.get('error', 'Unknown error')}"
                         )
-                        progress.update(main_task, advance=1)
-                        results.append(
-                            {
-                                "file": file_path,
-                                "error": str(exc),
-                                "traceback": error_details,
-                                "status": "failed",
-                            }
-                        )
-                    gc.collect()
-            return results
+                    if "traceback" in data:
+                        logger.debug(f"Traceback for {file_path}:\n{data['traceback']}")
+                    results.append(result)
+                except Exception as exc:
+                    error_details = traceback.format_exc()
+                    logger.error(
+                        f"Exception processing result for {file_path}: {str(exc)}\n{error_details}"
+                    )
+                    results.append(
+                        {
+                            "file": file_path,
+                            "error": str(exc),
+                            "traceback": error_details,
+                            "status": "failed",
+                        }
+                    )
+                gc.collect()
+        return results
 
 
 def display_summary(results, total_time, output_path):

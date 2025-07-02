@@ -2,7 +2,7 @@ from collections import namedtuple
 from dataclasses import dataclass
 from typing import Optional, Tuple, Callable
 from io import BufferedReader, BytesIO
-from tqdm.auto import tqdm
+from tqdm.auto import tqdm  # Use standard tqdm for compatibility with nesting
 
 # Basic ASN.1 Reference
 # https://luca.ntop.org/Teaching/Appunti/asn1.html
@@ -168,3 +168,7 @@ class BerDecoder:
         return list(
             tqdm(self.parse_blocks(), desc="Parsing TLVs", unit=" block", leave=False)
         )
+
+    @property
+    def transform_func(self):  # Just a placeholder for compatibility
+        return None
