@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from typing import Generator, Tuple
 import socket
 from tqdm.auto import tqdm
-from .transform import transform_ericsson_volte
+
+from teleparser.decoders.ericsson.transform import transform_ericsson_volte
 
 # Vendor IDs
 VENDOR_3GPP = 10415
@@ -575,8 +576,7 @@ class EricssonVolte:
             avps, offset = EricssonVolte.parse_grouped_avp(value_data)
             if not avps:
                 return {}, offset
-            # return EricssonCDRParser.flatten_avp(avp_def.avp, avps), offset
-            return {avp_def.avp: avps}, offset
+            return EricssonVolte.flatten_avp(avp_def.avp, avps), offset
         else:
             return {
                 avp_def.avp: EricssonVolte.parse_simple_value(value_data, avp_type),
@@ -676,3 +676,41 @@ class EricssonVolte:
     @staticmethod
     def transform_func(df):
         return transform_ericsson_volte(df)
+
+
+def run(
+    buffer_manager,
+    output_file: str | None = None,
+) -> list[dict[str, int | str | bool]]:
+    """Run the Ericsson Volte parser on the provided buffer manager"""
+    import json
+
+    parser = EricssonVolte(buffer_manager)
+    parsed_data = parser.process()
+    df = pd.DataFrame(parsed_data, copy=False)
+    df.astype("category", copy=False).to_parquet(
+        output_file, index=False, compression="snappy"
+    )
+
+    # if transform:
+    #     df = parser.transform_func(df)
+
+
+if __name__ == "__main__":
+    import typer
+    import json
+    from teleparser.buffer import BufferManager
+    from pathlib import Path
+    import pandas as pd
+
+    app = typer.Typer()
+
+    @app.command()
+    def run_parser(
+        input_file: Path,
+        output_file: Path,
+    ):
+        buffer_manager = BufferManager(input_file)
+        run(buffer_manager, output_file)
+
+    app()

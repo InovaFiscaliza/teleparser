@@ -85,8 +85,7 @@ class CDRFileManager:
                 f"Decoder invalid or not implemented for {self.cdr_type}"
             )
         self.decoder = DECODERS[self.cdr_type]
-        # timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        output_dir = self.output_path  # / f"{timestamp}"
+        output_dir = self.output_path
         output_dir.mkdir(parents=True, exist_ok=True)
         self.output_path = output_dir
         logger.info(f"Output directory created: {output_dir}")
@@ -106,7 +105,13 @@ class CDRFileManager:
         if zip_files:
             logger.info(f"Found {len(zip_files)} ZIP files to extract")
             gz_files.extend(self.decompress_zips(zip_files))
+        gz_files = [
+            f
+            for f in gz_files
+            if not (self.output_path / f"{f.stem}.parquet").is_file()
+        ]
         logger.info(f"Found {len(gz_files)} GZ files to process")
+        gz_files.sort(key=lambda x: x.stat().st_size)
         return gz_files
 
     def decompress_zips(self, zip_files: List[Path]) -> List[Path]:
@@ -140,23 +145,6 @@ class CDRFileManager:
             logger.info(f"Cleaning up temporary directory: {self.temp_dir}")
             shutil.rmtree(self.temp_dir)
 
-    # @staticmethod
-    # def _save_data(blocks: list, output_file: Path):
-    #     # Use a try-finally block to ensure resources are released
-    #     try:
-    #         all_columns = {k for block in blocks for k in block.keys()}
-    #         # Sort columns for consistent output
-    #         columns = sorted(all_columns)
-    #         with gzip.open(output_file, "wt", newline="") as f:
-    #             writer = csv.DictWriter(f, fieldnames=columns)
-    #             writer.writeheader()
-    #             writer.writerows(blocks)
-
-    #     finally:
-    #         # Explicitly clean up resources
-    #         del blocks
-    #         gc.collect()
-
     @staticmethod
     def _save_data(
         blocks: list, output_file: Path, transform_func: Callable | None = None
@@ -166,7 +154,9 @@ class CDRFileManager:
             df = transform_func(df)
         # Use a try-finally block to ensure resources are released
         try:
-            df.to_parquet(output_file, index=False, compression="snappy")
+            df.astype("category", copy=False).to_parquet(
+                output_file, index=False, compression="snappy"
+            )
             logger.info(f"Data saved to {output_file} successfully")
         except Exception as e:
             logger.error(f"Failed to save data to {output_file}: {e}", exc_info=True)
@@ -194,8 +184,6 @@ class CDRFileManager:
             CDRFileManager._save_data(
                 blocks, output_file, transform_func=decoder.transform_func
             )
-            # # circumvent bug of not removing .gzip extension after decompression
-            # output_file.rename(output_file.with_suffix(".csv.gzip"))
 
             return {"file": file_path, "records": counter, "status": "success"}
 
@@ -394,8 +382,9 @@ def main(
                 f"Detailed information for {len(failed_files)} failed files:"
             )
             for failed in failed_files:
-                logger.error(f"Failed file: {failed.get('file')}")
-                logger.error(f"Error: {failed.get('error')}")
+                logger.error(
+                    f"Failed file: {failed.get('file')}, Error: {failed.get('error')}"
+                )
                 if "traceback" in failed:
                     logger.debug(f"Traceback:\n{failed['traceback']}")
 

@@ -1,7 +1,5 @@
 def transform_ericsson_volte(df):
-    df[["Origin-Host"]] = (
-        df["Session-Id"].str.split(";", n=1, expand=True)[0].astype("string")
-    )
+    df["Origin-Host"] = df["Session-Id"].str.split(";", n=1, expand=True)[0]
     df.loc[df["Vendor-Id"].notna(), ["Vendor", "Type"]] = ["HUAWEI", "TAS"]
     df.loc[df["Origin-Host"].str.startswith("pcscf"), ["Vendor", "Type"]] = [
         "ERICSSON",
