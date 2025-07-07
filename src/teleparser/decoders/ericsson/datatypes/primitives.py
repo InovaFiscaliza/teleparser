@@ -1,6 +1,6 @@
 """This module implements primitive datatypes as described in the ASN.1 Especification"""
 
-from functools import cached_property, wraps
+from functools import wraps
 from . import exceptions
 
 
@@ -70,21 +70,27 @@ def fixed_size_ia5_string(size):
 class OctetString:
     """Implement ASN.1 Octet String type with optional size and boundaries constraints"""
 
-    def __init__(self, octets, size: int = None, lower: int = None, upper: int = None):
+    __slots__ = ("octets", "size", "value")
+
+    def __init__(
+        self,
+        octets,
+        size: int | None = None,
+        lower: int | None = None,
+        upper: int | None = None,
+    ):
+        self.octets = octets
+
         if size is None:
             size = len(octets)
-        elif size and size != len(octets):
+        elif size and size > len(octets):
             raise exceptions.OctetStringError(
-                f"{size:=} parameter is different from octets' length: {len(octets)}"
+                f"{size=} parameter is bigger than octets' length: {len(octets)}"
             )
         if lower and lower > size:
-            raise exceptions.OctetStringError(
-                f"{size:=} is smaller than {lower:=} limit"
-            )
+            raise exceptions.OctetStringError(f"{size=} is smaller than {lower=} limit")
         if upper and size > upper:
-            raise exceptions.OctetStringError(
-                f"{size:=} is bigger than {upper:=} limit"
-            )
+            raise exceptions.OctetStringError(f"{size=} is bigger than {upper=} limit")
         self.octets = octets
         self.size = size
 
@@ -92,38 +98,31 @@ class OctetString:
 class DigitString(OctetString):
     """ASN.1 DigitString implementation for OCTET STRING (SIZE(1..n))"""
 
+    __slots__ = ("octets", "size", "digits", "value")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    @cached_property
-    def digits(self):  # sourcery skip: identity-comprehension
-        # When you iterate over a bytes object, it returns the bytes as integers
-        return list(self.octets)
-
-    @property
-    def value(self) -> str:
-        """Returns the n digits as a string"""
-        return "".join(str(d) for d in self.digits)
+        self.digits = list(self.octets)
+        self.value = "".join(str(d) for d in self.digits)
 
 
 class Bool:
     """Flag type for presence of optional NULL values"""
 
+    __slots__ = ("value",)
+
     def __init__(self, byte: bytes):
         assert not byte, "byte should be empty"
-
-    @property
-    def value(self):
-        return True
+        self.value = True
 
 
 @fixed_size_digit_string(1)
 class ByteEnum(DigitString):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.value = self._value()
 
-    @property
-    def value(self):
+    def _value(self):
         return self.VALUES.get(int.from_bytes(self.octets, "big"), "Unknown")
 
 
@@ -134,6 +133,8 @@ class AddressString(OctetString):
     - First octet: TON (4 bits) + NPI (4 bits)
     - Subsequent octets: TBCD encoded digits (2 digits per octet)
     """
+
+    __slots__ = ("octets", "size", "ton", "npi", "digits", "value")
 
     # Type of Number (TON) values
     TON_UNKNOWN = 0
@@ -157,6 +158,7 @@ class AddressString(OctetString):
         super().__init__(octets, **kwargs)
         self._parse_ton_npi()
         self._parse_digits()
+        self.value = self.digits
 
     def _parse_ton_npi(self):
         """Parse Type of Number and Numbering Plan Indicator from first octet"""
@@ -168,10 +170,6 @@ class AddressString(OctetString):
         """Parse TBCD-encoded digits from remaining octets"""
         self.digits = TBCDString(self.octets[1:]).value
 
-    @property
-    def value(self):
-        return self.digits
-
     def __str__(self) -> str:
         """String representation including TON/NPI and number"""
         return f"TON={self.ton}, NPI={self.npi}, Number={self.digits}"
@@ -180,16 +178,15 @@ class AddressString(OctetString):
 class Ia5String(OctetString):
     """ASN.1 IA5String implementation for OCTET STRING (SIZE(1..n))"""
 
+    __slots__ = ("octets", "size", "value")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    @property
-    def value(self):
-        return "".join(chr(byte) for byte in self.octets)
+        self.value = "".join(chr(byte) for byte in self.octets)
 
 
 class TBCDString(OctetString):
-    """TBCDString ::= OCTET STRING (SIZE(1..n))
+    r"""TBCDString ::= OCTET STRING (SIZE(1..n))
 
     |    |    |    |    |    |    |    |    |
     |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
@@ -221,9 +218,12 @@ class TBCDString(OctetString):
 
     """
 
+    __slots__ = ("octets", "size", "digits", "value")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._parse_digits()
+        self.value = "".join(str(d) for d in self.digits)
 
     def _parse_digits(self):
         digits = []
@@ -236,14 +236,11 @@ class TBCDString(OctetString):
             digits.pop()
         self.digits = digits
 
-    @property
-    def value(self):
-        "Returns the 2n digits as a string"
-        return "".join(str(d) for d in self.digits)
-
 
 class UnsignedInt:
     """OCTET STRING is coded as an unsigned integer."""
+
+    __slots__ = ("octets", "size", "value")
 
     def __init__(self, octets: bytes, size: int):
         if not isinstance(octets, bytes):
@@ -252,10 +249,4 @@ class UnsignedInt:
             raise TypeError(f"size parameter is not an int: {type(octets)}")
         # assert len(octets) == size, f"Parameter should have size {size}, {len(octets)=}"
         self.octets = octets
-
-    @property
-    def value(self) -> int:
-        """Call ID Number - 3 byte unsigned integer
-        it convert 3 bytes to integer (big endian)"
-        """
-        return int.from_bytes(self.octets, byteorder="big")
+        self.value = int.from_bytes(octets, byteorder="big")

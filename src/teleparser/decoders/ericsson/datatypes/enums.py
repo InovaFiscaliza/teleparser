@@ -1,7 +1,7 @@
-from . import primitives
+from .primitives import ByteEnum
 
 
-class AirInterfaceUserRate(primitives.ByteEnum):
+class AirInterfaceUserRate(ByteEnum):
     """ASN.1 Formal Description
     AirInterfaceUserRate ::= ENUMERATED
     (aIUR9600bps                  (1),
@@ -34,7 +34,7 @@ class AirInterfaceUserRate(primitives.ByteEnum):
     }
 
 
-class AsyncSyncIndicator(primitives.ByteEnum):
+class AsyncSyncIndicator(ByteEnum):
     """ASN.1 Formal Description
     AsyncSyncIndicator ::= ENUMERATED
     (syncData        (0),
@@ -47,7 +47,7 @@ class AsyncSyncIndicator(primitives.ByteEnum):
     }
 
 
-class BearerServiceCode(primitives.ByteEnum):
+class BearerServiceCode(ByteEnum):
     """ASN.1 Formal Description
     BearerServiceCode ::= OCTET STRING (SIZE(1))
     |    |    |    |    |    |    |    |    |
@@ -101,7 +101,47 @@ class BearerServiceCode(primitives.ByteEnum):
     }
 
 
-class CallAttemptState(primitives.ByteEnum):
+class BitRate(ByteEnum):
+    """ASN.1 Formal Description
+    BitRate ::= OCTET STRING (SIZE(1))
+    |    |    |    |    |    |    |    |    |
+    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    |    |    |    |    |    |    |    |    |
+    /---------------------------------------/
+    | MSB                                LSB|  octet 1
+    /---------------------------------------/
+    BitRate                      Bits 8 7 6 5 4 3 2 1
+    4.75 kbps                        0 0 0 0 0 0 0 1
+    5.15 kbps                        0 0 0 0 0 0 1 0
+    5.9  kbps                        0 0 0 0 0 0 1 1
+    6.7  kbps                        0 0 0 0 0 1 0 0
+    7.4  kbps                        0 0 0 0 0 1 0 1
+    7.95 kbps                        0 0 0 0 0 1 1 0
+    10.2  kbps                        0 0 0 0 0 1 1 1
+    12.2  kbps                        0 0 0 0 1 0 0 0
+    14.4  kbps                        0 0 0 0 1 0 0 1
+    64.0  kbps                        0 0 0 0 1 0 1 0
+    28.8  kbps                        0 0 0 0 1 0 1 1
+    57.6  kbps                        0 0 0 0 1 1 0 0
+    """
+
+    VALUES = {
+        1: "4.75 kbps",
+        2: "5.15 kbps",
+        3: "5.9 kbps",
+        4: "6.7 kbps",
+        5: "7.4 kbps",
+        6: "7.95 kbps",
+        7: "10.2 kbps",
+        8: "12.2 kbps",
+        9: "14.4 kbps",
+        10: "64.0 kbps",
+        11: "28.8 kbps",
+        12: "57.6 kbps",
+    }
+
+
+class CallAttemptState(ByteEnum):
     """ASN.1 Formal Description
     CallAttemptState ::= ENUMERATED
     (initialState           (0),
@@ -126,7 +166,7 @@ class CallAttemptState(primitives.ByteEnum):
     }
 
 
-class CallPosition(primitives.ByteEnum):
+class CallPosition(ByteEnum):
     octets: bytes
     VALUES = {
         0: "valueUsedForAllCallsToDetermineIfOutputToTakePlace",
@@ -136,7 +176,76 @@ class CallPosition(primitives.ByteEnum):
     }
 
 
-class ChannelAllocationPriorityLevel(primitives.ByteEnum):
+class CarrierSelectionSubstitutionInformation(ByteEnum):
+    r"""Carrier Selection Substitution Information
+
+    This parameter identifies the method used to select a 
+    carrier.
+
+    This parameter is present only when an interexchange
+    carrier was used. The Carrier Selection Substitution
+    Information (CSSI) supplements the ISUP Carrier Selection
+    Information (CSI) parameter.
+    ASN.1 Formal Description
+
+    CarrierSelectionSubstitutionInformation ::= OCTET STRING
+                                                (SIZE(1))
+
+    |   |   |   |   |   |   |   |   |
+    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
+    |   |   |   |   |   |   |   |   |
+    /-------------------------------\
+    |MSB                         LSB|  Octet 1
+    \-------------------------------/
+
+    Note: The OCTET STRING is coded as an unsigned INTEGER.
+
+    CarrierSelectionSubstitionInformation
+
+                                Bits  8 7 6 5 4 3 2 1
+
+    Presubscribed carrier exists,       0 0 0 0 0 0 0 1
+    and carrier is not input by
+    calling party. Presubscribed
+    carrier is used.
+
+    Presubscribed carrier is same as    0 0 0 0 0 0 1 0
+    carrier input by calling party.
+    Input carrier is used.
+
+    Presubscribed carrier exists,       0 0 0 0 0 0 1 1
+    and input by calling party is
+    undetermined. Presubscribed
+    carrier is used.
+
+    Carrier is input by calling party,  0 0 0 0 0 1 0 0
+    and it is not the presubscribed
+    carrier for the calling party.
+    Input carrier is used.
+
+    Carrier given by Carrier Analysis   0 0 0 0 0 1 0 1
+    is used instead of presubscribed
+    carrier.
+
+    Carrier given by Carrier Analysis   0 0 0 0 0 1 1 0
+    is used instead of carrier input
+    by calling party.
+
+    Default carrier is used.            0 0 0 0 0 1 1 1
+    """
+
+    VALUES = {
+        1: "Presubscribed carrier exists, and carrier is not input by calling party. Presubscribed carrier is used.",
+        2: "Presubscribed carrier is same as carrier input by calling party. Input carrier is used.",
+        3: "Presubscribed carrier exists, and input by calling party is undetermined. Presubscribed carrier is used.",
+        4: "Carrier is input by calling party, and it is not the presubscribed carrier for the calling party. Input carrier is used.",
+        5: "Carrier given by Carrier Analysis is used instead of presubscribed carrier.",
+        6: "Carrier given by Carrier Analysis is used instead of carrier input by calling party.",
+        7: "Default carrier is used.",
+    }
+
+
+class ChannelAllocationPriorityLevel(ByteEnum):
     """ASN.1 Formal Description
     ChannelAllocationPriorityLevel ::= OCTET STRING (SIZE(1))
     |   |   |   |   |   |   |   |   |
@@ -177,12 +286,11 @@ class ChannelAllocationPriorityLevel(primitives.ByteEnum):
         15: "Priority level not used",
     }
 
-    @property
-    def value(self):
+    def _value(self):
         return self.VALUES[(self.octets[0] >> 2) & 0x0F]
 
 
-class ChangeInitiatingParty(primitives.ByteEnum):
+class ChangeInitiatingParty(ByteEnum):
     """ASN.1 Formal Description
     ChangeInitiatingParty ::= ENUMERATED
     (userInitiated                  (0),
@@ -195,7 +303,7 @@ class ChangeInitiatingParty(primitives.ByteEnum):
     }
 
 
-class ChargedParty(primitives.ByteEnum):
+class ChargedParty(ByteEnum):
     """ASN.1 Formal Description
     ChargedParty ::= ENUMERATED
     (chargingOfCallingSubscriber  (0),
@@ -210,7 +318,7 @@ class ChargedParty(primitives.ByteEnum):
     }
 
 
-class CRIIndicator(primitives.ByteEnum):
+class CRIIndicator(ByteEnum):
     """ASN.1 Formal Description
     CRIIndicator ::= ENUMERATED
     (chargeRateInformationAcknowledged       (1),
@@ -223,7 +331,7 @@ class CRIIndicator(primitives.ByteEnum):
     }
 
 
-class DefaultCallHandling(primitives.ByteEnum):
+class DefaultCallHandling(ByteEnum):
     """ASN.1 Formal Description
     DefaultCallHandling ::= ENUMERATED
     (continueCall                    (0),
@@ -236,7 +344,7 @@ class DefaultCallHandling(primitives.ByteEnum):
     }
 
 
-class DefaultSMSHandling(primitives.ByteEnum):
+class DefaultSMSHandling(ByteEnum):
     """ASN.1 Formal Description
     DefaultSMS-Handling ::= ENUMERATED
     (continueTransaction             (0),
@@ -249,7 +357,7 @@ class DefaultSMSHandling(primitives.ByteEnum):
     }
 
 
-class DeliveryOfErroneousSDU(primitives.ByteEnum):
+class DeliveryOfErroneousSDU(ByteEnum):
     """ASN.1 Formal Description
     DeliveryOfErroneousSDU ::= ENUMERATED
     (yes                              (0),
@@ -264,7 +372,7 @@ class DeliveryOfErroneousSDU(primitives.ByteEnum):
     }
 
 
-class DisconnectingParty(primitives.ByteEnum):
+class DisconnectingParty(ByteEnum):
     """Disconnecting Party
 
       This parameter indicates whether the call was disconnected
@@ -289,7 +397,7 @@ class DisconnectingParty(primitives.ByteEnum):
     }
 
 
-class EMLPPPriorityLevel(primitives.ByteEnum):
+class EMLPPPriorityLevel(ByteEnum):
     """Enhanced Multi-Level Precedence and Pre-Emption Service
     Priority Level
 
@@ -338,12 +446,11 @@ class EMLPPPriorityLevel(primitives.ByteEnum):
         7: "Priority level A = highest priority for subscription",
     }
 
-    @property
-    def value(self):
+    def _value(self):
         return self.VALUES[self.octets[0] & 7]
 
 
-class EosInfo(primitives.ByteEnum):
+class EosInfo(ByteEnum):
     """End-of-Selection Information  (M)
 
       This parameter contains End-of-Selection (EOS) information
@@ -458,7 +565,7 @@ class EosInfo(primitives.ByteEnum):
     }
 
 
-class FirstRadioChannelUsed(primitives.ByteEnum):
+class FirstRadioChannelUsed(ByteEnum):
     """ASN.1 Formal Description
     FirstRadioChannelUsed ::= ENUMERATED
     (fullRateChannel               (0),
@@ -471,7 +578,7 @@ class FirstRadioChannelUsed(primitives.ByteEnum):
     }
 
 
-class FixedNetworkUserRate(primitives.ByteEnum):
+class FixedNetworkUserRate(ByteEnum):
     """ASN.1 Formal Description
     FixedNetworkUserRate ::= ENUMERATED
     (fNUR9600bps                  (1),
@@ -499,7 +606,7 @@ class FixedNetworkUserRate(primitives.ByteEnum):
     }
 
 
-class FrequencyBandSupported(primitives.ByteEnum):
+class FrequencyBandSupported(ByteEnum):
     """Frequency Band Supported
 
       This parameter provides information about different
@@ -533,22 +640,20 @@ class FrequencyBandSupported(primitives.ByteEnum):
         1: Frequency Band supported
     """
 
-    def __init__(self, octets):
-        super().__init__(octets)
-        self._parse_frequency_band()
+    __slots__ = ("octets", "size", "value")
 
-    def _parse_frequency_band(self):
-        """Parse Frequency Band from octets 1 and 2"""
-        self.pgsm = self.octets[0] & 1 == 1
-        self.egsm = self.octets[0] & 2 == 2
-        self.gsm1800 = self.octets[0] & 3 == 3
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    @property
-    def value(self):
-        return {"pgsm": self.pgsm, "egsm": self.egsm, "gsm1800": self.gsm1800}
+    def _value(self):
+        return {
+            "pgsm": self.octets[0] & 1 == 1,
+            "egsm": self.octets[0] & 2 == 2,
+            "gsm1800": self.octets[0] & 3 == 3,
+        }
 
 
-class INMarkingOfMS(primitives.ByteEnum):
+class INMarkingOfMS(ByteEnum):
     """ASN.1 Formal Description
     INMarkingOfMS ::= ENUMERATED
     (originatingINService                                 (1),
@@ -588,7 +693,7 @@ class INMarkingOfMS(primitives.ByteEnum):
     }
 
 
-class IntermediateRate(primitives.ByteEnum):
+class IntermediateRate(ByteEnum):
     """ASN.1 Formal Description
     IntermediateRate ::= ENUMERATED
     (rate8KbitPerSecondUsed           (2),
@@ -601,7 +706,7 @@ class IntermediateRate(primitives.ByteEnum):
     }
 
 
-class LCSClientType(primitives.ByteEnum):
+class LCSClientType(ByteEnum):
     """ASN.1 Formal Description
     LCSClientType ::= ENUMERATED
     (emergencyServices                  (0),
@@ -618,7 +723,7 @@ class LCSClientType(primitives.ByteEnum):
     }
 
 
-class MessageTypeIndicator(primitives.ByteEnum):
+class MessageTypeIndicator(ByteEnum):
     """ASN.1 Formal Description
     MessageTypeIndicator ::= ENUMERATED
     (sMSdeliverSCtoMS         (0),
@@ -639,7 +744,7 @@ class MessageTypeIndicator(primitives.ByteEnum):
     }
 
 
-class MobileUserClass1(primitives.ByteEnum):
+class MobileUserClass1(ByteEnum):
     """Mobile User Class 1
 
       This parameter contains Mobile system supplementary
@@ -682,13 +787,12 @@ class MobileUserClass1(primitives.ByteEnum):
         5: "PHS service",
     }
 
-    @property
-    def value(self):
+    def _value(self):
         number = self.octets[0]
         return "Spare" if 6 <= number <= 255 else self.VALUES[number]
 
 
-class NumberOfChannels(primitives.ByteEnum):
+class NumberOfChannels(ByteEnum):
     """ASN.1 Formal Description
     NumberOfChannels ::= ENUMERATED
     (oneTrafficChannel         (0),
@@ -713,7 +817,7 @@ class NumberOfChannels(primitives.ByteEnum):
     }
 
 
-class OptimalRoutingType(primitives.ByteEnum):
+class OptimalRoutingType(ByteEnum):
     """ASN.1 Formal Description
     OptimalRoutingType ::= ENUMERATED
     (optimalRoutingAtLateCallForwarding    (0))
@@ -724,7 +828,7 @@ class OptimalRoutingType(primitives.ByteEnum):
     }
 
 
-class OriginatedCode(primitives.ByteEnum):
+class OriginatedCode(ByteEnum):
     """Originated Code
 
       This parameter indicates from where the call is originated.
@@ -761,7 +865,7 @@ class OriginatedCode(primitives.ByteEnum):
     }
 
 
-class OriginatingLineInformation(primitives.ByteEnum):
+class OriginatingLineInformation(ByteEnum):
     """Originating Location Number
 
       This parameter contains information, that is,
@@ -820,7 +924,7 @@ class OriginatingLineInformation(primitives.ByteEnum):
     }
 
 
-class OutputForSubscriber(primitives.ByteEnum):
+class OutputForSubscriber(ByteEnum):
     """Output for Subscriber
 
       This parameter indicates if the ICI output was made
@@ -841,7 +945,7 @@ class OutputForSubscriber(primitives.ByteEnum):
     }
 
 
-class OutputType(primitives.ByteEnum):
+class OutputType(ByteEnum):
     """Output Type
 
       This field is used internally for Adjunc Processor(AP)
@@ -871,7 +975,7 @@ class OutputType(primitives.ByteEnum):
     }
 
 
-class RadioChannelProperty(primitives.ByteEnum):
+class RadioChannelProperty(ByteEnum):
     """ASN.1 Formal Description
     RadioChannelProperty ::= ENUMERATED
     (halfRateChannel                            (0),
@@ -912,7 +1016,7 @@ class RadioChannelProperty(primitives.ByteEnum):
     }
 
 
-class RegionalServiceUsed(primitives.ByteEnum):
+class RegionalServiceUsed(ByteEnum):
     """ASN.1 Formal Description
     RegionalServiceUsed ::= ENUMERATED
     (localSubscription                                  (0),
@@ -929,7 +1033,7 @@ class RegionalServiceUsed(primitives.ByteEnum):
     }
 
 
-class ResponseTimeCategory(primitives.ByteEnum):
+class ResponseTimeCategory(ByteEnum):
     """ASN.1 Formal Description
     ResponseTimeCategory ::= ENUMERATED
     (lowdelay       (0),
@@ -942,7 +1046,7 @@ class ResponseTimeCategory(primitives.ByteEnum):
     }
 
 
-class SelectedCodec(primitives.ByteEnum):
+class SelectedCodec(ByteEnum):
     """ASN.1 Formal Description
     SelectedCodec ::= ENUMERATED
     (gSMFullRate                (0),
@@ -972,7 +1076,7 @@ class SelectedCodec(primitives.ByteEnum):
     }
 
 
-class ServiceSwitchingType(primitives.ByteEnum):
+class ServiceSwitchingType(ByteEnum):
     """ASN.1 Formal Description
     ServiceSwitchingType ::= ENUMERATED
     (speechToFax       (0),
@@ -985,7 +1089,7 @@ class ServiceSwitchingType(primitives.ByteEnum):
     }
 
 
-class Single(primitives.ByteEnum):
+class Single(ByteEnum):
     """ASN.1 Formal Description
     Single ::=  ENUMERATED
     (aPartyToBeCharged      (0),
@@ -1002,7 +1106,7 @@ class Single(primitives.ByteEnum):
     }
 
 
-class SMSResult(primitives.ByteEnum):
+class SMSResult(ByteEnum):
     """ASN.1 Formal Description
     SMSResult ::= ENUMERATED
     (unsuccessfulMOSMSDeliverytoSMSCDuetoCAMELReason  (0),
@@ -1015,7 +1119,7 @@ class SMSResult(primitives.ByteEnum):
     }
 
 
-class SpeechCoderVersion(primitives.ByteEnum):
+class SpeechCoderVersion(ByteEnum):
     """ASN.1 Formal Description
     SpeechCoderVersion ::= ENUMERATED
     (fullRateVersion1         (0),
@@ -1036,7 +1140,7 @@ class SpeechCoderVersion(primitives.ByteEnum):
     }
 
 
-class SSCode(primitives.ByteEnum):
+class SSCode(ByteEnum):
     """Supplementary Service Code
 
       This parameter identifies a Supplementary Service or a
@@ -1180,7 +1284,7 @@ class SSCode(primitives.ByteEnum):
     }
 
 
-class SSRequest(primitives.ByteEnum):
+class SSRequest(ByteEnum):
     """ASN.1 Formal Description
     SSRequest ::= ENUMERATED
     (registration               (0),
@@ -1205,7 +1309,7 @@ class SSRequest(primitives.ByteEnum):
     }
 
 
-class SubscriberState(primitives.ByteEnum):
+class SubscriberState(ByteEnum):
     """ASN.1 Formal Description
     SubscriberState ::= ENUMERATED
     (detached                   (0),
@@ -1220,7 +1324,7 @@ class SubscriberState(primitives.ByteEnum):
     }
 
 
-class TariffSwitchInd(primitives.ByteEnum):
+class TariffSwitchInd(ByteEnum):
     """ASN.1 Formal Description
     TariffSwitchInd ::= ENUMERATED
     (noTariffSwitch                    (0),
@@ -1233,7 +1337,7 @@ class TariffSwitchInd(primitives.ByteEnum):
     }
 
 
-class TeleServiceCode(primitives.ByteEnum):
+class TeleServiceCode(ByteEnum):
     """ASN.1 Formal Description
     TeleServiceCode ::= OCTET STRING (SIZE (1))
     |    |    |    |    |    |    |    |    |
@@ -1297,7 +1401,7 @@ class TeleServiceCode(primitives.ByteEnum):
     }
 
 
-class TrafficClass(primitives.ByteEnum):
+class TrafficClass(ByteEnum):
     """ASN.1 Formal Description
     TrafficClass ::= OCTET STRING (SIZE(1))
     |    |    |    |    |    |    |    |    |
@@ -1321,7 +1425,7 @@ class TrafficClass(primitives.ByteEnum):
     }
 
 
-class TransparencyIndicator(primitives.ByteEnum):
+class TransparencyIndicator(ByteEnum):
     """ASN.1 Formal Description
     TransparencyIndicator ::= ENUMERATED
     (transparent                              (0),
@@ -1334,7 +1438,7 @@ class TransparencyIndicator(primitives.ByteEnum):
     }
 
 
-class TriggerDetectionPoint(primitives.ByteEnum):
+class TriggerDetectionPoint(ByteEnum):
     """ASN.1 Formal Description
     TriggerDetectionPoint ::= ENUMERATED
     (originatingCallAttemptAuthorized                     (1),
@@ -1395,7 +1499,7 @@ class TriggerDetectionPoint(primitives.ByteEnum):
     }
 
 
-class TypeOfCalledSubscriber(primitives.ByteEnum):
+class TypeOfCalledSubscriber(ByteEnum):
     """ASN.1 Formal Description
     TypeOfCalledSubscriber ::= ENUMERATED
     (pSTNSubscriber       (0),
@@ -1410,7 +1514,7 @@ class TypeOfCalledSubscriber(primitives.ByteEnum):
     }
 
 
-class TypeOfLocationRequest(primitives.ByteEnum):
+class TypeOfLocationRequest(ByteEnum):
     """ASN.1 Formal Description
     TypeOfLocationRequest ::= ENUMERATED
     (mT_LocationRequestCurrentLocation              (0),
@@ -1434,7 +1538,7 @@ class TypeOfLocationRequest(primitives.ByteEnum):
     }
 
 
-class TypeOfSignalling(primitives.ByteEnum):
+class TypeOfSignalling(ByteEnum):
     """ASN.1 Formal Description
     TypeOfSignalling ::= ENUMERATED
     (iSUPIsNotAppliedAllTheWay       (0),
@@ -1449,7 +1553,7 @@ class TypeOfSignalling(primitives.ByteEnum):
     }
 
 
-class UILayer1Protocol(primitives.ByteEnum):
+class UILayer1Protocol(ByteEnum):
     """ASN.1 Formal Description
     UILayer1Protocol ::= ENUMERATED
     (V110_X30                     (1),
@@ -1478,7 +1582,7 @@ class UILayer1Protocol(primitives.ByteEnum):
     }
 
 
-class UnsuccessfulPositioningDataReason(primitives.ByteEnum):
+class UnsuccessfulPositioningDataReason(ByteEnum):
     """ASN.1 Formal Description
     UnsuccessfulPositioningDataReason ::= ENUMERATED
     (systemError                           (0),
@@ -1491,7 +1595,7 @@ class UnsuccessfulPositioningDataReason(primitives.ByteEnum):
     }
 
 
-class UserClass(primitives.ByteEnum):
+class UserClass(ByteEnum):
     """User Class
 
       This parameter is mapped from the Additional Fixed
@@ -1533,8 +1637,7 @@ class UserClass(primitives.ByteEnum):
         3: "Spare",
     }
 
-    @property
-    def value(self):
+    def _value(self):
         self.additional_info = self.VALUES[self.octets[0] & 3]
         self.spare = self.octets[0] >> 2
         return self.spare, self.additional_info
@@ -1543,7 +1646,7 @@ class UserClass(primitives.ByteEnum):
         return f"Spare: {self.spare}, Additional Info: {self.additional_info}"
 
 
-class UserRate(primitives.ByteEnum):
+class UserRate(ByteEnum):
     """ASN.1 Formal Description
     UserRate ::= ENUMERATED
     (uRIndNeg          (0),

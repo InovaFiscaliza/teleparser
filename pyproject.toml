@@ -1,18 +1,24 @@
 [project]
 name = "teleparser"
-version = "0.0.1"
-description = "Add your description here"
+version = "0.1.1"
+description = "A tool to parse CDR files from Brazilian Mobile operators."
 readme = "README.md"
 authors = [
     { name = "Ronaldo S.A. Batista", email = "ronaldokun@gmail.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "fastcore>=1.8.2",
+    "fastprogress>=1.0.3",
+    "pandas>=2.3.0",
+    "pyarrow>=20.0.0",
+    "tqdm>=4.67.1",
     "typer>=0.15.2",
 ]
 
 [project.scripts]
-teleparser = "teleparser:main"
+teleparser = "teleparser.cli:process_cdrs"
+
 
 [build-system]
 requires = ["hatchling"]
@@ -20,4 +26,10 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-]  
+    "ipykernel>=6.29.5",
+    "ipywidgets>=8.1.7",
+    "line-profiler>=4.2.0",
+    "nuitka>=2.6.9",
+    "pyinstaller>=6.12.0",
+]
+

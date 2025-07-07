@@ -105,28 +105,24 @@ class AoCCurrencyAmountSent(primitives.AddressString):
     """
 
 
-class BitRate(primitives.AddressString):
+class BSSMAPCauseCode(primitives.AddressString):
     """ASN.1 Formal Description
-    BitRate ::= OCTET STRING (SIZE(1))
+    BSSMAPCauseCode ::= OCTET STRING (SIZE(1..2))
     |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
+    | 8  | 7  | 6  | 5  | 4  | 3  | 2  | 1  |
     |    |    |    |    |    |    |    |    |
     /---------------------------------------/
-    | MSB                                LSB|  octet 1
+    |ext |         cause value              | octet 1
+    +---------------------------------------+
+    |          extended cause value         | octet 2
     /---------------------------------------/
-    BitRate                      Bits 8 7 6 5 4 3 2 1
-    4.75 kbps                        0 0 0 0 0 0 0 1
-    5.15 kbps                        0 0 0 0 0 0 1 0
-    5.9  kbps                        0 0 0 0 0 0 1 1
-    6.7  kbps                        0 0 0 0 0 1 0 0
-    7.4  kbps                        0 0 0 0 0 1 0 1
-    7.95 kbps                        0 0 0 0 0 1 1 0
-    10.2  kbps                        0 0 0 0 0 1 1 1
-    12.2  kbps                        0 0 0 0 1 0 0 0
-    14.4  kbps                        0 0 0 0 1 0 0 1
-    64.0  kbps                        0 0 0 0 1 0 1 0
-    28.8  kbps                        0 0 0 0 1 0 1 1
-    57.6  kbps                        0 0 0 0 1 1 0 0
+    The second octet is used only if the ext bit is
+    set to one.
+    The cause value is specified in the Function
+    Specification "A-Interface, Section H:
+    Base Station System Management Application Part,
+    BSSMAP, Message Formats And Coding" in chapter
+    "Information Elements".
     """
 
 
@@ -135,28 +131,6 @@ class CAMELTDPData:
     CAMELTDPData ::= SEQUENCE(
     serviceKey     (0) IMPLICIT  ServiceKey,
     gsmSCFAddress  (1) IMPLICIT  AddressString (SIZE (1..9)))
-    """
-
-
-class CarrierInformation(primitives.AddressString):
-    """ASN.1 Formal Description
-    CarrierInformation ::= OCTET STRING (SIZE(1))
-    |   |   |   |   |   |   |   |   |
-    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
-    |   |   |   |   |   |   |   |   |
-    /-------------------------------/
-    |   |   TNI     |     NIP       |  Octet 1
-    /-------------------------------/
-    Note: The OCTET STRING is coded as an unsigned INTEGER.
-    - Bit 8: Spare
-    - Bit 7-5: Type Of Network Identification (TNI)
-    where
-    010  national network
-    - Bit 4-1: Network Identification Plan (NIP)
-    where
-    0000  unknown
-    0001  3-digit carrier
-    0010  4-digit carrier
     """
 
 
@@ -771,22 +745,6 @@ class EndToEndAccessDataMap(primitives.AddressString):
     Bit 8:
     Reserved
     Note that "SETUP" and "CONNECT" are functional messages.
-    """
-
-
-class ErrorRatio(primitives.AddressString):
-    """ASN.1 Formal Description
-    ErrorRatio ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |               Mantissa                |  octet 1
-    +---------------------------------------+
-    |               Exponent                |  octet 2
-    /---------------------------------------/
-    Note: The OCTET STRING is coded as an unsigned INTEGER.
-    Value range:  0 - 9 for both octets.
     """
 
 
@@ -1409,29 +1367,6 @@ class PositioningDelivery(primitives.AddressString):
     """
 
 
-class ProcedureCode:
-    """ASN.1 Formal Description
-    ProcedureCode ::= TBCDString (SIZE(1))
-    """
-
-
-class RANAPCauseCode(primitives.AddressString):
-    """ASN.1 Formal Description
-    RANAPCauseCode ::= OCTET STRING (SIZE(1))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                              LSB  | octet 1
-    /---------------------------------------/
-    The cause value is specified in the Function
-    Specification (FS) "IU-Interface, Section H:
-    Radio Access Network Application Part,
-    RANAP, Message Formats And Coding" in chapter
-    "Information Elements".
-    """
-
-
 class ServiceCode:
     """ASN.1 Formal Description
     ServiceCode ::= TBCDString (SIZE(1..2))
@@ -1471,38 +1406,6 @@ class ServiceKey(primitives.AddressString):
     |                                 LSB   | octet 4
     /---------------------------------------/
     Value Range H'0 - H'7FFFFFFF
-    """
-
-
-class TargetRNCid(primitives.AddressString):
-    """ASN.1 Formal Description
-    TargetRNCid ::= OCTET STRING (SIZE(7))
-    |   |   |   |   |   |   |   |   |
-    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
-    |   |   |   |   |   |   |   |   |
-    /-------------------------------/
-    |  MCC digit 2  |  MCC digit 1  | octet 1
-    +---------------+---------------+
-    |  MNC digit 3  |  MCC digit 3  | octet 2
-    +---------------+---------------+
-    |  MNC digit 2  |  MNC digit 1  | octet 3
-    +-------------------------------+
-    | MSB          LAC              | octet 4
-    +-------------------------------+
-    |              LAC, cont.   LSB | octet 5
-    +-------------------------------+
-    | MSB   RNC-id                  | octet 6
-    +-------------------------------+
-    |       RNC-id,     cont.   LSB | octet 7
-    /-------------------------------/
-    Note: The OCTET STRING is coded as an unsigned INTEGER.
-    MCC, Mobile country code (octet 1 and 2).
-    MNC, Mobile network code (octet 2 and 3).
-    Note: If MNC uses only 2 digits, 3rd is coded with
-    filler H'F.
-    LAC, Location area code (octet 4 and 5).
-    RNC-id, Radio Network Control id (octet 6 and 7),
-    value range: H'0 - H'FFF.
     """
 
 
@@ -1553,22 +1456,6 @@ class TrafficActivityCode(primitives.AddressString):
     The TSC is obtained from the Basic Service Charging Code
     (BSCC) and its value varies according to the operator's
     definition.
-    """
-
-
-class TransferDelay(primitives.AddressString):
-    """ASN.1 Formal Description
-    TransferDelay ::= OCTET STRING (SIZE(2))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   |  octet 1
-    +---------------------------------------+
-    |                                   LSB |  octet 2
-    /---------------------------------------/
-    Note : The OCTET STRING is coded as an unsigned INTEGER.
-    Value range: H'0 - H'FFFF
     """
 
 

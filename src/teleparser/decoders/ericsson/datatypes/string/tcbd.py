@@ -1,5 +1,5 @@
 from ..primitives import TBCDString
-from teleparser.config import PRESTADORAS
+from teleparser.prestadoras import PRESTADORAS
 
 
 class AccountCode(TBCDString):
@@ -73,9 +73,12 @@ class IMSI(TBCDString):
     each digit encoded 0000 to 1001
     """
 
+    __slots__ = ("octets", "size", "digits", "mcc", "mnc", "msin", "carrier", "value")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._parse_mcc_mnc_msin()
+        self.value = self._value()
 
     def _parse_mcc_mnc_msin(self):
         self.mcc = self.digits[0]
@@ -85,12 +88,20 @@ class IMSI(TBCDString):
         self.carrier = PRESTADORAS[mnc]
         self.msin = "".join(str(d) for d in msin)
 
-    @property
-    def value(self):
+    def _value(self):
         return self.carrier._asdict() | {"msin": self.msin}
 
     def __str__(self) -> str:
         return f"{self.carrier.nome} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"
+
+
+class ProcedureCode(TBCDString):
+    """ASN.1 Formal Description
+    ProcedureCode ::= TBCDString (SIZE(1))
+    """
+
+    def __init__(self, octets: bytes):
+        super().__init__(octets, size=1)
 
 
 class ServiceCode(TBCDString):

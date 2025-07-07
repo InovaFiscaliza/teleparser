@@ -1,9 +1,8 @@
-from collections import UserDict
 from typing import Mapping
-from . import modules
+from teleparser.decoders.ericsson import modules
 
 
-class TlvVozEricsson:
+class EricssonVoz:
     """Tag-Length-Value object for BER encoding for Ericsson Common Charging Output"""
 
     def __init__(
