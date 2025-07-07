@@ -154,7 +154,7 @@ class CDRFileManager:
             df = transform_func(df)
         # Use a try-finally block to ensure resources are released
         try:
-            df.astype("category", copy=False).to_parquet(
+            df.astype("string", copy=False).astype("category", copy=False).to_parquet(
                 output_file, index=False, compression="snappy"
             )
             logger.info(f"Data saved to {output_file} successfully")
