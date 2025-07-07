@@ -57,10 +57,13 @@ class AddressStringExtended(OctetString):
     character depending on the NPI value.
     """
 
+    __slots__ = ("octets", "size", "ton", "npi", "digits", "value")
+
     def __init__(self, octets):
         super().__init__(octets, lower=1, upper=20)
         self._parse_ton_npi()
         self._parse_digits()
+        self.value = self.digits
 
     def _parse_ton_npi(self):
         """Parse Type of Number and Numbering Plan Indicator from first octet"""
@@ -73,10 +76,6 @@ class AddressStringExtended(OctetString):
             self.digits = TBCDString(self.octets[1:]).value
         else:
             self.digits = self.octets[1:].hex().upper()
-
-    @property
-    def value(self):
-        return self.digits
 
 
 class BSSMAPCauseCode(OctetString):
@@ -99,9 +98,19 @@ class BSSMAPCauseCode(OctetString):
     "Information Elements".
     """
 
+    __slots__ = (
+        "octets",
+        "size",
+        "digits",
+        "value",
+        "cause_value",
+        "extended_cause_value",
+    )
+
     def __init__(self, octets):
         super().__init__(octets, upper=2)
         self._parse_cause_value()
+        self.value = self._value()
 
     def _parse_cause_value(self):
         """Parse cause value from octets 1 and 2"""
@@ -109,8 +118,7 @@ class BSSMAPCauseCode(OctetString):
         if self.octets[0] >> 7 == 1:
             self.extended_cause_value = self.octets[1]
 
-    @property
-    def value(self):
+    def _value(self):
         if self.size == 2:
             return {
                 "cause_value": self.cause_value,
@@ -146,11 +154,22 @@ class CarrierInfo(OctetString):
     1111
     """
 
+    __slots__ = (
+        "octets",
+        "size",
+        "digits",
+        "value",
+        "carrier_identification_code",
+        "entry_poi_hierarchy",
+        "exit_poi_hierarchy",
+    )
+
     def __init__(self, octets):
         super().__init__(octets, lower=2, upper=3)
         self._parse_carrier_identification_code()
         self._parse_entry_poi_hierarchy()
         self._parse_exit_poi_hierarchy()
+        self.value = self._value()
 
     VALUES = {
         0: "No Indication",
@@ -178,6 +197,13 @@ class CarrierInfo(OctetString):
             exit_poi_hierarchy = "Spare" if digit > 2 else self.VALUES[digit]
         self.exit_poi_hierarchy = exit_poi_hierarchy
 
+    def _value(self):
+        return {
+            "carrier_identification_code": self.carrier_identification_code,
+            "entry_poi_hierarchy": self.entry_poi_hierarchy,
+            "exit_poi_hierarchy": self.exit_poi_hierarchy,
+        }
+
 
 class CarrierInformation(OctetString):
     """ASN.1 Formal Description
@@ -200,9 +226,19 @@ class CarrierInformation(OctetString):
     0010  4-digit carrier
     """
 
+    __slots__ = (
+        "octets",
+        "size",
+        "digits",
+        "value",
+        "type_of_network_identification",
+        "network_identification_plan",
+    )
+
     def __init__(self, octets):
         super().__init__(octets, size=1)
         self._parse_network_identification()
+        self.value = self._value()
 
     def _parse_network_identification(self):
         value = self.octets[0]
@@ -217,8 +253,7 @@ class CarrierInformation(OctetString):
             case _:
                 self.network_identification_plan = "Unknown"
 
-    @property
-    def value(self):
+    def _value(self):
         return {
             "type_of_network_identification": self.type_of_network_identification,
             "network_identification_plan": self.network_identification_plan,
