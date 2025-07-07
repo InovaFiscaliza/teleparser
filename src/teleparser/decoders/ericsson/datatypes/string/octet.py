@@ -709,6 +709,17 @@ class GlobalTitle(OctetString):
         4: "International number",
     }
 
+    __slots__ = (
+        "octets",
+        "size",
+        "translation_type",
+        "numbering_plan",
+        "odd",
+        "nature_of_address",
+        "digits",
+        "value",
+    )
+
     def __init__(self, octets):
         super().__init__(octets, lower=4, upper=12)
         self._parse_translation_type()
@@ -813,7 +824,6 @@ class GlobalTitleAndSubSystemNumber(GlobalTitle):
         "octets",
         "size",
         "value",
-        "subsystem_number",
         "translation_type",
         "numbering_plan",
         "odd",
@@ -823,12 +833,8 @@ class GlobalTitleAndSubSystemNumber(GlobalTitle):
 
     def __init__(self, octets: bytes):
         super().__init__(octets[1:])
-        self.subsystem_number = octets[0]
-        self.value = self._value()
-
-    def _value(self):
-        return {
-            "subsystem_number": self.subsystem_number,
+        self.value = {
+            "subsystem_number": octets[0],
             "translation_type": getattr(self, "translation_type", None),
             "numbering_plan": getattr(self, "numbering_plan", None),
             "odd": getattr(self, "odd", None),
@@ -1253,9 +1259,6 @@ class TAC(OctetString):
     def _value(self):
         return f"TSC: {self.tsc}, TOS: {self.tos}, TOI: {self.toi}, TOP: {self.top}"
 
-    def __str__(self):
-        return self.value
-
 
 class TargetRNCid(OctetString):
     """ASN.1 Formal Description
@@ -1295,6 +1298,7 @@ class TargetRNCid(OctetString):
         self._parse_mcc_mnc()
         self._parse_lac()
         self._parse_rnc_id()
+        self.value = self._value()
 
     def _parse_mcc_mnc(self):
         mcc1 = self.octets[0] & 0x0F  # MCC digit 1
@@ -1308,7 +1312,6 @@ class TargetRNCid(OctetString):
         else:
             mnc = mnc1 * 100 + mnc2 * 10 + mnc3
         self.carrier = PRESTADORAS.get(mnc, Prestadora(mnc=mnc, mcc=self.mcc))
-        self.value = self._value()
 
     def _parse_lac(self):
         self.lac = int.from_bytes(self.octets[3:5], "big")

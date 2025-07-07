@@ -286,8 +286,7 @@ class ChannelAllocationPriorityLevel(ByteEnum):
         15: "Priority level not used",
     }
 
-    @property
-    def value(self):
+    def _value(self):
         return self.VALUES[(self.octets[0] >> 2) & 0x0F]
 
 
@@ -447,8 +446,7 @@ class EMLPPPriorityLevel(ByteEnum):
         7: "Priority level A = highest priority for subscription",
     }
 
-    @property
-    def value(self):
+    def _value(self):
         return self.VALUES[self.octets[0] & 7]
 
 
@@ -642,21 +640,17 @@ class FrequencyBandSupported(ByteEnum):
         1: Frequency Band supported
     """
 
-    __slots__ = ("pgsm", "egsm", "gsm1800", "value")
+    __slots__ = ("octets", "size", "value")
 
-    def __init__(self, octets):
-        super().__init__(octets)
-        self._parse_frequency_band()
-        self.value = self._value()
-
-    def _parse_frequency_band(self):
-        """Parse Frequency Band from octets 1 and 2"""
-        self.pgsm = self.octets[0] & 1 == 1
-        self.egsm = self.octets[0] & 2 == 2
-        self.gsm1800 = self.octets[0] & 3 == 3
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def _value(self):
-        return {"pgsm": self.pgsm, "egsm": self.egsm, "gsm1800": self.gsm1800}
+        return {
+            "pgsm": self.octets[0] & 1 == 1,
+            "egsm": self.octets[0] & 2 == 2,
+            "gsm1800": self.octets[0] & 3 == 3,
+        }
 
 
 class INMarkingOfMS(ByteEnum):
@@ -793,8 +787,7 @@ class MobileUserClass1(ByteEnum):
         5: "PHS service",
     }
 
-    @property
-    def value(self):
+    def _value(self):
         number = self.octets[0]
         return "Spare" if 6 <= number <= 255 else self.VALUES[number]
 
@@ -1644,8 +1637,7 @@ class UserClass(ByteEnum):
         3: "Spare",
     }
 
-    @property
-    def value(self):
+    def _value(self):
         self.additional_info = self.VALUES[self.octets[0] & 3]
         self.spare = self.octets[0] >> 2
         return self.spare, self.additional_info

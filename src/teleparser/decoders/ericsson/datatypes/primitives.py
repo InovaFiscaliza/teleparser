@@ -70,7 +70,7 @@ def fixed_size_ia5_string(size):
 class OctetString:
     """Implement ASN.1 Octet String type with optional size and boundaries constraints"""
 
-    __slots__ = ("octets", "size")
+    __slots__ = ("octets", "size", "value")
 
     def __init__(
         self,
@@ -79,6 +79,8 @@ class OctetString:
         lower: int | None = None,
         upper: int | None = None,
     ):
+        self.octets = octets
+
         if size is None:
             size = len(octets)
         elif size and size > len(octets):
