@@ -284,10 +284,12 @@ class ChargingIndicator(OctetString):
     NO_CHARGE = 1
     CHARGE = 2
     SPARE = 3
+    __slots__ = ("octets", "size", "digits", "value", "indicator")
 
     def __init__(self, octets: bytes):
         super().__init__(octets, size=1)
         self._parse_indicator()
+        self.value = self._value()
 
     def _parse_indicator(self):
         value = int.from_bytes(self.octets, byteorder="big")
@@ -299,8 +301,7 @@ class ChargingIndicator(OctetString):
             f"Bits 8-3 should be all zeros, got: {bin(unused_bits)}"
         )
 
-    @property
-    def value(self):
+    def _value(self):
         """Return the charging indicator as a string"""
         match self.indicator:
             case self.NO_INDICATION:
