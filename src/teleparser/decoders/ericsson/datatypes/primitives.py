@@ -70,6 +70,8 @@ def fixed_size_ia5_string(size):
 class OctetString:
     """Implement ASN.1 Octet String type with optional size and boundaries constraints"""
 
+    __slots__ = ("octets", "size")
+
     def __init__(self, octets, size: int = None, lower: int = None, upper: int = None):
         if size is None:
             size = len(octets)
@@ -92,39 +94,29 @@ class OctetString:
 class DigitString(OctetString):
     """ASN.1 DigitString implementation for OCTET STRING (SIZE(1..n))"""
 
+    __slots__ = ("octets", "size", "digits", "value")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    @cached_property
-    def digits(self):  # sourcery skip: identity-comprehension
-        # When you iterate over a bytes object, it returns the bytes as integers
-        return list(self.octets)
-
-    @property
-    def value(self) -> str:
-        """Returns the n digits as a string"""
-        return "".join(str(d) for d in self.digits)
+        self.digits = list(self.octets)
+        self.value = "".join(str(d) for d in self.digits)
 
 
 class Bool:
     """Flag type for presence of optional NULL values"""
 
+    __slots__ = ("value",)
+
     def __init__(self, byte: bytes):
         assert not byte, "byte should be empty"
-
-    @property
-    def value(self):
-        return True
+        self.value = True
 
 
 @fixed_size_digit_string(1)
 class ByteEnum(DigitString):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    @property
-    def value(self):
-        return self.VALUES.get(int.from_bytes(self.octets, "big"), "Unknown")
+        self.value = self.VALUES.get(int.from_bytes(self.octets, "big"), "Unknown")
 
 
 class AddressString(OctetString):
@@ -134,6 +126,8 @@ class AddressString(OctetString):
     - First octet: TON (4 bits) + NPI (4 bits)
     - Subsequent octets: TBCD encoded digits (2 digits per octet)
     """
+
+    __slots__ = ("octets", "size", "ton", "npi", "digits", "value")
 
     # Type of Number (TON) values
     TON_UNKNOWN = 0
@@ -157,6 +151,7 @@ class AddressString(OctetString):
         super().__init__(octets, **kwargs)
         self._parse_ton_npi()
         self._parse_digits()
+        self.value = self.digits
 
     def _parse_ton_npi(self):
         """Parse Type of Number and Numbering Plan Indicator from first octet"""
@@ -168,10 +163,6 @@ class AddressString(OctetString):
         """Parse TBCD-encoded digits from remaining octets"""
         self.digits = TBCDString(self.octets[1:]).value
 
-    @property
-    def value(self):
-        return self.digits
-
     def __str__(self) -> str:
         """String representation including TON/NPI and number"""
         return f"TON={self.ton}, NPI={self.npi}, Number={self.digits}"
@@ -182,10 +173,7 @@ class Ia5String(OctetString):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    @property
-    def value(self):
-        return "".join(chr(byte) for byte in self.octets)
+        self.value = "".join(chr(byte) for byte in self.octets)
 
 
 class TBCDString(OctetString):
@@ -224,6 +212,7 @@ class TBCDString(OctetString):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._parse_digits()
+        self.value = "".join(str(d) for d in self.digits)
 
     def _parse_digits(self):
         digits = []
@@ -236,11 +225,6 @@ class TBCDString(OctetString):
             digits.pop()
         self.digits = digits
 
-    @property
-    def value(self):
-        "Returns the 2n digits as a string"
-        return "".join(str(d) for d in self.digits)
-
 
 class UnsignedInt:
     """OCTET STRING is coded as an unsigned integer."""
@@ -252,10 +236,4 @@ class UnsignedInt:
             raise TypeError(f"size parameter is not an int: {type(octets)}")
         # assert len(octets) == size, f"Parameter should have size {size}, {len(octets)=}"
         self.octets = octets
-
-    @property
-    def value(self) -> int:
-        """Call ID Number - 3 byte unsigned integer
-        it convert 3 bytes to integer (big endian)"
-        """
-        return int.from_bytes(self.octets, byteorder="big")
+        self.value = int.from_bytes(octets, byteorder="big")

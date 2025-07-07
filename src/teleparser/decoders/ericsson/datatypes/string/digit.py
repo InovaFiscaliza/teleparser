@@ -44,8 +44,11 @@ class ChargeAreaCode(DigitString):
         the 6th digit is filler (H'F).
     Note2: In case of POICA the 6th digit is filler (H'0)."""
 
-    @cached_property
-    def digits(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.digits = self._digits()
+
+    def _digits(self):
         digits = [int.from_bytes(byte, byteorder="big") for byte in self.octets]
         assert all(0 <= digit <= 9 for digit in digits), (
             " Acceptable digits are between 0 and 9."
@@ -182,8 +185,13 @@ class InternalCauseAndLoc(DigitString):
     Codes and Location Information".
     """
 
-    @property
-    def value(self):
+    __slots__ = ("octets", "size", "digits", "value", "location", "cause")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.value = self._value()
+
+    def _value(self):
         self.location = self.digits[0]
         self.cause = self.digits[1]
         return {"location": self.location, "cause": self.cause}
@@ -258,8 +266,20 @@ class NetworkCallReference(DigitString):
         Value range of Switch identity: H'1 - H'FFFF
     """
 
-    @property
-    def value(self):
+    __slots__ = (
+        "octets",
+        "size",
+        "digits",
+        "value",
+        "sequence_number",
+        "switch_identity",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.value = self._value()
+
+    def _value(self):
         self.sequence_number = int.from_bytes(self.octets[:3], "big")
         self.switch_identity = int.from_bytes(self.octets[3:], "big")
         return {
@@ -409,13 +429,13 @@ class SpeechCoderPreferenceList(DigitString):
 
     def __init__(self, octets: bytes):
         super().__init__(octets, upper=6)
+        self.digits = self._parse_digits()
 
-    @cached_property
-    def digits(self):
+    def _parse_digits(self):
         """Returns the n digits as a string"""
         digits = list(self.octets)
         assert all(0 <= digit <= 6 for digit in digits), (
-            f"Speech Coder Preference List should be in range 0-5: {digits}"
+            f"Speech Coder Preference List should be in range 0-6: {digits}"
         )
         return digits
 
@@ -483,9 +503,21 @@ class Time(DigitString):
     Note: 10th of a second is only included for the parameter
         chargeableDuration and only used for WCDMA Japan."""
 
+    __slots__ = (
+        "octets",
+        "size",
+        "digits",
+        "value",
+        "hour",
+        "minute",
+        "second",
+        "tenth_of_a_second",
+    )
+
     def __init__(self, octets: bytes):
         super().__init__(octets, lower=3, upper=4)
         self._parse_digits()
+        self.value = self._value()
 
     def _parse_digits(self):
         hour = int.from_bytes(self.octets[:1], "big")
@@ -504,8 +536,7 @@ class Time(DigitString):
             )
             self.tenth_of_a_second = tenth_of_a_second
 
-    @property
-    def value(self):
+    def _value(self):
         """Return datetime string"""
         value = f"{self.hour:02d}:{self.minute:02d}:{self.second:02d}"
         if self.size == 4:
