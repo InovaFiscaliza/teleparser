@@ -642,9 +642,12 @@ class FrequencyBandSupported(ByteEnum):
         1: Frequency Band supported
     """
 
+    __slots__ = ("pgsm", "egsm", "gsm1800", "value")
+
     def __init__(self, octets):
         super().__init__(octets)
         self._parse_frequency_band()
+        self.value = self._value()
 
     def _parse_frequency_band(self):
         """Parse Frequency Band from octets 1 and 2"""
@@ -652,8 +655,7 @@ class FrequencyBandSupported(ByteEnum):
         self.egsm = self.octets[0] & 2 == 2
         self.gsm1800 = self.octets[0] & 3 == 3
 
-    @property
-    def value(self):
+    def _value(self):
         return {"pgsm": self.pgsm, "egsm": self.egsm, "gsm1800": self.gsm1800}
 
 
