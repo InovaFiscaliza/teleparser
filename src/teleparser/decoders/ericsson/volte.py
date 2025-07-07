@@ -683,7 +683,6 @@ def run(
     output_file: str | None = None,
 ) -> list[dict[str, int | str | bool]]:
     """Run the Ericsson Volte parser on the provided buffer manager"""
-    import json
 
     parser = EricssonVolte(buffer_manager)
     parsed_data = parser.process()
@@ -698,7 +697,6 @@ def run(
 
 if __name__ == "__main__":
     import typer
-    import json
     from teleparser.buffer import BufferManager
     from pathlib import Path
     import pandas as pd
