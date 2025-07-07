@@ -1,6 +1,6 @@
 """This module implements primitive datatypes as described in the ASN.1 Especification"""
 
-from functools import cached_property, wraps
+from functools import wraps
 from . import exceptions
 
 
@@ -72,21 +72,23 @@ class OctetString:
 
     __slots__ = ("octets", "size")
 
-    def __init__(self, octets, size: int = None, lower: int = None, upper: int = None):
+    def __init__(
+        self,
+        octets,
+        size: int | None = None,
+        lower: int | None = None,
+        upper: int | None = None,
+    ):
         if size is None:
             size = len(octets)
-        elif size and size != len(octets):
+        elif size and size > len(octets):
             raise exceptions.OctetStringError(
-                f"{size:=} parameter is different from octets' length: {len(octets)}"
+                f"{size=} parameter is bigger than octets' length: {len(octets)}"
             )
         if lower and lower > size:
-            raise exceptions.OctetStringError(
-                f"{size:=} is smaller than {lower:=} limit"
-            )
+            raise exceptions.OctetStringError(f"{size=} is smaller than {lower=} limit")
         if upper and size > upper:
-            raise exceptions.OctetStringError(
-                f"{size:=} is bigger than {upper:=} limit"
-            )
+            raise exceptions.OctetStringError(f"{size=} is bigger than {upper=} limit")
         self.octets = octets
         self.size = size
 
@@ -116,7 +118,10 @@ class Bool:
 class ByteEnum(DigitString):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.value = self.VALUES.get(int.from_bytes(self.octets, "big"), "Unknown")
+        self.value = self._value()
+
+    def _value(self):
+        return self.VALUES.get(int.from_bytes(self.octets, "big"), "Unknown")
 
 
 class AddressString(OctetString):
@@ -171,6 +176,8 @@ class AddressString(OctetString):
 class Ia5String(OctetString):
     """ASN.1 IA5String implementation for OCTET STRING (SIZE(1..n))"""
 
+    __slots__ = ("octets", "size", "value")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.value = "".join(chr(byte) for byte in self.octets)
@@ -209,6 +216,8 @@ class TBCDString(OctetString):
 
     """
 
+    __slots__ = ("octets", "size", "digits", "value")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._parse_digits()
@@ -228,6 +237,8 @@ class TBCDString(OctetString):
 
 class UnsignedInt:
     """OCTET STRING is coded as an unsigned integer."""
+
+    __slots__ = ("octets", "size", "value")
 
     def __init__(self, octets: bytes, size: int):
         if not isinstance(octets, bytes):
