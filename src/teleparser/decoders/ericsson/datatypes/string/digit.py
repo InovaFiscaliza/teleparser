@@ -1,4 +1,3 @@
-from functools import cached_property
 from ..primitives import DigitString, fixed_size_digit_string
 
 

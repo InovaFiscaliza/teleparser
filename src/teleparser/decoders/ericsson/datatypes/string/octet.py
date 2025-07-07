@@ -1,5 +1,4 @@
-from ..primitives import OctetString, TBCDString, Ia5String
-from ..exceptions import OctetStringError
+from ..primitives import OctetString, TBCDString
 from teleparser.prestadoras import PRESTADORAS, Prestadora
 
 
@@ -229,7 +228,6 @@ class CarrierInformation(OctetString):
     __slots__ = (
         "octets",
         "size",
-        "digits",
         "value",
         "type_of_network_identification",
         "network_identification_plan",
@@ -355,17 +353,19 @@ class CUGInterlockCode(OctetString):
         the 2nd to 4th NI digits.
     """
 
+    __slots__ = ("octets", "size", "value", "network_indicator", "code")
+
     def __init__(self, octets: bytes):
         super().__init__(octets, size=4)
         self._parse_network_indicator()
+        self.value = self._value()
 
     def _parse_network_indicator(self):
         """Parse Network Indicator from octets 1 and 2"""
         self.network_indicator = TBCDString(self.octets[:2]).value
         self.code = int.from_bytes(self.octets[2:], byteorder="big")
 
-    @property
-    def value(self):
+    def _value(self):
         return self.network_indicator, self.code
 
     def __str__(self):
@@ -452,6 +452,19 @@ class C7CHTMessage(OctetString):
         7: "Tariff scale VII(4 second)",
     }
 
+    __slots__ = (
+        "octets",
+        "size",
+        "value",
+        "hours_indicator",
+        "minutes_indicator",
+        "message_indicator",
+        "tarif_indicator_is_present",
+        "tariff_indicator",
+        "tariff_factor",
+        "time_indicator",
+    )
+
     def __init__(self, octets, **kwargs):
         super().__init__(octets, size=5, **kwargs)
         self._parse_hours_indicator()
@@ -460,6 +473,7 @@ class C7CHTMessage(OctetString):
         self._parse_tariff_indicator()
         self._parse_tariff_factor()
         self._parse_time_indicator()
+        self.value = self._value()
 
     def _parse_hours_indicator(self):
         """Parse hours Indicator from first octet"""
@@ -503,8 +517,7 @@ class C7CHTMessage(OctetString):
         )
         self.time_indicator = time_indicator * 15
 
-    @property
-    def value(self):
+    def _value(self):
         return (
             f"{self.hours_indicator:02d}:{self.minutes_indicator:02d}",
             self.message_indicator,
@@ -564,9 +577,12 @@ class Date(OctetString):
     Month (octet 3): Value range 1 - 12 (H'1 - H'C)
     Day   (octet 4): Value range 1 - 31 (H'1 - H'1F)"""
 
+    __slots__ = ("octets", "size", "value", "year", "month", "day")
+
     def __init__(self, octets: bytes):
         super().__init__(octets, lower=3, upper=4)
         self._parse_digits()
+        self.value = self._value()
 
     def _parse_digits(self):
         if self.size == 4:
@@ -591,9 +607,7 @@ class Date(OctetString):
         assert 0 <= year2 <= 99, f"Year should be in range 0-99: {year2}"
         self.year = year1 * 100 + year2
 
-    @property
-    def value(self):
-        """Return date string"""
+    def _value(self):
         if self.size == 4:
             return f"{self.day:04d}-{self.month:02d}-{self.year:02d}"
         else:
@@ -623,11 +637,13 @@ class ErrorRatio(OctetString):
         Value range:  0 - 9 for both octets.
     """
 
+    __slots__ = ("octets", "size", "value")
+
     def __init__(self, octets):
         super().__init__(octets, size=2)
+        self.value = self._value()
 
-    @property
-    def value(self):
+    def _value(self):
         mantissa = int.from_bytes(self.octets[:1], byteorder="big")
         exponent = int.from_bytes(self.octets[1:2], byteorder="big")
         return mantissa * (10 ** (-exponent))
@@ -700,6 +716,7 @@ class GlobalTitle(OctetString):
         self._parse_numbering_indicator()
         self._parse_nature_of_address_indicator()
         self._parse_digits()
+        self.value = self._value()
 
     def _parse_translation_type(self):
         """Parse Translation Type from octets 1"""
@@ -734,13 +751,13 @@ class GlobalTitle(OctetString):
             digits.pop()
         self.digits = digits
 
-    @property
-    def value(self):
+    def _value(self):
         return {
             "translation_type": self.translation_type,
             "numbering_plan": self.numbering_plan,
+            "odd": self.odd,
             "nature_of_address": self.nature_of_address,
-            "digits": "".join(str(d) for d in self.digits),
+            "digits": getattr(self, "digits", None),
         }
 
 
@@ -792,18 +809,31 @@ class GlobalTitleAndSubSystemNumber(GlobalTitle):
     of odd number of digits.
     """
 
+    __slots__ = (
+        "octets",
+        "size",
+        "value",
+        "subsystem_number",
+        "translation_type",
+        "numbering_plan",
+        "odd",
+        "nature_of_address",
+        "digits",
+    )
+
     def __init__(self, octets: bytes):
         super().__init__(octets[1:])
         self.subsystem_number = octets[0]
+        self.value = self._value()
 
-    @property
-    def value(self):
+    def _value(self):
         return {
             "subsystem_number": self.subsystem_number,
-            "translation_type": self.translation_type,
-            "numbering_plan": self.numbering_plan,
-            "nature_of_address": self.nature_of_address,
-            "digits": "".join(str(d) for d in self.digits),
+            "translation_type": getattr(self, "translation_type", None),
+            "numbering_plan": getattr(self, "numbering_plan", None),
+            "odd": getattr(self, "odd", None),
+            "nature_of_address": getattr(self, "nature_of_address", None),
+            "digits": getattr(self, "digits", None),
         }
 
 
@@ -855,17 +885,19 @@ class IMEI(OctetString):
         Bits 5-8 of octet 8: 1111 used as a filler.
     """
 
+    __slots__ = ("octets", "size", "value", "tac", "snr", "spare")
+
     def __init__(self, octets):
         super().__init__(octets, size=8)
         self._parse_tac_snr()
+        self.value = self._value()
 
     def _parse_tac_snr(self):
         self.tac = TBCDString(self.octets[:4]).value
         self.snr = TBCDString(self.octets[4:]).value
         self.spare = self.octets[7] & 0x0F
 
-    @property
-    def value(self):
+    def _value(self):
         return {"TAC": self.tac, "SNR": self.snr, "Spare": self.spare}
 
     def __str__(self):
@@ -893,7 +925,7 @@ class LocationInformation(OctetString):
     +-------------------------------+
     |       CI/SAC value, cont. LSB | octet 7
     /-------------------------------/
-    MCC, Mobile country code (octet 1 and octet 2)
+    MCC, Mobile country code (octet 1 and 2)
     MNC, Mobile network code (octet 2 and octet 3).
     Note: If MNC uses only 2 digits, then 3rd
     is coded with filler H'F.
@@ -913,11 +945,14 @@ class LocationInformation(OctetString):
     area code are coded with zeros.
     """
 
+    __slots__ = ("octets", "size", "value", "mcc", "carrier", "lac", "ci_sac", "rnc_id")
+
     def __init__(self, octets: bytes):
         super().__init__(octets, size=7)
         self._parse_mcc_mnc()
         self._parse_lac()
         self._parse_ci_sac()
+        self.value = self._value()
 
     def _parse_mcc_mnc(self):
         mcc1 = self.octets[0] & 0x0F  # MCC digit 1
@@ -939,12 +974,11 @@ class LocationInformation(OctetString):
         ci_sac = int.from_bytes(self.octets[5:], "big")
         self.ci_sac = ci_sac
 
-    @property
-    def value(self):
+    def _value(self):
         return self.carrier._asdict() | {"lac": self.lac, "ci_sac": self.ci_sac}
 
     def __str__(self):
-        return f"{self.carrier.name} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) LAC: {self.lac}, CI/SAC: {self.ci_sac}"
+        return f"{getattr(self.carrier, 'name', 'Unknown')} (MCC: {getattr(self.carrier, 'mcc', 'Unknown')}, MNC: {getattr(self.carrier, 'mnc', 'Unknown')}) LAC: {self.lac}, CI/SAC: {self.ci_sac}"
 
 
 class PointCodeAndSubSystemNumber(OctetString):
@@ -975,9 +1009,12 @@ class PointCodeAndSubSystemNumber(OctetString):
     - octet 4    : SubSystemNumber
     """
 
+    __slots__ = ("octets", "size", "value", "spc_type", "spc", "subsystem_number")
+
     def __init__(self, octets: bytes):
         super().__init__(octets, size=4)
         self._parse_spc()
+        self.value = self._value()
 
     def _parse_spc(self):
         """Parse SPC from octets 1 and 2"""
@@ -990,8 +1027,7 @@ class PointCodeAndSubSystemNumber(OctetString):
         self.spc = int.from_bytes(self.octets[:3], "big")
         self.subsystem_number = self.octets[3]
 
-    @property
-    def value(self):
+    def _value(self):
         return {
             "spc_type": self.spc_type,
             "spc": self.spc,
@@ -1048,18 +1084,31 @@ class PositionAccuracy(OctetString):
         kilometers.
     """
 
+    __slots__ = (
+        "octets",
+        "size",
+        "value",
+        "error_shape",
+        "angle",
+        "half_width",
+        "half_length",
+        "radius",
+        "area",
+    )
+
     def __init__(self, octets):
         super().__init__(octets, size=2)
-        self._parse_error_area_definition()
+        self._parse_error_shape()
+        self.value = self._value()
 
     def _parse_error_shape(self):
         """Parse Error Area Definition from octets 1, bit 8"""
         if self.octets[0] >> 7 == 1:
-            self.error_shape == "circular"
+            self.error_shape = "circular"
             self._parse_area_circular()
         else:
-            self.error_shape == "rectangular"
-            self._parse_angle_rectangular()
+            self.error_shape = "rectangular"
+            self._parse_area_rectangular()
 
     def _parse_area_rectangular(self):
         """Parse Angle from octets 1, bits 7-1"""
@@ -1076,8 +1125,7 @@ class PositionAccuracy(OctetString):
         self.radius = self.octets[1]
         self.area = self.radius * self.radius * pi
 
-    @property
-    def value(self):
+    def _value(self):
         return {"error_shape": self.error_shape, "angle": self.angle, "area": self.area}
 
     def __str__(self):
@@ -1113,6 +1161,17 @@ class PresentationAndScreeningIndicator(OctetString):
         0001   Presentation restricted
     """
 
+    __slots__ = (
+        "octets",
+        "size",
+        "digits",
+        "value",
+        "screening",
+        "screening_indicator",
+        "presentation",
+        "presentation_indicator",
+    )
+
     def __init__(self, octets: bytes):
         super().__init__(octets, size=1)
         self.screening = {
@@ -1123,17 +1182,15 @@ class PresentationAndScreeningIndicator(OctetString):
         self.presentation = {0: "Presentation allowed", 1: "Presentation restricted"}
         self._parse_screening_indicator()
         self._parse_presentation_indicator()
+        self.value = self._value()
 
     def _parse_presentation_indicator(self):
-        """Parse Presentation Indicator from octets 1 bits 4-1"""
         self.presentation_indicator = self.presentation[self.octets[0] & 1]
 
     def _parse_screening_indicator(self):
-        """Parse Screening Indicator from octets 1 bits 8-5"""
         self.screening_indicator = self.screening[(self.octets[0] >> 4) & 3]
 
-    @property
-    def value(self):
+    def _value(self):
         return {
             "screening": self.screening_indicator,
             "presentation": self.presentation_indicator,
@@ -1180,28 +1237,24 @@ class TAC(OctetString):
       or deactivation of the service is registered.
     """
 
+    __slots__ = ("octets", "size", "value", "tsc", "tos", "toi", "top")
+
     def __init__(self, octets):
-        super().__init__(octets, lower=3, upper=4)
-        try:
-            self.string = octets.hex().upper()
-        except AttributeError as e:
-            raise OctetStringError("Error parsing octet") from e
+        super().__init__(octets, size=2)
+        self._parse_tac()
+        self.value = self._value()
 
-    @property
-    def value(self) -> str:
-        # Extract individual octets
-        tsc = self.string[:2]  # Telecom Service Code
-        tos = self.string[2:4]  # Type of Seizure
-        toi = self.string[4:6]  # Type of Indicator
+    def _parse_tac(self):
+        self.tsc = (self.octets[0] >> 4) & 0x0F
+        self.tos = self.octets[0] & 0x0F
+        self.toi = (self.octets[1] >> 4) & 0x0F
+        self.top = self.octets[1] & 0x0F
 
-        # Handle optional TOP octet
-        top = self.string[6:8] if len(self.string) == 8 else ""
-
-        return {"tsc": tsc, "tos": tos, "toi": toi, "top": top}
+    def _value(self):
+        return f"TSC: {self.tsc}, TOS: {self.tos}, TOI: {self.toi}, TOP: {self.top}"
 
     def __str__(self):
-        # Build result string
-        return f"{self.value}"
+        return self.value
 
 
 class TargetRNCid(OctetString):
@@ -1227,13 +1280,15 @@ class TargetRNCid(OctetString):
     /-------------------------------/
     Note: The OCTET STRING is coded as an unsigned INTEGER.
     MCC, Mobile country code (octet 1 and 2).
-    MNC, Mobile network code (octet 2 and 3).
+    MNC, Mobile network code (octet 2 and octet 3).
     Note: If MNC uses only 2 digits, 3rd is coded with
     filler H'F.
     LAC, Location area code (octet 4 and 5).
     RNC-id, Radio Network Control id (octet 6 and 7),
     value range: H'0 - H'FFF.
     """
+
+    __slots__ = ("octets", "size", "value", "mcc", "carrier", "lac", "rnc_id")
 
     def __init__(self, octets: bytes):
         super().__init__(octets, size=7)
@@ -1253,6 +1308,7 @@ class TargetRNCid(OctetString):
         else:
             mnc = mnc1 * 100 + mnc2 * 10 + mnc3
         self.carrier = PRESTADORAS.get(mnc, Prestadora(mnc=mnc, mcc=self.mcc))
+        self.value = self._value()
 
     def _parse_lac(self):
         self.lac = int.from_bytes(self.octets[3:5], "big")
@@ -1261,6 +1317,5 @@ class TargetRNCid(OctetString):
         rnc_id = int.from_bytes(self.octets[5:], "big")
         self.rnc_id = rnc_id
 
-    @property
-    def value(self):
+    def _value(self):
         return self.carrier._asdict() | {"lac": self.lac, "rnc_id": self.rnc_id}

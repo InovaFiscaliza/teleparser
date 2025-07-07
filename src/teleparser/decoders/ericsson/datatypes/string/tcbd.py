@@ -73,9 +73,12 @@ class IMSI(TBCDString):
     each digit encoded 0000 to 1001
     """
 
+    __slots__ = ("octets", "size", "digits", "mcc", "mnc", "msin", "carrier", "value")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._parse_mcc_mnc_msin()
+        self.value = self._value()
 
     def _parse_mcc_mnc_msin(self):
         self.mcc = self.digits[0]
@@ -85,8 +88,7 @@ class IMSI(TBCDString):
         self.carrier = PRESTADORAS[mnc]
         self.msin = "".join(str(d) for d in msin)
 
-    @property
-    def value(self):
+    def _value(self):
         return self.carrier._asdict() | {"msin": self.msin}
 
     def __str__(self) -> str:

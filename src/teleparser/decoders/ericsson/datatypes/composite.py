@@ -1,4 +1,3 @@
-from collections import UserDict
 
 from .string.digit import ServiceKey
 from .boolean import Bool
