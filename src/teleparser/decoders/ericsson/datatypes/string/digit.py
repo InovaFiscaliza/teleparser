@@ -414,8 +414,8 @@ class SpeechCoderPreferenceList(DigitString):
     def digits(self):
         """Returns the n digits as a string"""
         digits = list(self.octets)
-        assert all(0 <= digit <= 5 for digit in digits), (
-            f"Speech Coder Preference List should be in range 0-5: {self.digits}"
+        assert all(0 <= digit <= 6 for digit in digits), (
+            f"Speech Coder Preference List should be in range 0-5: {digits}"
         )
         return digits
 
