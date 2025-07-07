@@ -207,7 +207,6 @@ class CDRFileManager:
         logger.info(f"Starting sequential processing of {len(self.gz_files)} files")
         for file_path in tqdm(self.gz_files, desc="Decoding CDR files", unit="file"):
             try:
-                logger.info(f"Processing file: {file_path}")
                 result = self.decode_file(
                     file_path=file_path,
                     decoder=self.decoder,
@@ -243,12 +242,19 @@ class CDRFileManager:
     def process_single_file(file_path, decoder, output_path):
         """Process a single file in a worker process"""
         try:
-            logger.info(f"Processing file in worker: {file_path}")
             result = CDRFileManager.decode_file(
                 file_path=file_path,
                 decoder=decoder,
                 output_path=output_path,
             )
+            if "records" in result:
+                logger.info(
+                    f"Successfully processed {file_path}: {result['records']} records"
+                )
+            else:
+                logger.error(
+                    f"Failed to process {file_path}: {result.get('error', 'Unknown error')}"
+                )
             return {"file_path": file_path, "result": result}
 
         except Exception as e:
@@ -289,7 +295,6 @@ class CDRFileManager:
             ):
                 file_path = future_to_file[future]
                 try:
-                    logger.info(f"Processing result for file: {file_path}")
                     data = future.result()
                     result = data.get("result", {})
                     if "records" in result:
