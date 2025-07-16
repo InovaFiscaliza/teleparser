@@ -68,10 +68,13 @@ DECODERS = {
 
 
 class CDRFileManager:
-    def __init__(self, input_path: Path, output_path: Path, cdr_type: str):
+    def __init__(
+        self, input_path: Path, output_path: Path, cdr_type: str, reprocess: bool
+    ):
         self.input_path = Path(input_path)
         self.output_path = Path(output_path)
         self.cdr_type = cdr_type
+        self.reprocess = reprocess
         self.processed_files: Set[Path] = set()
         self.failed_files: Set[Path] = set()
         self.temp_dir: Path | None = None
@@ -105,11 +108,12 @@ class CDRFileManager:
         if zip_files:
             logger.info(f"Found {len(zip_files)} ZIP files to extract")
             gz_files.extend(self.decompress_zips(zip_files))
-        gz_files = [
-            f
-            for f in gz_files
-            if not (self.output_path / f"{f.stem}.parquet").is_file()
-        ]
+        if not self.reprocess:
+            gz_files = [
+                f
+                for f in gz_files
+                if not (self.output_path / f"{f.stem}.parquet").is_file()
+            ]
         logger.info(f"Found {len(gz_files)} GZ files to process")
         gz_files.sort(key=lambda x: x.stat().st_size)
         return gz_files
@@ -354,6 +358,7 @@ def main(
     output_path: Path,
     cdr_type: str,
     workers: int,
+    reprocess: bool = False,
     log_level: int = logging.INFO,
 ):
     # Set up logging to file and console
@@ -361,10 +366,10 @@ def main(
     logger = setup_logging(output_path, log_level)
 
     logger.info(
-        f"Starting teleparser with input: {input_path}, output: {output_path}, type: {cdr_type}, workers: {workers}"
+        f"Starting teleparser with input: {input_path}, output: {output_path}, type: {cdr_type}, workers: {workers}, reprocess: {reprocess}"
     )
     try:
-        manager = CDRFileManager(input_path, output_path, cdr_type)
+        manager = CDRFileManager(input_path, output_path, cdr_type, reprocess)
         file_count = len(manager.gz_files)
         logger.info(f"[blue]Started processing of {file_count} files...[/blue]")
 

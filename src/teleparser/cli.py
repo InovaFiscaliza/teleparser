@@ -28,6 +28,9 @@ def process_cdrs():
             "-n",
             help="Número de núcleos para processamento paralelo, máximo é o número de núcleos da CPU - 1",
         ),
+        reprocess: bool = typer.Option(
+            False, "--reprocessar", "-r", help="Reprocessar arquivos existentes"
+        ),
         log_level: str = typer.Option(
             "INFO",
             "--log",
