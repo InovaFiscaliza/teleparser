@@ -81,12 +81,41 @@ class IMSI(TBCDString):
         self.value = self._value()
 
     def _parse_mcc_mnc_msin(self):
-        self.mcc = self.digits[0]
-        mnc = self.digits[1]
-        msin = self.digits[2:]
-        assert len(msin) <= 15, "The total number of msin digits should not exceed 15."
+        # According to ASN.1 specification:
+        # MCC: digit 1, digit 2, digit 3 (positions 0, 1, 2 in digits array)
+        # MNC: digit 1, digit 2 (positions 3, 4 in digits array)
+        # MSIN: remaining digits (from position 5 onwards)
+
+        if len(self.digits) < 5:
+            raise ValueError(
+                f"IMSI must have at least 5 digits, got {len(self.digits)}"
+            )
+
+        # Extract MCC (Mobile Country Code) - first 3 digits
+        mcc_digits = self.digits[0:3]
+        self.mcc = "".join(str(d) for d in mcc_digits)
+
+        # Extract MNC (Mobile Network Code) - next 2 digits
+        mnc_digits = self.digits[3:5]
+        mnc = "".join(str(d) for d in mnc_digits)
+
+        # Extract MSIN (Mobile Subscriber Identification Number) - remaining digits
+        msin_digits = self.digits[5:]
+
+        # Validate MSIN length constraint
+        assert len(msin_digits) <= 10, (
+            f"MSIN digits should not exceed 10, got {len(msin_digits)}"
+        )
+
+        # Total digits should not exceed 15 (MCC=3 + MNC=2 + MSIN≤10)
+        total_digits = len(self.digits)
+        assert total_digits <= 15, (
+            f"Total IMSI digits should not exceed 15, got {total_digits}"
+        )
+
+        # Set instance variables
         self.carrier = PRESTADORAS[mnc]
-        self.msin = "".join(str(d) for d in msin)
+        self.msin = "".join(str(d) for d in msin_digits)
 
     def _value(self):
         return self.carrier._asdict() | {"msin": self.msin}
