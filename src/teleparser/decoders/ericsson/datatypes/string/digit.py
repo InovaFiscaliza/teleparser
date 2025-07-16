@@ -279,12 +279,14 @@ class NetworkCallReference(DigitString):
         self.value = self._value()
 
     def _value(self):
-        self.sequence_number = int.from_bytes(self.octets[:3], "big")
-        self.switch_identity = int.from_bytes(self.octets[3:], "big")
-        return {
-            "sequenceNumber": self.sequence_number,
-            "switchIdentity": self.switch_identity,
-        }
+        # Simplification asked
+        # self.sequence_number = int.from_bytes(self.octets[:3], "big")
+        # self.switch_identity = int.from_bytes(self.octets[3:], "big")
+        # return {
+        #     "sequenceNumber": self.sequence_number,
+        #     "switchIdentity": self.switch_identity,
+        # }
+        return self.octets.hex()
 
     def __str__(self):
         return f"{self.sequence_number:06d}-{self.switch_identity:04d}"
