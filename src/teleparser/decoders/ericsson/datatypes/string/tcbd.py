@@ -1,5 +1,5 @@
 from ..primitives import TBCDString
-from teleparser.prestadoras import PRESTADORAS
+from teleparser.prestadoras import PRESTADORAS, Prestadora
 
 
 class AccountCode(TBCDString):
@@ -114,7 +114,7 @@ class IMSI(TBCDString):
         )
 
         # Set instance variables
-        self.carrier = PRESTADORAS[mnc]
+        self.carrier = PRESTADORAS.get(int(mnc),Prestadora(mnc=mnc, mcc=self.mcc))
         self.msin = "".join(str(d) for d in msin_digits)
 
     def _value(self):
