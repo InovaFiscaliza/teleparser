@@ -1,3 +1,5 @@
+
+from dataclasses import dataclass
 from collections import namedtuple
 from typing import Optional, Tuple, Callable
 from io import BufferedReader, BytesIO
@@ -31,7 +33,7 @@ EOC = {(0, False, 0, 0), (2, True, 1, 0)}
 
 BerTag = namedtuple("BerTag", ["tag_class", "constructed", "number"])
 
-
+@dataclass
 class BerDecoder:
     """Basic Encoding Rules decoder"""
 
