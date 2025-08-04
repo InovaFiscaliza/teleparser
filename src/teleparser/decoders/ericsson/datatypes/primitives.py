@@ -136,23 +136,30 @@ class AddressString(OctetString):
 
     __slots__ = ("octets", "size", "ton", "npi", "digits", "value")
 
-    # Type of Number (TON) values
-    TON_UNKNOWN = 0
-    TON_INTERNATIONAL = 1
-    TON_NATIONAL = 2
-    TON_NETWORK_SPECIFIC = 3
-    TON_SUBSCRIBER = 4
-    TON_ALPHANUMERIC = 5
-    TON_ABBREVIATED = 6
-    TON_RESERVED = 7
+    # https://www.infobip.com/glossary/ton-npi-settings
+    TON_LABELS = {
+    0: "Unknown",
+    1: "International",
+    2: "National",
+    3: "Network-Specific",
+    4: "Subscriber Number",
+    5: "Alphanumeric",
+    6: "Abbreviated",
+    7: "Reserved",
+}
 
-    # Numbering Plan Indicator (NPI) values
-    NPI_UNKNOWN = 0
-    NPI_ISDN = 1
-    NPI_DATA = 3
-    NPI_TELEX = 4
-    NPI_PRIVATE = 9
-    NPI_RESERVED = 15
+    NPI_LABELS = {
+    0: "Unknown",
+    1: "ISDN/telephone numbering plan (E163/E164)",
+    3: "Data numbering plan (X.121)",
+    4: "Telex numbering plan (F.69)",
+    6: "Land Mobile (E.212)",
+    8: "National numbering plan",
+    9: "Private numbering plan",
+    10: "ERMES numbering plan (ETSI DE/PS 3 01-3)",
+    13: "Internet (IP)",
+    18: "WAP Client Id (to be defined by WAP Forum)",
+}
 
     def __init__(self, octets: bytes, **kwargs):
         super().__init__(octets, **kwargs)
@@ -223,7 +230,7 @@ class TBCDString(OctetString):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._parse_digits()
-        self.value = "".join(self._digit_to_str(d) for d in self.digits)
+        self.value = "".join(self.digits)
 
     @staticmethod
     def _digit_to_str(d):
@@ -241,9 +248,7 @@ class TBCDString(OctetString):
             digit1 = octet & 0x0F
             digit2 = (octet >> 4) & 0x0F
             digits.extend([digit1, digit2])
-        if digits and digits[-1] == 15:  # Filler
-            digits.pop()
-        self.digits = digits
+        self.digits = [self._digit_to_str(d) for d in digits]
 
 
 class UnsignedInt:

@@ -98,19 +98,19 @@ class IMSI(TBCDString):
         )
         
         # Extract MCC (Mobile Country Code) - first 3 digits
-        self.mcc = "".join(str(d) for d in self.digits[0:3])
+        self.mcc = "".join(self.digits[0:3])
 
         # Extract MNC (Mobile Network Code) - next 2 digits
         mnc_digits: list = self.digits[3:5]
         msin_digits: list = self.digits[5:]
-        if self.digits[-1] != 0xF:
+        if self.digits[-1] != "F":
             mnc_digits.append(self.digits[5])
             msin_digits = self.digits[6:]
         else:
             msin_digits = self.digits[5:-1] # Exclude the filler digit        
 
-        self.mnc = int("".join(str(d) for d in mnc_digits))
-        self.msin = int("".join(str(d) for d in msin_digits))
+        self.mnc = int("".join(mnc_digits))
+        self.msin = int("".join(msin_digits))
 
         # Set instance variables
         self.carrier = PRESTADORAS.get(self.mnc, Prestadora(mnc=mnc, mcc=self.mcc))
