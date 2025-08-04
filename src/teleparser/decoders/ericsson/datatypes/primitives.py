@@ -223,7 +223,16 @@ class TBCDString(OctetString):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._parse_digits()
-        self.value = "".join(str(d) for d in self.digits)
+        self.value = "".join(self._digit_to_str(d) for d in self.digits)
+
+    @staticmethod
+    def _digit_to_str(d):
+        if 0 <= d <= 9:
+            return str(d)
+        elif 10 <= d <= 15:
+            return chr(ord('A') + d - 10)
+        else:
+            return str(d)
 
     def _parse_digits(self):
         digits = []
