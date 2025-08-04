@@ -5,7 +5,7 @@ Prestadora = namedtuple(
     ["nome", "cnpj", "mnc", "mcc", "pais"],
     defaults=(None, None, None, "724", "Brazil"),
 )
-PRESTADORAS = {
+PRESTADORAS: dict[tuple[str, str], Prestadora] = {
     ("00", "724"): Prestadora(
         nome="CLARO S.A.", cnpj="40432544000147", mnc="00", mcc="724", pais="Brazil"
     ),
