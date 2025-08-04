@@ -118,6 +118,9 @@ class Bool:
 
 @fixed_size_digit_string(1)
 class ByteEnum(DigitString):
+
+    # VALUES dict will be defined in runtime for inherited classes
+    VALUES = {}     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.value = self._value()
@@ -170,8 +173,8 @@ class AddressString(OctetString):
     def _parse_ton_npi(self):
         """Parse Type of Number and Numbering Plan Indicator from first octet"""
         first_octet = self.octets[0]
-        self.ton = TON_LABELS.get((first_octet >> 4) & 0x0F, "Unknown")  # Extract bits 8-5
-        self.npi = NPI_LABELS.get(first_octet & 0x0F, "Unknown")  # Extract bits 4-1
+        self.ton = AddressString.TON_LABELS.get((first_octet >> 4) & 0x0F, "Unknown")  # Extract bits 8-5
+        self.npi = AddressString.NPI_LABELS.get(first_octet & 0x0F, "Unknown")  # Extract bits 4-1
 
     def _parse_digits(self):
         """Parse TBCD-encoded digits from remaining octets"""
