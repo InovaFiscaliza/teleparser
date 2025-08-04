@@ -109,14 +109,14 @@ class IMSI(TBCDString):
         else:
             msin_digits = self.digits[5:-1] # Exclude the filler digit        
 
-        self.mnc = int("".join(mnc_digits))
-        self.msin = int("".join(msin_digits))
+        self.mnc = "".join(mnc_digits)
+        self.msin = "".join(msin_digits)
 
         # Set instance variables
-        self.carrier = PRESTADORAS.get(self.mnc, Prestadora(mnc=mnc, mcc=self.mcc))
+        self.carrier = PRESTADORAS.get((self.mnc, self.mcc), Prestadora(mnc=int(self.mnc), mcc=int(self.mcc)))
 
     def _value(self):
-        return {"mcc": self.mcc, "mnc": self.mnc, "msin": self.msin, "nome": self.carrier.nome, "cnpj": self.carrier.cnpj}
+        return {"mcc": self.mcc, "mnc": self.mnc, "msin": self.msin, "nome": self.carrier.nome, "cnpj": self.carrier.cnpj, "pais": self.carrier.pais}
 
     def __str__(self) -> str:
         return f"{self.carrier.nome} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"

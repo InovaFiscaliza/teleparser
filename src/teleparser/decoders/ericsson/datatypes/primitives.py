@@ -178,7 +178,11 @@ class AddressString(OctetString):
 
     def _parse_digits(self):
         """Parse TBCD-encoded digits from remaining octets"""
-        self.digits = TBCDString(self.octets[1:]).digits
+        digits = TBCDString(self.octets[1:]).digits
+        if digits and digits[-1] == "F":
+            digits = digits[:-1]
+        self.digits = digits
+
 
     def _value(self):
         """Return a dictionary representation of the address"""
