@@ -137,7 +137,7 @@ class AddressString(OctetString):
     __slots__ = ("octets", "size", "ton", "npi", "digits", "value")
 
     # https://www.infobip.com/glossary/ton-npi-settings
-    TON_LABELS = {
+    TON_LABELS: dict[int, str] = {
     0: "Unknown",
     1: "International",
     2: "National",
@@ -148,7 +148,7 @@ class AddressString(OctetString):
     7: "Reserved",
 }
 
-    NPI_LABELS = {
+    NPI_LABELS: dict[int, str] = {
     0: "Unknown",
     1: "ISDN/telephone numbering plan (E163/E164)",
     3: "Data numbering plan (X.121)",
@@ -165,17 +165,25 @@ class AddressString(OctetString):
         super().__init__(octets, **kwargs)
         self._parse_ton_npi()
         self._parse_digits()
-        self.value = self.digits
+        self.value = self._value()
 
     def _parse_ton_npi(self):
         """Parse Type of Number and Numbering Plan Indicator from first octet"""
         first_octet = self.octets[0]
-        self.ton = (first_octet >> 4) & 0x0F  # Extract bits 8-5
-        self.npi = first_octet & 0x0F  # Extract bits 4-1
+        self.ton = TON_LABELS.get((first_octet >> 4) & 0x0F, "Unknown")  # Extract bits 8-5
+        self.npi = NPI_LABELS.get(first_octet & 0x0F, "Unknown")  # Extract bits 4-1
 
     def _parse_digits(self):
         """Parse TBCD-encoded digits from remaining octets"""
-        self.digits = TBCDString(self.octets[1:]).value
+        self.digits = TBCDString(self.octets[1:]).digits
+
+    def _value(self):
+        """Return a dictionary representation of the address"""
+        return {
+            "ton": self.ton,
+            "npi": self.npi,
+            "digits": "".join(self.digits),
+        }
 
     def __str__(self) -> str:
         """String representation including TON/NPI and number"""
