@@ -1,9 +1,9 @@
-
 from dataclasses import dataclass
 from collections import namedtuple
 from typing import Optional, Tuple, Callable
 from io import BufferedReader, BytesIO
 from tqdm.auto import tqdm  # Use standard tqdm for compatibility with nesting
+from teleparser.buffer import BufferManager
 
 # Basic ASN.1 Reference
 # https://luca.ntop.org/Teaching/Appunti/asn1.html
@@ -33,15 +33,37 @@ EOC = {(0, False, 0, 0), (2, True, 1, 0)}
 
 BerTag = namedtuple("BerTag", ["tag_class", "constructed", "number"])
 
+BerStream = BufferedReader | BytesIO | BufferManager
+
+
 @dataclass
 class BerDecoder:
     """Basic Encoding Rules decoder"""
 
     parser: Callable
-    buffer_manager: Optional[BufferedReader] = None
+    buffer_manager: BufferManager
 
     @staticmethod
-    def decode_tag(tag_bytes: bytes):
+    def read_tag(stream: BerStream) -> Optional[bytes]:
+        first_byte = stream.read(1)  # index makes a converted to int
+        if not first_byte:
+            return None
+
+        tag_byte = first_byte
+        if int.from_bytes(tag_byte, "big") & HIGH_CLASS_NUM == HIGH_CLASS_NUM:
+            # Multi-byte tag
+            while True:
+                b = stream.read(1)
+                if not b:
+                    raise ValueError("Unexpected end of tag")
+                tag_byte += b
+                if int.from_bytes(b, "big") & MASK_BIT8 == 0:
+                    break
+
+        return tag_byte
+
+    @staticmethod
+    def decode_tag(tag_bytes: bytes) -> BerTag:
         first_byte = tag_bytes[0]
         tag_class = (first_byte >> CLASS_SHIFT) & TWO_BIT_MASK
         constructed = ((first_byte >> ENCODE_SHIFT) & MODULO_2) == 1
@@ -58,34 +80,52 @@ class BerDecoder:
         return BerTag(tag_class, constructed, number)
 
     @staticmethod
-    def _reached_eoc(tag: BerTag, length: int):
+    def read_length(stream: BerStream) -> Tuple[int, int]:
+        first_byte = stream.read(1)[0]
+        # definite short form
+        if first_byte >> SHIFT_7 == 0:
+            return first_byte, 1
+
+        length = 0
+        length_size = first_byte & MASK_BIT7
+        # indefinite form
+        if length_size == 0:
+            return 0, 1
+
+        length_bytes = stream.read(length_size)
+        if length_bytes is not None:
+            if len(length_bytes) != length_size:
+                raise ValueError("Unexpected end of length")
+
+            #  definite long form
+            #  When iterating on bytes it's already converted to int
+            for b in length_bytes:
+                length = (length << SHIFT_8) | b
+
+        return length, length_size + 1
+
+    @staticmethod
+    def reached_eoc(tag: BerTag, length: int) -> bool:
         return (tag.tag_class, tag.constructed, tag.number, length) in EOC
 
     def decode(
         self,
-        stream: BufferedReader | BytesIO,
+        stream: BerStream,
         offset: int = 0,
         depth: int = 0,
         schema: dict | None = None,
     ):
-        if (tag_bytes := self._read_tag(stream)) is None:
+        if (tag_bytes := BerDecoder.read_tag(stream)) is None:
             return None
 
-        tag_data = self._read_tag_indexed(index)
-        if tag_data is None:
-            return None
+        tag: BerTag = BerDecoder.decode_tag(tag_bytes)
+        length, length_size = BerDecoder.read_length(stream)
+        offset += len(tag_bytes) + length_size
 
-        tag, tag_size = tag_data
-        index += tag_size
-
-        length_data = self._read_length_indexed(index)
-        length, length_size = length_data
-        index += length_size
-
-        if self._reached_eoc(tag, length) or length == 0:
+        if BerDecoder.reached_eoc(tag, length) or length == 0:
             return self.decode(stream, offset, depth, schema)
         # Read value
-        value = stream.read(length)
+        value: bytes = stream.read(length)
         if len(value) != length:
             raise ValueError("Unexpected end of data")
 
@@ -105,7 +145,7 @@ class BerDecoder:
         return decoded_data, length
 
     def unravel_decoded_tlv(
-        self, tag_number: int, value: bytes, schema: dict
+        self, tag_number: int, value: bytes, schema: dict | None
     ) -> Tuple[dict, dict] | None:
         """Unravel TLV tree to a flat dictionary"""
         try:
@@ -120,45 +160,6 @@ class BerDecoder:
         else:
             output = {tlv.name: tlv.value}
         return output, tlv.schema
-
-    @staticmethod
-    def _read_tag(stream: BufferedReader) -> Optional[bytes]:
-        first_byte = stream.read(1)  # index makes a converted to int
-        if not first_byte:
-            return None
-
-        tag_byte = first_byte
-        if int.from_bytes(tag_byte, "big") & HIGH_CLASS_NUM == HIGH_CLASS_NUM:
-            # Multi-byte tag
-            while True:
-                if index + tag_size >= len(self.buffer):
-                    raise ValueError("Unexpected end of tag")
-                tag_byte += b
-                if int.from_bytes(b, "big") & MASK_BIT8 == 0:
-                    break
-
-        return tag_byte
-
-        # definite short form
-        if first_byte >> SHIFT_7 == 0:
-            return first_byte, 1
-
-        length = 0
-        length_size = first_byte & MASK_BIT7
-
-        # indefinite form
-        if length_size == 0:
-            return 0, 1
-
-        if index + 1 + length_size > len(self.buffer):
-            raise ValueError("Unexpected end of length")
-
-        # definite long form
-        for i in range(length_size):
-            b = self.buffer[index + 1 + i]
-            length = (length << SHIFT_8) | b
-
-        return length, length_size + 1
 
     def parse_blocks(self):
         with self.buffer_manager.open() as file_buffer:

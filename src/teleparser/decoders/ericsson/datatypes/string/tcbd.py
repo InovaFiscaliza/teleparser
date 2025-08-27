@@ -1,4 +1,4 @@
-from ..primitives import TBCDString
+from teleparser.decoders.ericsson.datatypes.primitives import TBCDString
 from teleparser.prestadoras import PRESTADORAS, Prestadora
 
 
@@ -48,27 +48,32 @@ class IMSI(TBCDString):
     +-------------------+-------------------+
     |  MNC digit 1      |  MCC digit 3      | octet 2
     +-------------------+-------------------+
-    |  MSIN digit 1     |  MNC digit 2      | octet 3
+    |  See Note 1       |  MNC digit 2      | octet 3
     +-------------------+-------------------+
-    |  MSIN digit 3     |  MSIN digit 2     | octet 4
+    |  MSIN digit p+2     |  MSIN digit p+1     | octet 4
     /---------------------------------------/
     .
     .
     .
     /---------------------------------------/
-    |  MSIN digit 2n-7  |  MSIN digit 2n-8  | octet n-1
+    |  MSIN digit p+2n-8  |  MSIN digit p+2n-9 | octet n-1
     +-------------------+-------------------+
-    |  See note         |  MSIN digit 2n-6  | octet n
+    |  See note 2         |  MSIN digit p+2n-7  | octet n
     /---------------------------------------/
-    Note: bits 5-8 of octet n contain
+    Note 1: bits 5-8 of octet 3 contain
+    - MNC digit 3 (p=0 for the next octets),
+    - or MSIN digit 1 (p=1 for the next octets).
+    Note 2: bits 5-8 of octet n contain
     - last MSIN digit, or
     - 1111 used as a filler when there is an odd
     total number of digits.
     MCC Mobile Country Code (octet 1 and bits 1-4 of octet 2)
     MNC Mobile Network Code (bits 5-8 of octet 2 and bits 1-4
-    of octet 3).
+    of octet 3). MNC is coded with two or three digits. If MNC is
+    coded with three digits, bits 5-8 of octet 3 contain the third
+    digit.
     MSIN Mobile Subscriber Identification Number
-    The total number of digits should not exceed 15.
+    The total number of digits should not exceed 16.
     Digits 0 to 9, two digits per octet,
     each digit encoded 0000 to 1001
     """
@@ -83,42 +88,46 @@ class IMSI(TBCDString):
     def _parse_mcc_mnc_msin(self):
         # According to ASN.1 specification:
         # MCC: digit 1, digit 2, digit 3 (positions 0, 1, 2 in digits array)
-        # MNC: digit 1, digit 2 (positions 3, 4 in digits array)
-        # MSIN: remaining digits (from position 5 onwards)
+        # MNC: digits 4-5 (positions 3,4), possibly digit 6 (position 5) if 3-digit MNC
+        # If last digit is 0xF, it's a filler, not a digit.
 
-        if len(self.digits) < 5:
-            raise ValueError(
-                f"IMSI must have at least 5 digits, got {len(self.digits)}"
-            )
+        total_digits = len(self.digits)
+
+        assert 5 <= total_digits <= 16, (
+            f"IMSI must have at least 5 digits and at most 16 digits, got {total_digits}"
+        )
 
         # Extract MCC (Mobile Country Code) - first 3 digits
-        mcc_digits = self.digits[0:3]
-        self.mcc = "".join(str(d) for d in mcc_digits)
+        self.mcc = "".join(self.digits[0:3])
 
-        # Extract MNC (Mobile Network Code) - next 2 digits
-        mnc_digits = self.digits[3:5]
-        mnc = "".join(str(d) for d in mnc_digits)
+        # Extract MNC (Mobile Network Code) - initially 3 digits
+        mnc_digits: list = self.digits[3:6]
+        msin_digits: list = self.digits[5:]
+        while msin_digits and msin_digits[-1] == "F":
+            msin_digits.pop()  # Exclude the filler digit
 
-        # Extract MSIN (Mobile Subscriber Identification Number) - remaining digits
-        msin_digits = self.digits[5:]
-
-        # Validate MSIN length constraint
-        assert len(msin_digits) <= 10, (
-            f"MSIN digits should not exceed 10, got {len(msin_digits)}"
-        )
-
-        # Total digits should not exceed 15 (MCC=3 + MNC=2 + MSIN≤10)
-        total_digits = len(self.digits)
-        assert total_digits <= 15, (
-            f"Total IMSI digits should not exceed 15, got {total_digits}"
-        )
-
-        # Set instance variables
-        self.carrier = PRESTADORAS.get(int(mnc),Prestadora(mnc=mnc, mcc=self.mcc))
-        self.msin = "".join(str(d) for d in msin_digits)
+        if carrier := PRESTADORAS.get(("".join(mnc_digits), self.mcc)):
+            self.msin = "".join(msin_digits[1:])  # first digit is from mnc and not msin
+            self.mnc = "".join(mnc_digits)
+            self.carrier = carrier
+        elif carrier := PRESTADORAS.get(("".join(mnc_digits[:-1]), self.mcc)):
+            self.mnc = "".join(mnc_digits[:-1])
+            self.msin = "".join(msin_digits)
+            self.carrier = carrier
+        else:
+            self.mnc = "".join(mnc_digits)
+            self.msin = "".join(msin_digits)
+            self.carrier = Prestadora(mnc=int(self.mnc), mcc=int(self.mcc))
 
     def _value(self):
-        return self.carrier._asdict() | {"msin": self.msin}
+        return {
+            "mcc": self.mcc,
+            "mnc": self.mnc,
+            "msin": self.msin,
+            "nome": self.carrier.nome,
+            "cnpj": self.carrier.cnpj,
+            "pais": self.carrier.pais,
+        }
 
     def __str__(self) -> str:
         return f"{self.carrier.nome} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"
