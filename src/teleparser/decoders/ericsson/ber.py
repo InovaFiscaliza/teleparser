@@ -43,7 +43,6 @@ class BerDecoder:
     parser: Callable
     buffer_manager: BufferManager
 
-   
     @staticmethod
     def read_tag(stream: BerStream) -> Optional[bytes]:
         first_byte = stream.read(1)  # index makes a converted to int
@@ -123,7 +122,6 @@ class BerDecoder:
         length, length_size = BerDecoder.read_length(stream)
         offset += len(tag_bytes) + length_size
 
-
         if BerDecoder.reached_eoc(tag, length) or length == 0:
             return self.decode(stream, offset, depth, schema)
         # Read value
@@ -162,7 +160,6 @@ class BerDecoder:
         else:
             output = {tlv.name: tlv.value}
         return output, tlv.schema
-
 
     def parse_blocks(self):
         with self.buffer_manager.open() as file_buffer:
