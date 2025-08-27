@@ -1,4 +1,4 @@
-from ..primitives import TBCDString
+from teleparser.decoders.ericsson.datatypes.primitives import TBCDString
 from teleparser.prestadoras import PRESTADORAS, Prestadora
 
 
@@ -96,27 +96,38 @@ class IMSI(TBCDString):
         assert 5 <= total_digits <= 16, (
             f"IMSI must have at least 5 digits and at most 16 digits, got {total_digits}"
         )
-        
+
         # Extract MCC (Mobile Country Code) - first 3 digits
         self.mcc = "".join(self.digits[0:3])
 
-        # Extract MNC (Mobile Network Code) - next 2 digits
-        mnc_digits: list = self.digits[3:5]
+        # Extract MNC (Mobile Network Code) - initially 3 digits
+        mnc_digits: list = self.digits[3:6]
         msin_digits: list = self.digits[5:]
-        if self.digits[-1] != "F":
-            mnc_digits.append(self.digits[5])
-            msin_digits = self.digits[6:]
+        while msin_digits and msin_digits[-1] == "F":
+            msin_digits.pop()  # Exclude the filler digit
+
+        if carrier := PRESTADORAS.get(("".join(mnc_digits), self.mcc)):
+            self.msin = "".join(msin_digits[1:])  # first digit is from mnc and not msin
+            self.mnc = "".join(mnc_digits)
+            self.carrier = carrier
+        elif carrier := PRESTADORAS.get(("".join(mnc_digits[:-1]), self.mcc)):
+            self.mnc = "".join(mnc_digits[:-1])
+            self.msin = "".join(msin_digits)
+            self.carrier = carrier
         else:
-            msin_digits = self.digits[5:-1] # Exclude the filler digit        
-
-        self.mnc = "".join(mnc_digits)
-        self.msin = "".join(msin_digits)
-
-        # Set instance variables
-        self.carrier = PRESTADORAS.get((self.mnc, self.mcc), Prestadora(mnc=int(self.mnc), mcc=int(self.mcc)))
+            self.mnc = "".join(mnc_digits)
+            self.msin = "".join(msin_digits)
+            self.carrier = Prestadora(mnc=int(self.mnc), mcc=int(self.mcc))
 
     def _value(self):
-        return {"mcc": self.mcc, "mnc": self.mnc, "msin": self.msin, "nome": self.carrier.nome, "cnpj": self.carrier.cnpj, "pais": self.carrier.pais}
+        return {
+            "mcc": self.mcc,
+            "mnc": self.mnc,
+            "msin": self.msin,
+            "nome": self.carrier.nome,
+            "cnpj": self.carrier.cnpj,
+            "pais": self.carrier.pais,
+        }
 
     def __str__(self) -> str:
         return f"{self.carrier.nome} (MCC: {self.carrier.mcc}, MNC: {self.carrier.mnc}) MSIN: {self.msin}"
