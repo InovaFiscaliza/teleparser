@@ -67,210 +67,223 @@ DECODERS = {
     "ericsson_volte": ericsson_volte_decoder,
 }
 
-def cast_to_datetime(value, fmt=None, is_time=False):
-    """Helper function to cast a value to datetime with optional format"""
-    try:
-        if is_time:
-            # If it's a time, we only want the time part
-            return pd.to_datetime(value, format=fmt, errors='coerce').dt.time
-        else:
-            # If it's a date, we want the date part
-            return pd.to_datetime(value, format=fmt, errors='coerce').dt.date
-    except ValueError:
-        return pd.NaT
 
-DTIME_TYPES = {'chargeableDuration': partialler(pd.to_timedelta, errors='coerce'),
-               'dateForStartOfCharge': partialler(cast_to_datetime, fmt='%d-%m-%y'),
-               'interruptionTime': partialler(pd.to_timedelta, errors='coerce'),
-               'timeForStartOfCharge': partialler(cast_to_datetime, fmt='%H:%M:%S', is_time=True),
-               'timeForStopOfCharge': partialler(cast_to_datetime, fmt='%H:%M:%S', is_time=True),
-               'timeForTCSeizureCalled': partialler(cast_to_datetime, fmt='%H:%M:%S', is_time=True),
-               'timeForTCSeizureCalling': partialler(cast_to_datetime, fmt='%H:%M:%S', is_time=True),
-               'timeForEvent': partialler(cast_to_datetime, fmt='%H:%M:%S', is_time=True)}
+def cast_to_datetime(value, fmt=None, is_delta=False):
+    """Helper function to cast a value to datetime with optional format"""
+    if is_delta:
+        return pd.to_timedelta(value, errors="raise")
+    return pd.to_datetime(value, format=fmt, errors="raise")
+
+
+MAPPING_TYPES = {
+    "chargeableDuration": partialler(cast_to_datetime, is_delta=True),
+    "dateForStartOfCharge": partialler(cast_to_datetime, fmt="%d-%m-%y"),
+    "interruptionTime": partialler(cast_to_datetime, is_delta=True),
+    "timeForStartOfCharge": partialler(cast_to_datetime, fmt="%H:%M:%S"),
+    "timeForStopOfCharge": partialler(cast_to_datetime, fmt="%H:%M:%S"),
+    "timeForTCSeizureCalled": partialler(cast_to_datetime, fmt="%H:%M:%S"),
+    "timeForTCSeizureCalling": partialler(cast_to_datetime, fmt="%H:%M:%S"),
+    "timeForEvent": partialler(cast_to_datetime, fmt="%H:%M:%S"),
+    "recordSequenceNumber": partialler(pd.to_numeric, downcast="unsigned"),
+    "calledSubscriberIMSI.msin": partialler(pd.to_numeric, downcast="unsigned"),
+    "firstCalledLocationInformation.lac": partialler(
+        pd.to_numeric, downcast="unsigned"
+    ),
+    "firstCalledLocationInformation.ci_sac": partialler(
+        pd.to_numeric, downcast="unsigned"
+    ),
+    "calledSubscriberIMEI.TAC": partialler(pd.to_numeric, downcast="unsigned"),
+    "internalCauseAndLoc.location": partialler(pd.to_numeric, downcast="unsigned"),
+    "internalCauseAndLoc.cause": partialler(pd.to_numeric, downcast="unsigned"),
+    "faultCode": partialler(pd.to_numeric, downcast="unsigned"),
+    "lastCalledLocationInformation.lac": partialler(pd.to_numeric, downcast="unsigned"),
+    "lastCalledLocationInformation.ci_sac": partialler(
+        pd.to_numeric, downcast="unsigned"
+    ),
+    "callingPartyNumber.digits": partialler(pd.to_numeric, downcast="integer"),
+    "relatedCallNumber": partialler(pd.to_numeric, downcast="unsigned"),
+    "callIdentificationNumber": partialler(pd.to_numeric, downcast="unsigned"),
+    "originalCalledNumber.digits": partialler(pd.to_numeric, downcast="integer"),
+    "redirectingNumber.digits": partialler(pd.to_numeric, downcast="integer"),
+    "firstCallingLocationInformation.lac": partialler(
+        pd.to_numeric, downcast="unsigned"
+    ),
+    "firstCallingLocationInformation.ci_sac": partialler(
+        pd.to_numeric, downcast="unsigned"
+    ),
+    "callingSubscriberIMEI.TAC": partialler(pd.to_numeric, downcast="unsigned"),
+    "serviceKey": partialler(pd.to_numeric, downcast="integer"),
+    "translatedNumber.digits": partialler(pd.to_numeric, downcast="integer"),
+    "chargeNumber.digits": partialler(pd.to_numeric, downcast="integer"),
+    "lastCallingLocationInformation.lac": partialler(
+        pd.to_numeric, downcast="unsigned"
+    ),
+    "lastCallingLocationInformation.ci_sac": partialler(
+        pd.to_numeric, downcast="unsigned"
+    ),
+    "sCPAddress.globalTitleAndSubSystemNumber.digits": partialler(
+        pd.to_numeric, downcast="integer"
+    ),
+    "speechCoderPreferenceList": partialler(pd.to_numeric, downcast="unsigned"),
+    "originatingLocationNumber.digits": partialler(pd.to_numeric, downcast="integer"),
+}
 
 DTYPES = {
-    'CallDataRecord': 'category',
-    'CallModule': 'category',
-    'callPosition': 'category',
-    'exchangeIdentity': 'category',
-    'recordSequenceNumber': 'uint32',
-    'tariffClass': 'category',
-    'tariffSwitchInd': 'category',
-    'timeForStopOfCharge': 'category',
-    'outputType': 'category',
-    'switchIdentity': 'category',
-    'calledSubscriberIMSI.mcc': 'category',
-    'calledSubscriberIMSI.mnc': 'category',
-    'calledSubscriberIMSI.msin': 'uint32',
-    'calledSubscriberIMSI.nome': 'category',
-    'calledSubscriberIMSI.cnpj': 'category',
-    'calledSubscriberIMSI.pais': 'category',
-    'firstCalledLocationInformation.nome': 'category',
-    'firstCalledLocationInformation.cnpj': 'category',
-    'firstCalledLocationInformation.mnc': 'category',
-    'firstCalledLocationInformation.mcc': 'category',
-    'firstCalledLocationInformation.pais': 'category',
-    'firstCalledLocationInformation.lac': 'uint32',
-    'firstCalledLocationInformation.ci_sac': 'uint32',
-    'calledSubscriberIMEI.TAC': 'uint32',
-    'calledSubscriberIMEI.SNR': 'category',
-    'calledSubscriberIMEI.Spare': 'category',
-    'mobileStationRoamingNumber.ton': 'category',
-    'mobileStationRoamingNumber.npi': 'category',
-    'mobileStationRoamingNumber.digits': 'category',
-    'eosInfo': 'category',
-    'teleServiceCode': 'category',
-    'mSCIdentification.ton': 'category',
-    'mSCIdentification.npi': 'category',
-    'mSCIdentification.digits': 'category',
-    'gSMCallReferenceNumber': 'category',
-    'mSCAddress.ton': 'category',
-    'mSCAddress.npi': 'category',
-    'mSCAddress.digits': 'category',
-    'outgoingRoute': 'category',
-    'calledPartyNumber.ton': 'category',
-    'calledPartyNumber.npi': 'category',
-    'calledPartyNumber.digits': 'category',
-    'guaranteedBitRate': 'category',
-    'trafficClass': 'category',
-    'maxBitRateDownlink': 'category',
-    'maxBitRateUplink': 'category',
-    'transferDelay': 'category',
-    'deliveryOfErroneousSDU1': 'category',
-    'deliveryOfErroneousSDU2': 'category',
-    'sDUErrorRatio1': 'category',
-    'residualBitErrorRatio1': 'category',
-    'sDUErrorRatio2': 'category',
-    'residualBitErrorRatio2': 'category',
-    'deliveryOfErroneousSDU3': 'category',
-    'sDUErrorRatio3': 'category',
-    'residualBitErrorRatio3': 'category',
-    'networkCallReference': 'category',
-    'callingPartyNumber.ton': 'category',
-    'callingPartyNumber.npi': 'category',
-    'callingPartyNumber.digits': 'int64',
-    'incomingRoute': 'category',
-    'presentationAndScreeningIndicator.screening': 'category',
-    'presentationAndScreeningIndicator.presentation': 'category',
-    'redirectionCounter': 'category',
-    'relatedCallNumber': 'uint32',
-    'callIdentificationNumber': 'uint32',
-    'typeOfCallingSubscriber': 'category',
-    'tAC': 'category',
-    'subscriptionType': 'category',
-    'originForCharging': 'category',
-    'chargedParty': 'category',
-    'timeFromRegisterSeizureToStartOfCharging': 'category',
-    'internalCauseAndLoc.location': 'uint8',
-    'internalCauseAndLoc.cause': 'uint8',
-    'faultCode': 'uint32',
-    'lastCalledLocationInformation.nome': 'category',
-    'lastCalledLocationInformation.cnpj': 'category',
-    'lastCalledLocationInformation.mnc': 'category',
-    'lastCalledLocationInformation.mcc': 'category',
-    'lastCalledLocationInformation.pais': 'category',
-    'lastCalledLocationInformation.lac': 'uint16',
-    'lastCalledLocationInformation.ci_sac': 'uint16',
-    'outgoingAssignedRoute': 'category',
-    'eMLPPPriorityLevel': 'category',
-    'disconnectingParty': 'category',
-    'originalCalledNumber.ton': 'category',
-    'originalCalledNumber.npi': 'category',
-    'originalCalledNumber.digits': 'int64',
-    'redirectingNumber.ton': 'category',
-    'redirectingNumber.npi': 'category',
-    'redirectingNumber.digits': 'int64',
-    'callingSubscriberIMSI.mcc': 'category',
-    'callingSubscriberIMSI.mnc': 'category',
-    'callingSubscriberIMSI.msin': 'category',
-    'callingSubscriberIMSI.nome': 'category',
-    'callingSubscriberIMSI.cnpj': 'category',
-    'callingSubscriberIMSI.pais': 'category',
-    'firstCallingLocationInformation.nome': 'category',
-    'firstCallingLocationInformation.cnpj': 'category',
-    'firstCallingLocationInformation.mnc': 'category',
-    'firstCallingLocationInformation.mcc': 'category',
-    'firstCallingLocationInformation.pais': 'category',
-    'firstCallingLocationInformation.lac': 'uint16',
-    'firstCallingLocationInformation.ci_sac': 'uint16',
-    'callingSubscriberIMEI.TAC': 'uint32',
-    'callingSubscriberIMEI.SNR': 'string',
-    'callingSubscriberIMEI.Spare': 'category',
-    'serviceCentreAddress.ton': 'category',
-    'serviceCentreAddress.npi': 'category',
-    'serviceCentreAddress.digits': 'category',
-    'messageTypeIndicator': 'category',
-    'destinationAddress': 'category',
-    'camelTDPData': 'category',
-    'serviceKey': 'int64',
-    'gsmSCFAddress.ton': 'category',
-    'gsmSCFAddress.npi': 'category',
-    'gsmSCFAddress.digits': 'category',
-    'sMSReferenceNumber': 'string',
-    'numberOfShortMessages': 'category',
-    'originatingAddress': 'category',
-    'translatedNumber.ton': 'category',
-    'translatedNumber.npi': 'category',
-    'translatedNumber.digits': 'string',
-    'originatingLineInformation': 'category',
-    'originatedCode': 'category',
-    'chargeNumber.ton': 'category',
-    'chargeNumber.npi': 'category',
-    'chargeNumber.digits': 'int64',
-    'sMSResult': 'category',
-    'iNMarkingOfMS': 'category',
-    'timeForTCSeizureCalling': 'category',
-    'chargingCase': 'category',
-    'lastCallingLocationInformation.nome': 'category',
-    'lastCallingLocationInformation.cnpj': 'category',
-    'lastCallingLocationInformation.mnc': 'category',
-    'lastCallingLocationInformation.mcc': 'category',
-    'lastCallingLocationInformation.pais': 'category',
-    'lastCallingLocationInformation.lac': 'uint16',
-    'lastCallingLocationInformation.ci_sac': 'uint16',
-    'incomingAssignedRoute': 'category',
-    'iNServiceTrigger': 'category',
-    'sSFChargingCase': 'category',
-    'triggerData': 'category',
-    'triggerDetectionPoint': 'category',
-    'sCPAddress.globalTitleAndSubSystemNumber.subsystem_number': 'category',
-    'sCPAddress.globalTitleAndSubSystemNumber.translation_type': 'category',
-    'sCPAddress.globalTitleAndSubSystemNumber.numbering_plan': 'category',
-    'sCPAddress.globalTitleAndSubSystemNumber.odd': 'bool',
-    'sCPAddress.globalTitleAndSubSystemNumber.nature_of_address': 'category',
-    'sCPAddress.globalTitleAndSubSystemNumber.digits': 'category',
-    'optimalRoutingType': 'category',
-    'redirectingIMSI.mcc': 'category',
-    'redirectingIMSI.mnc': 'category',
-    'redirectingIMSI.msin': 'category',
-    'redirectingIMSI.nome': 'category',
-    'redirectingIMSI.cnpj': 'category',
-    'redirectingIMSI.pais': 'category',
-    'multimediaInformation': 'category',
-    'uILayer1Protocol': 'category',
-    'frequencyBandSupported.pgsm': 'category',
-    'frequencyBandSupported.egsm': 'category',
-    'frequencyBandSupported.gsm1800': 'category',
-    'firstRadioChannelUsed': 'category',
-    'firstAssignedSpeechCoderVersion': 'category',
-    'speechCoderPreferenceList': 'uint16',
-    'radioChannelProperty': 'category',
-    'sSCode': 'category',
-    'sSRequest': 'category',
-    'defaultCallHandling': 'category',
-    'cAMELDestinationAddress': 'category',
-    'rANAPCauseCode': 'category',
-    'originatingLocationNumber.ton': 'category',
-    'originatingLocationNumber.npi': 'category',
-    'originatingLocationNumber.digits': 'category',
-    'defaultSMSHandling': 'category',
-    'bSSMAPCauseCode.cause_value': 'category',
-    'freeFormatData': 'category',
-    'sSFLegID': 'category',
-    'bearerServiceCode': 'category',
-    'fNURRequested': 'category',
-    'transparencyIndicator': 'category',
-    'partialOutputRecNum': 'category'
+    "CallDataRecord": "category",
+    "CallModule": "category",
+    "callPosition": "category",
+    "exchangeIdentity": "category",
+    "tariffClass": "category",
+    "tariffSwitchInd": "category",
+    "timeForStopOfCharge": "category",
+    "outputType": "category",
+    "switchIdentity": "category",
+    "calledSubscriberIMSI.mcc": "category",
+    "calledSubscriberIMSI.mnc": "category",
+    "calledSubscriberIMSI.nome": "category",
+    "calledSubscriberIMSI.cnpj": "category",
+    "calledSubscriberIMSI.pais": "category",
+    "firstCalledLocationInformation.nome": "category",
+    "firstCalledLocationInformation.cnpj": "category",
+    "firstCalledLocationInformation.mnc": "category",
+    "firstCalledLocationInformation.mcc": "category",
+    "firstCalledLocationInformation.pais": "category",
+    "calledSubscriberIMEI.SNR": "category",
+    "calledSubscriberIMEI.Spare": "category",
+    "mobileStationRoamingNumber.ton": "category",
+    "mobileStationRoamingNumber.npi": "category",
+    "mobileStationRoamingNumber.digits": "category",
+    "eosInfo": "category",
+    "teleServiceCode": "category",
+    "mSCIdentification.ton": "category",
+    "mSCIdentification.npi": "category",
+    "mSCIdentification.digits": "category",
+    "gSMCallReferenceNumber": "category",
+    "mSCAddress.ton": "category",
+    "mSCAddress.npi": "category",
+    "mSCAddress.digits": "category",
+    "outgoingRoute": "category",
+    "calledPartyNumber.ton": "category",
+    "calledPartyNumber.npi": "category",
+    "calledPartyNumber.digits": "category",
+    "guaranteedBitRate": "category",
+    "trafficClass": "category",
+    "maxBitRateDownlink": "category",
+    "maxBitRateUplink": "category",
+    "transferDelay": "category",
+    "deliveryOfErroneousSDU1": "category",
+    "deliveryOfErroneousSDU2": "category",
+    "sDUErrorRatio1": "category",
+    "residualBitErrorRatio1": "category",
+    "sDUErrorRatio2": "category",
+    "residualBitErrorRatio2": "category",
+    "deliveryOfErroneousSDU3": "category",
+    "sDUErrorRatio3": "category",
+    "residualBitErrorRatio3": "category",
+    "networkCallReference": "category",
+    "callingPartyNumber.ton": "category",
+    "callingPartyNumber.npi": "category",
+    "incomingRoute": "category",
+    "presentationAndScreeningIndicator.screening": "category",
+    "presentationAndScreeningIndicator.presentation": "category",
+    "redirectionCounter": "category",
+    "typeOfCallingSubscriber": "category",
+    "tAC": "category",
+    "subscriptionType": "category",
+    "originForCharging": "category",
+    "chargedParty": "category",
+    "timeFromRegisterSeizureToStartOfCharging": "category",
+    "lastCalledLocationInformation.nome": "category",
+    "lastCalledLocationInformation.cnpj": "category",
+    "lastCalledLocationInformation.mnc": "category",
+    "lastCalledLocationInformation.mcc": "category",
+    "lastCalledLocationInformation.pais": "category",
+    "outgoingAssignedRoute": "category",
+    "eMLPPPriorityLevel": "category",
+    "disconnectingParty": "category",
+    "originalCalledNumber.ton": "category",
+    "originalCalledNumber.npi": "category",
+    "redirectingNumber.ton": "category",
+    "redirectingNumber.npi": "category",
+    "callingSubscriberIMSI.mcc": "category",
+    "callingSubscriberIMSI.mnc": "category",
+    "callingSubscriberIMSI.msin": "category",
+    "callingSubscriberIMSI.nome": "category",
+    "callingSubscriberIMSI.cnpj": "category",
+    "callingSubscriberIMSI.pais": "category",
+    "firstCallingLocationInformation.nome": "category",
+    "firstCallingLocationInformation.cnpj": "category",
+    "firstCallingLocationInformation.mnc": "category",
+    "firstCallingLocationInformation.mcc": "category",
+    "firstCallingLocationInformation.pais": "category",
+    "callingSubscriberIMEI.SNR": "string",
+    "callingSubscriberIMEI.Spare": "category",
+    "serviceCentreAddress.ton": "category",
+    "serviceCentreAddress.npi": "category",
+    "serviceCentreAddress.digits": "category",
+    "messageTypeIndicator": "category",
+    "destinationAddress": "category",
+    "camelTDPData": "category",
+    "gsmSCFAddress.ton": "category",
+    "gsmSCFAddress.npi": "category",
+    "gsmSCFAddress.digits": "category",
+    "sMSReferenceNumber": "string",
+    "numberOfShortMessages": "category",
+    "originatingAddress": "category",
+    "translatedNumber.ton": "category",
+    "translatedNumber.npi": "category",
+    "originatingLineInformation": "category",
+    "originatedCode": "category",
+    "chargeNumber.ton": "category",
+    "chargeNumber.npi": "category",
+    "sMSResult": "category",
+    "iNMarkingOfMS": "category",
+    "chargingCase": "category",
+    "lastCallingLocationInformation.nome": "category",
+    "lastCallingLocationInformation.cnpj": "category",
+    "lastCallingLocationInformation.mnc": "category",
+    "lastCallingLocationInformation.mcc": "category",
+    "lastCallingLocationInformation.pais": "category",
+    "incomingAssignedRoute": "category",
+    "iNServiceTrigger": "category",
+    "sSFChargingCase": "category",
+    "triggerData": "category",
+    "triggerDetectionPoint": "category",
+    "sCPAddress.globalTitleAndSubSystemNumber.subsystem_number": "category",
+    "sCPAddress.globalTitleAndSubSystemNumber.translation_type": "category",
+    "sCPAddress.globalTitleAndSubSystemNumber.numbering_plan": "category",
+    "sCPAddress.globalTitleAndSubSystemNumber.odd": "bool",
+    "sCPAddress.globalTitleAndSubSystemNumber.nature_of_address": "category",
+    "optimalRoutingType": "category",
+    "redirectingIMSI.mcc": "category",
+    "redirectingIMSI.mnc": "category",
+    "redirectingIMSI.msin": "category",
+    "redirectingIMSI.nome": "category",
+    "redirectingIMSI.cnpj": "category",
+    "redirectingIMSI.pais": "category",
+    "multimediaInformation": "category",
+    "uILayer1Protocol": "category",
+    "frequencyBandSupported.pgsm": "category",
+    "frequencyBandSupported.egsm": "category",
+    "frequencyBandSupported.gsm1800": "category",
+    "firstRadioChannelUsed": "category",
+    "firstAssignedSpeechCoderVersion": "category",
+    "radioChannelProperty": "category",
+    "sSCode": "category",
+    "sSRequest": "category",
+    "defaultCallHandling": "category",
+    "cAMELDestinationAddress": "category",
+    "rANAPCauseCode": "category",
+    "originatingLocationNumber.ton": "category",
+    "originatingLocationNumber.npi": "category",
+    "defaultSMSHandling": "category",
+    "bSSMAPCauseCode.cause_value": "category",
+    "freeFormatData": "category",
+    "sSFLegID": "category",
+    "bearerServiceCode": "category",
+    "fNURRequested": "category",
+    "transparencyIndicator": "category",
+    "partialOutputRecNum": "category",
 }
 
 
@@ -357,21 +370,34 @@ class CDRFileManager:
             shutil.rmtree(self.temp_dir)
 
     @staticmethod
-    def _save_data(
-        blocks: list, output_file: Path, transform_func: Callable | None = None
-    ):
+    def _save_parquet(df: pd.DataFrame, output_file: Path):
+        try:
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            df.to_parquet(output_file, index=False, compression="snappy")
+            logger.info(f"Data saved to {output_file} successfully")
+        except Exception as e:
+            logger.error(f"Failed to save data to {output_file}: {e}", exc_info=True)
+            raise
+
+    @staticmethod
+    def format_df(blocks: list, transform_func: Callable | None = None):
         df = pd.DataFrame(blocks, copy=False)
         if transform_func is not None:
             df = transform_func(df)
         # Use a try-finally block to ensure resources are released
         try:
-            df.astype("string", copy=False).astype("category", copy=False).to_parquet(
-                output_file, index=False, compression="snappy"
-            )
-            logger.info(f"Data saved to {output_file} successfully")
-        except Exception as e:
-            logger.error(f"Failed to save data to {output_file}: {e}", exc_info=True)
-            raise
+            df = df.astype("string").astype("category")  # Remove object dtype first
+            for col, func in MAPPING_TYPES.items():
+                if col in df.columns:
+                    try:
+                        df[col] = func(df[col])
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to convert column {col} with custom function: {e}. Setting to category",
+                            exc_info=False,
+                        )
+
+            return df
         finally:
             # Explicitly clean up resources
             del blocks
@@ -390,11 +416,10 @@ class CDRFileManager:
         try:
             blocks = decoder.process()
             counter = len(blocks)
-            # Save the processed data
-            output_file = output_path / f"{file_path.stem}.parquet"
-            CDRFileManager._save_data(
-                blocks, output_file, transform_func=decoder.transform_func
-            )
+            df = CDRFileManager.format_df(blocks, transform_func=decoder.transform_func)
+            if output_path is not None:
+                output_file = output_path / f"{file_path.stem}.parquet"
+                CDRFileManager._save_parquet(df, output_file)
 
             return {"file": file_path, "records": counter, "status": "success"}
 
@@ -483,7 +508,7 @@ class CDRFileManager:
     def decode_files_parallel(self, workers: int):
         """Decode files using parallel processing with multiple CPU cores"""
         cpu_count = os.cpu_count() or 1
-        max_workers = min(workers, cpu_count, len(self.gz_files))
+        max_workers = max(1, min(workers, cpu_count, len(self.gz_files)))
         logger.info(
             f"Starting parallel processing with {max_workers} workers for {len(self.gz_files)} files"
         )

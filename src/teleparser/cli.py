@@ -53,7 +53,7 @@ def process_cdrs():
             numeric_level = logging.INFO
 
         try:
-            main(Path(entrada), output_dir, tipo_cdr, workers, numeric_level)
+            main(Path(entrada), output_dir, tipo_cdr, workers, reprocess, numeric_level)
         except Exception as e:
             # At this point, logger might not be initialized yet, so we print to console
             error_details = traceback.format_exc()
