@@ -68,22 +68,19 @@ DECODERS = {
 }
 
 
-def cast_to_datetime(value, fmt=None, is_delta=False):
-    """Helper function to cast a value to datetime with optional format"""
-    if is_delta:
-        return pd.to_timedelta(value, errors="raise")
-    return pd.to_datetime(value, format=fmt, errors="raise")
-
-
 MAPPING_TYPES = {
-    "chargeableDuration": partialler(cast_to_datetime, is_delta=True),
-    "dateForStartOfCharge": partialler(cast_to_datetime, fmt="%d-%m-%y"),
-    "interruptionTime": partialler(cast_to_datetime, is_delta=True),
-    "timeForStartOfCharge": partialler(cast_to_datetime, fmt="%H:%M:%S"),
-    "timeForStopOfCharge": partialler(cast_to_datetime, fmt="%H:%M:%S"),
-    "timeForTCSeizureCalled": partialler(cast_to_datetime, fmt="%H:%M:%S"),
-    "timeForTCSeizureCalling": partialler(cast_to_datetime, fmt="%H:%M:%S"),
-    "timeForEvent": partialler(cast_to_datetime, fmt="%H:%M:%S"),
+    "chargeableDuration": partialler(lambda x: pd.to_timedelta(x)),
+    "dateForStartOfCharge": partialler(lambda x: pd.to_datetime(x, format="%d-%m-%y")),
+    "interruptionTime": partialler(lambda x: pd.to_timedelta(x)),
+    "timeForStartOfCharge": partialler(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
+    "timeForStopOfCharge": partialler(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
+    "timeForTCSeizureCalled": partialler(
+        lambda x: pd.to_datetime(x, format="%H:%M:%S")
+    ),
+    "timeForTCSeizureCalling": partialler(
+        lambda x: pd.to_datetime(x, format="%H:%M:%S")
+    ),
+    "timeForEvent": partialler(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
     "recordSequenceNumber": partialler(pd.to_numeric, downcast="unsigned"),
     "calledSubscriberIMSI.msin": partialler(pd.to_numeric, downcast="unsigned"),
     "firstCalledLocationInformation.lac": partialler(
