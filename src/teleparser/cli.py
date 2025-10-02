@@ -41,6 +41,12 @@ def process_cdrs():
             "--log",
             help="Nível de log. Opções: DEBUG, INFO, WARNING, ERROR, CRITICAL",
         ),
+        max_count: int = typer.Option(
+            None,
+            "--max-arquivos",
+            "-m",
+            help="Número máximo de arquivos para processar. Padrão: None (processar todos)",
+        ),
     ):
         """Processa arquivos CDR da ENTRADA (arquivo/pasta) e opcionalmente salva resultados na pasta SAIDA em formato .parquet.\n
         O formato esperado é um arquivo ou pasta com um ou mais arquivos gzip.\n
@@ -58,7 +64,7 @@ def process_cdrs():
             numeric_level = logging.INFO
 
         try:
-            main(Path(entrada), output_dir, tipo_cdr, workers, reprocess, numeric_level)
+            main(Path(entrada), output_dir, tipo_cdr, workers, reprocess, numeric_level, max_count)
         except Exception as e:
             # At this point, logger might not be initialized yet, so we print to console
             error_details = traceback.format_exc()

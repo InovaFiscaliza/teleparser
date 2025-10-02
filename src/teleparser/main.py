@@ -133,12 +133,18 @@ MAPPING_TYPES = {
 
 class CDRFileManager:
     def __init__(
-        self, input_path: Path, output_path: Path | None, cdr_type: str, reprocess: bool
+        self,
+        input_path: Path,
+        output_path: Path | None,
+        cdr_type: str,
+        reprocess: bool,
+        max_count: int | None = None,
     ):
         self.input_path = Path(input_path)
         self.output_path = Path(output_path) if output_path is not None else None
         self.cdr_type = cdr_type
         self.reprocess = reprocess
+        self.max_count = max_count
         self.processed_files: Set[Path] = set()
         self.failed_files: Set[Path] = set()
         self.temp_dir: Path | None = None
@@ -184,8 +190,17 @@ class CDRFileManager:
                 for f in gz_files
                 if not (self.output_path / f"{f.stem}.parquet").is_file()
             ]
-        logger.info(f"Found {len(gz_files)} GZ files to process")
+        
+        # Sort by size for better load balancing in parallel processing
         gz_files.sort(key=lambda x: x.stat().st_size)
+        
+        # Limit to max_count files if specified
+        if self.max_count is not None and self.max_count > 0:
+            original_count = len(gz_files)
+            gz_files = gz_files[:self.max_count]
+            logger.info(f"Limited to {len(gz_files)} files (max_count={self.max_count}, found {original_count})")
+        
+        logger.info(f"Found {len(gz_files)} GZ files to process")
         return gz_files
 
     def decompress_zips(self, zip_files: List[Path]) -> List[Path]:
@@ -465,16 +480,17 @@ def main(
     workers: int = os.cpu_count() // 2,
     reprocess: bool = False,
     log_level: int = logging.INFO,
+    max_count: int | None = None,
 ):
     # Set up logging to file and console
     global logger
     logger = setup_logging(output_path, log_level)
 
     logger.info(
-        f"Starting teleparser with input: {input_path}, output: {output_path}, type: {cdr_type}, workers: {workers}, reprocess: {reprocess}"
+        f"Starting teleparser with input: {input_path}, output: {output_path}, type: {cdr_type}, workers: {workers}, reprocess: {reprocess}, max_count: {max_count}"
     )
     try:
-        manager = CDRFileManager(input_path, output_path, cdr_type, reprocess)
+        manager = CDRFileManager(input_path, output_path, cdr_type, reprocess, max_count)
         file_count = len(manager.gz_files)
         logger.info(f"[blue]Started processing of {file_count} files...[/blue]")
 
