@@ -28,7 +28,7 @@ def process_cdrs():
             help=f"Tipo de CDR para processar. Opções: {', '.join(DECODERS.keys())}",
         ),
         workers: int = typer.Option(
-            os.cpu_count() - 1,
+            os.cpu_count() // 2,
             "--nucleos",
             "-n",
             help="Número de núcleos para processamento paralelo, máximo é o número de núcleos da CPU - 1",
@@ -64,7 +64,15 @@ def process_cdrs():
             numeric_level = logging.INFO
 
         try:
-            main(Path(entrada), output_dir, tipo_cdr, workers, reprocess, numeric_level, max_count)
+            main(
+                Path(entrada),
+                output_dir,
+                tipo_cdr,
+                workers,
+                reprocess,
+                numeric_level,
+                max_count,
+            )
         except Exception as e:
             # At this point, logger might not be initialized yet, so we print to console
             error_details = traceback.format_exc()

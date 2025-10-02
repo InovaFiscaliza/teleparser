@@ -27,7 +27,7 @@ logger = logging.getLogger("teleparser")
 # Configure logging
 def setup_logging(output_path: Path | None, log_level: int = logging.INFO):
     """Set up logging to both file and console
-    
+
     If output_path is None, logs are saved to ~/.local/share/teleparser/logs/
     following XDG Base Directory specification.
     """
@@ -38,7 +38,7 @@ def setup_logging(output_path: Path | None, log_level: int = logging.INFO):
         logs_dir = xdg_data_home / "teleparser" / "logs"
     else:
         logs_dir = output_path / "logs"
-    
+
     logs_dir.mkdir(parents=True, exist_ok=True)
 
     # Create a timestamped log file name
@@ -158,14 +158,16 @@ class CDRFileManager:
                 f"Decoder invalid or not implemented for {self.cdr_type}"
             )
         self.decoder = DECODERS[self.cdr_type]
-        
+
         if self.output_path is not None:
             output_dir = self.output_path
             output_dir.mkdir(parents=True, exist_ok=True)
             self.output_path = output_dir
             logger.info(f"Output directory created: {output_dir}")
         else:
-            logger.info("No output directory specified - results will not be saved to disk")
+            logger.info(
+                "No output directory specified - results will not be saved to disk"
+            )
 
     @cached_property
     def gz_files(self) -> List[Path]:
@@ -182,7 +184,7 @@ class CDRFileManager:
         if zip_files:
             logger.info(f"Found {len(zip_files)} ZIP files to extract")
             gz_files.extend(self.decompress_zips(zip_files))
-        
+
         # Only skip already processed files if output_path is set and reprocess is False
         if not self.reprocess and self.output_path is not None:
             gz_files = [
@@ -190,16 +192,18 @@ class CDRFileManager:
                 for f in gz_files
                 if not (self.output_path / f"{f.stem}.parquet").is_file()
             ]
-        
+
         # Sort by size for better load balancing in parallel processing
         gz_files.sort(key=lambda x: x.stat().st_size)
-        
+
         # Limit to max_count files if specified
         if self.max_count is not None and self.max_count > 0:
             original_count = len(gz_files)
-            gz_files = gz_files[:self.max_count]
-            logger.info(f"Limited to {len(gz_files)} files (max_count={self.max_count}, found {original_count})")
-        
+            gz_files = gz_files[: self.max_count]
+            logger.info(
+                f"Limited to {len(gz_files)} files (max_count={self.max_count}, found {original_count})"
+            )
+
         logger.info(f"Found {len(gz_files)} GZ files to process")
         return gz_files
 
@@ -210,8 +214,9 @@ class CDRFileManager:
             self.temp_dir = self.output_path / "temp_extracted"
         else:
             import tempfile
+
             self.temp_dir = Path(tempfile.gettempdir()) / "teleparser_temp_extracted"
-        
+
         self.temp_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Created temporary directory for ZIP extraction: {self.temp_dir}")
 
@@ -243,7 +248,6 @@ class CDRFileManager:
     @staticmethod
     def _save_parquet(df: pd.DataFrame, output_file: Path):
         try:
-            output_file.parent.mkdir(parents=True, exist_ok=True)
             df.to_parquet(output_file, index=False, compression="snappy")
             logger.info(f"Data saved to {output_file} successfully")
         except Exception as e:
@@ -286,9 +290,15 @@ class CDRFileManager:
 
         try:
             blocks = decoder.process()
-            counter = len(blocks)
+            if (counter := len(blocks)) == 0:
+                logger.warning(f"No records found in {file_path}")
+                return {
+                    "file": file_path,
+                    "records": 0,
+                    "status": "success",
+                }
             df = CDRFileManager.format_df(blocks, transform_func=decoder.transform_func)
-            
+
             # Only save to disk if output_path is provided
             if output_path is not None:
                 output_file = output_path / f"{file_path.stem}.parquet"
@@ -298,7 +308,9 @@ class CDRFileManager:
                 "file": file_path,
                 "records": counter,
                 "status": "success",
-                "dataframe": df if output_path is None else None,  # Return df only if not saving
+                "dataframe": df
+                if output_path is None
+                else None,  # Return df only if not saving
             }
 
         except Exception as e:
@@ -449,12 +461,12 @@ def display_summary(results, total_time, output_path):
     logger.info(f"Files processed successfully: {success_count}")
     logger.info(f"Files failed: {failed_count}")
     logger.info(f"Total records processed: {total_records}")
-    
+
     if output_path is not None:
         logger.info(f"Output directory: {output_path}")
     else:
         logger.info("No output directory - results returned in memory only")
-    
+
     logger.info(f"Total Time: {total_time:.2f} seconds")
     logger.info("Cleaning up temporary files now, if present...")
 
@@ -463,12 +475,14 @@ def display_summary(results, total_time, output_path):
     print(f"[green]Files processed successfully: {success_count}[/green]")
     print(f"[red]Files failed: {failed_count}[/red]")
     print(f"[yellow]Total records processed: {total_records}[/yellow]")
-    
+
     if output_path is not None:
         print(f"[magenta]Output directory: {output_path}[/magenta]")
     else:
-        print("[magenta]No output directory - results returned in memory only[/magenta]")
-    
+        print(
+            "[magenta]No output directory - results returned in memory only[/magenta]"
+        )
+
     print(f"[green]Total Time: {total_time:.2f} seconds[/green]")
     print("[blue]Cleaning up temporary files now, if present...[/blue]")
 
@@ -490,7 +504,9 @@ def main(
         f"Starting teleparser with input: {input_path}, output: {output_path}, type: {cdr_type}, workers: {workers}, reprocess: {reprocess}, max_count: {max_count}"
     )
     try:
-        manager = CDRFileManager(input_path, output_path, cdr_type, reprocess, max_count)
+        manager = CDRFileManager(
+            input_path, output_path, cdr_type, reprocess, max_count
+        )
         file_count = len(manager.gz_files)
         logger.info(f"[blue]Started processing of {file_count} files...[/blue]")
 
@@ -518,6 +534,8 @@ def main(
                 )
                 if "traceback" in failed:
                     logger.debug(f"Traceback:\n{failed['traceback']}")
+
+        return results if output_path is None else None
 
     except Exception as e:
         error_details = traceback.format_exc()
