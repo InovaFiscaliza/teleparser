@@ -5,8 +5,6 @@ from typing import Generator, Tuple
 import socket
 from tqdm.auto import tqdm
 
-from teleparser.decoders.ericsson.transform import transform_ericsson_volte
-
 # Vendor IDs
 VENDOR_3GPP = 10415
 VENDOR_ERICSSON = 193
@@ -674,8 +672,27 @@ class EricssonVolte:
         )  # Process all AVPs and return as a list
 
     @staticmethod
+    def insert_vendor_info(df):
+        df["Origin-Host"] = df["Session-Id"].str.split(";", n=1, expand=True)[0]
+        df.loc[df["Vendor-Id"].notna(), ["Vendor", "Type"]] = ["HUAWEI", "TAS"]
+        df.loc[df["Origin-Host"].str.startswith("pcscf"), ["Vendor", "Type"]] = [
+            "ERICSSON",
+            "SBG",
+        ]
+        df.loc[df["Origin-Host"].str.startswith("scscf"), ["Vendor", "Type"]] = [
+            "ERICSSON",
+            "IMS",
+        ]
+        slice = df["Origin-Host"].str.startswith("tas") & df["Vendor-Id"].isna()
+        df.loc[slice, ["Vendor", "Type"]] = ["ERICSSON", "TAS"]
+        df["Accounting-Record-Type"] = df["Accounting-Record-Type"].map(
+            {1.0: "EVENT", 2.0: "START", 3.0: "INTERIM", 4.0: "STOP"}
+        )
+        return df.drop(["Vendor-Id"], axis=1)
+
+    @staticmethod
     def transform_func(df):
-        return transform_ericsson_volte(df)
+        return EricssonVolte.insert_vendor_info(df)
 
 
 def run(

@@ -20,11 +20,25 @@ from teleparser.decoders.ericsson import ericsson_voz_decoder, ericsson_volte_de
 from teleparser.buffer import BufferManager
 
 
+# Initialize a placeholder logger - will be properly configured later
+logger = logging.getLogger("teleparser")
+
+
 # Configure logging
-def setup_logging(output_path: Path, log_level: int = logging.INFO):
-    """Set up logging to both file and console"""
-    # Create logs directory if it doesn't exist
-    logs_dir = output_path / "logs"
+def setup_logging(output_path: Path | None, log_level: int = logging.INFO):
+    """Set up logging to both file and console
+    
+    If output_path is None, logs are saved to ~/.local/share/teleparser/logs/
+    following XDG Base Directory specification.
+    """
+    # Determine logs directory
+    if output_path is None:
+        # Use XDG Base Directory for application logs
+        xdg_data_home = Path.home() / ".local" / "share"
+        logs_dir = xdg_data_home / "teleparser" / "logs"
+    else:
+        logs_dir = output_path / "logs"
+    
     logs_dir.mkdir(parents=True, exist_ok=True)
 
     # Create a timestamped log file name
@@ -47,20 +61,11 @@ def setup_logging(output_path: Path, log_level: int = logging.INFO):
     file_handler.setFormatter(file_format)
     file_handler.setLevel(log_level)
 
-    # # Console handler - using Rich for better formatting
-    # console_handler = RichHandler(rich_tracebacks=True)
-    # console_handler.setLevel(log_level)
-
     # Add handlers to logger
     logger.addHandler(file_handler)
-    # logger.addHandler(console_handler)
 
-    # logger.info(f"Logging initialized. Log file: {log_file}")
     return logger
 
-
-# Initialize a placeholder logger - will be properly configured later
-logger = logging.getLogger("teleparser")
 
 DECODERS = {
     "ericsson_voz": ericsson_voz_decoder,
@@ -128,10 +133,10 @@ MAPPING_TYPES = {
 
 class CDRFileManager:
     def __init__(
-        self, input_path: Path, output_path: Path, cdr_type: str, reprocess: bool
+        self, input_path: Path, output_path: Path | None, cdr_type: str, reprocess: bool
     ):
         self.input_path = Path(input_path)
-        self.output_path = Path(output_path)
+        self.output_path = Path(output_path) if output_path is not None else None
         self.cdr_type = cdr_type
         self.reprocess = reprocess
         self.processed_files: Set[Path] = set()
@@ -147,10 +152,14 @@ class CDRFileManager:
                 f"Decoder invalid or not implemented for {self.cdr_type}"
             )
         self.decoder = DECODERS[self.cdr_type]
-        output_dir = self.output_path
-        output_dir.mkdir(parents=True, exist_ok=True)
-        self.output_path = output_dir
-        logger.info(f"Output directory created: {output_dir}")
+        
+        if self.output_path is not None:
+            output_dir = self.output_path
+            output_dir.mkdir(parents=True, exist_ok=True)
+            self.output_path = output_dir
+            logger.info(f"Output directory created: {output_dir}")
+        else:
+            logger.info("No output directory specified - results will not be saved to disk")
 
     @cached_property
     def gz_files(self) -> List[Path]:
@@ -167,7 +176,9 @@ class CDRFileManager:
         if zip_files:
             logger.info(f"Found {len(zip_files)} ZIP files to extract")
             gz_files.extend(self.decompress_zips(zip_files))
-        if not self.reprocess:
+        
+        # Only skip already processed files if output_path is set and reprocess is False
+        if not self.reprocess and self.output_path is not None:
             gz_files = [
                 f
                 for f in gz_files
@@ -179,7 +190,13 @@ class CDRFileManager:
 
     def decompress_zips(self, zip_files: List[Path]) -> List[Path]:
         """Extract ZIP files and return paths to extracted files"""
-        self.temp_dir = self.output_path / "temp_extracted"
+        # Use output_path if available, otherwise use system temp directory
+        if self.output_path is not None:
+            self.temp_dir = self.output_path / "temp_extracted"
+        else:
+            import tempfile
+            self.temp_dir = Path(tempfile.gettempdir()) / "teleparser_temp_extracted"
+        
         self.temp_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Created temporary directory for ZIP extraction: {self.temp_dir}")
 
@@ -246,7 +263,7 @@ class CDRFileManager:
     def decode_file(
         file_path: Path,
         decoder,
-        output_path: Path,
+        output_path: Path | None = None,
     ):
         blocks = []
         buffer_manager = BufferManager(file_path)
@@ -256,11 +273,18 @@ class CDRFileManager:
             blocks = decoder.process()
             counter = len(blocks)
             df = CDRFileManager.format_df(blocks, transform_func=decoder.transform_func)
+            
+            # Only save to disk if output_path is provided
             if output_path is not None:
                 output_file = output_path / f"{file_path.stem}.parquet"
                 CDRFileManager._save_parquet(df, output_file)
 
-            return {"file": file_path, "records": counter, "status": "success"}
+            return {
+                "file": file_path,
+                "records": counter,
+                "status": "success",
+                "dataframe": df if output_path is None else None,  # Return df only if not saving
+            }
 
         except Exception as e:
             error_details = traceback.format_exc()
@@ -314,7 +338,7 @@ class CDRFileManager:
         return results
 
     @staticmethod
-    def process_single_file(file_path, decoder, output_path):
+    def process_single_file(file_path, decoder, output_path=None):
         """Process a single file in a worker process"""
         try:
             result = CDRFileManager.decode_file(
@@ -410,7 +434,12 @@ def display_summary(results, total_time, output_path):
     logger.info(f"Files processed successfully: {success_count}")
     logger.info(f"Files failed: {failed_count}")
     logger.info(f"Total records processed: {total_records}")
-    logger.info(f"Output directory: {output_path}")
+    
+    if output_path is not None:
+        logger.info(f"Output directory: {output_path}")
+    else:
+        logger.info("No output directory - results returned in memory only")
+    
     logger.info(f"Total Time: {total_time:.2f} seconds")
     logger.info("Cleaning up temporary files now, if present...")
 
@@ -419,16 +448,21 @@ def display_summary(results, total_time, output_path):
     print(f"[green]Files processed successfully: {success_count}[/green]")
     print(f"[red]Files failed: {failed_count}[/red]")
     print(f"[yellow]Total records processed: {total_records}[/yellow]")
-    print(f"[magenta]Output directory: {output_path}[/magenta]")
+    
+    if output_path is not None:
+        print(f"[magenta]Output directory: {output_path}[/magenta]")
+    else:
+        print("[magenta]No output directory - results returned in memory only[/magenta]")
+    
     print(f"[green]Total Time: {total_time:.2f} seconds[/green]")
     print("[blue]Cleaning up temporary files now, if present...[/blue]")
 
 
 def main(
     input_path: Path,
-    output_path: Path,
-    cdr_type: str,
-    workers: int,
+    output_path: Path | None = None,
+    cdr_type: str = "ericsson_voz",
+    workers: int = os.cpu_count() // 2,
     reprocess: bool = False,
     log_level: int = logging.INFO,
 ):

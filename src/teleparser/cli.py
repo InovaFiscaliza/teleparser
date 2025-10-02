@@ -15,7 +15,12 @@ def process_cdrs():
         entrada: str = typer.Argument(
             ..., help="Caminho para um arquivo CDR único ou diretório"
         ),
-        saída: str = typer.Argument(..., help="Caminho para o diretório de saída"),
+        saída: str = typer.Option(
+            None,
+            "--saida",
+            "-s",
+            help="Caminho para o diretório de saída. Somente a tabela resultado é retornada caso None",
+        ),
         tipo_cdr: str = typer.Option(
             "ericsson_voz",
             "--tipo",
@@ -37,14 +42,14 @@ def process_cdrs():
             help="Nível de log. Opções: DEBUG, INFO, WARNING, ERROR, CRITICAL",
         ),
     ):
-        """Processa arquivos CDR da ENTRADA (arquivo/pasta) e salva resultados na pasta SAIDA em formato .csv.gzip.\n
+        """Processa arquivos CDR da ENTRADA (arquivo/pasta) e opcionalmente salva resultados na pasta SAIDA em formato .parquet.\n
         O formato esperado é um arquivo ou pasta com um ou mais arquivos gzip.\n
         Se os arquivos gzip estiverem em um arquivo ZIP, eles serão extraídos primeiro.\n
-        O modo padrão é processamento paralelo utilizando múltiplos núcleos da CPU.
+        O modo padrão é processamento paralelo utilizando múltiplos núcleos da CPU.\n
+        Se --saida não for especificado, os resultados são processados em memória e não salvos em disco.
         """
-        # Create output directory if it doesn't exist
-        output_dir = Path(saída)
-        output_dir.mkdir(parents=True, exist_ok=True)
+        # Create output directory if it's provided
+        output_dir = Path(saída) if saída is not None else None
 
         # Set log level based on command line argument
         numeric_level = getattr(logging, log_level.upper(), None)
