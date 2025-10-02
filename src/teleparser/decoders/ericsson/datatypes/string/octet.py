@@ -971,7 +971,7 @@ class LocationInformation(OctetString):
             mnc = mnc1 * 10 + mnc2
         else:
             mnc = mnc1 * 100 + mnc2 * 10 + mnc3
-        self.carrier = PRESTADORAS.get(mnc, Prestadora(mnc=mnc, mcc=self.mcc))
+        self.carrier = PRESTADORAS.get((mnc, self.mcc), {})
 
     def _parse_lac(self):
         self.lac = int.from_bytes(self.octets[3:5], "big")
@@ -981,7 +981,10 @@ class LocationInformation(OctetString):
         self.ci_sac = ci_sac
 
     def _value(self):
-        return self.carrier._asdict() | {"lac": str(self.lac), "ci_sac": str(self.ci_sac)}
+        return self.carrier._asdict() | {
+            "lac": str(self.lac),
+            "ci_sac": str(self.ci_sac),
+        }
 
     def __str__(self):
         return f"{getattr(self.carrier, 'name', 'Unknown')} (MCC: {getattr(self.carrier, 'mcc', 'Unknown')}, MNC: {getattr(self.carrier, 'mnc', 'Unknown')}) LAC: {self.lac}, CI/SAC: {self.ci_sac}"
@@ -1311,7 +1314,7 @@ class TargetRNCid(OctetString):
             mnc = mnc1 * 10 + mnc2
         else:
             mnc = mnc1 * 100 + mnc2 * 10 + mnc3
-        self.carrier = PRESTADORAS.get(mnc, Prestadora(mnc=mnc, mcc=self.mcc))
+        self.carrier = PRESTADORAS.get((mnc, self.mcc), {})
 
     def _parse_lac(self):
         self.lac = int.from_bytes(self.octets[3:5], "big")
