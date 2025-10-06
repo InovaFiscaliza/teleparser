@@ -971,7 +971,7 @@ class LocationInformation(OctetString):
             mnc = mnc1 * 10 + mnc2
         else:
             mnc = mnc1 * 100 + mnc2 * 10 + mnc3
-        self.carrier = PRESTADORAS.get((mnc, self.mcc), {})
+        self.carrier = PRESTADORAS.get((mnc, self.mcc), Prestadora())
 
     def _parse_lac(self):
         self.lac = int.from_bytes(self.octets[3:5], "big")
@@ -1314,7 +1314,7 @@ class TargetRNCid(OctetString):
             mnc = mnc1 * 10 + mnc2
         else:
             mnc = mnc1 * 100 + mnc2 * 10 + mnc3
-        self.carrier = PRESTADORAS.get((mnc, self.mcc), {})
+        self.carrier = PRESTADORAS.get((mnc, self.mcc), Prestadora())
 
     def _parse_lac(self):
         self.lac = int.from_bytes(self.octets[3:5], "big")
