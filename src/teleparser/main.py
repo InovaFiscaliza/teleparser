@@ -255,24 +255,26 @@ class CDRFileManager:
             raise
 
     @staticmethod
-    def format_df(blocks: list, transform_func: Callable | None = None):
-        df = pd.DataFrame(blocks, copy=False)
+    def format_df(
+        blocks: list, transform_func: Callable | None = None, format_df: bool = False
+    ):
+        df = pd.DataFrame(blocks, copy=False, dtype="string")
         if transform_func is not None:
             df = transform_func(df)
         # Use a try-finally block to ensure resources are released
         try:
-            df = df.astype("string").astype("category")  # Remove object dtype first
-            for col, func in MAPPING_TYPES.items():
-                if col in df.columns:
-                    try:
-                        df[col] = func(df[col])
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to convert column {col} with custom function: {e}. Setting to category",
-                            exc_info=False,
-                        )
+            if format_df:
+                for col, func in MAPPING_TYPES.items():
+                    if col in df.columns:
+                        try:
+                            df[col] = func(df[col])
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to convert column {col} with custom function: {e}. Setting to category",
+                                exc_info=False,
+                            )
 
-            return df
+            return df.astype("category", copy=False)
         finally:
             # Explicitly clean up resources
             del blocks
