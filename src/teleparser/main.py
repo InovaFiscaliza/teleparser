@@ -298,6 +298,7 @@ class CDRFileManager:
                     "file": file_path,
                     "records": 0,
                     "status": "success",
+                    "dataframe": None,
                 }
             df = CDRFileManager.format_df(blocks, transform_func=decoder.transform_func)
 
@@ -324,6 +325,7 @@ class CDRFileManager:
                 "error": str(e),
                 "traceback": error_details,
                 "status": "failed",
+                "dataframe": None,
             }
 
         finally:
@@ -366,36 +368,6 @@ class CDRFileManager:
                 )
         return results
 
-    @staticmethod
-    def process_single_file(file_path, decoder, output_path=None):
-        """Process a single file in a worker process"""
-        try:
-            result = CDRFileManager.decode_file(
-                file_path=file_path,
-                decoder=decoder,
-                output_path=output_path,
-            )
-            if "records" in result:
-                logger.info(
-                    f"Successfully processed {file_path}: {result['records']} records"
-                )
-            else:
-                logger.error(
-                    f"Failed to process {file_path}: {result.get('error', 'Unknown error')}"
-                )
-            return {"file_path": file_path, "result": result}
-
-        except Exception as e:
-            error_details = traceback.format_exc()
-            logger.error(
-                f"Exception in worker processing {file_path}: {str(e)}\n{error_details}"
-            )
-            return {
-                "file_path": file_path,
-                "error": str(e),
-                "traceback": error_details,
-                "status": "failed",
-            }
 
     def decode_files_parallel(self, workers: int):
         """Decode files using parallel processing with multiple CPU cores"""
@@ -408,7 +380,7 @@ class CDRFileManager:
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             future_to_file = {
                 executor.submit(
-                    CDRFileManager.process_single_file,
+                    CDRFileManager.decode_file,
                     file_path,
                     self.decoder,
                     self.output_path,
@@ -423,18 +395,17 @@ class CDRFileManager:
             ):
                 file_path = future_to_file[future]
                 try:
-                    data = future.result()
-                    result = data.get("result", {})
+                    result = future.result()
                     if "records" in result:
                         logger.info(
                             f"Successfully processed {file_path}: {result['records']} records"
                         )
                     else:
                         logger.error(
-                            f"Failed to process {file_path}: {data.get('error', 'Unknown error')}"
+                            f"Failed to process {file_path}: {result.get('error', 'Unknown error')}"
                         )
-                    if "traceback" in data:
-                        logger.debug(f"Traceback for {file_path}:\n{data['traceback']}")
+                    if "traceback" in result:
+                        logger.debug(f"Traceback for {file_path}:\n{result['traceback']}")
                     results.append(result)
                 except Exception as exc:
                     error_details = traceback.format_exc()
@@ -447,6 +418,7 @@ class CDRFileManager:
                             "error": str(exc),
                             "traceback": error_details,
                             "status": "failed",
+                            "dataframe": None,
                         }
                     )
                 gc.collect()
