@@ -16,7 +16,11 @@ from fastcore.basics import partialler
 
 from tqdm.auto import tqdm
 from rich import print
-from teleparser.decoders.ericsson import ericsson_voz_decoder, ericsson_volte_decoder
+from teleparser.decoders.ericsson import (
+    ericsson_voz_decoder,
+    ericsson_voz_decoder_optimized,
+    ericsson_volte_decoder,
+)
 from teleparser.buffer import BufferManager
 
 
@@ -69,6 +73,7 @@ def setup_logging(output_path: Path | None, log_level: int = logging.INFO):
 
 DECODERS = {
     "ericsson_voz": ericsson_voz_decoder,
+    "ericsson_voz_optimized": ericsson_voz_decoder_optimized,
     "ericsson_volte": ericsson_volte_decoder,
 }
 
@@ -258,7 +263,7 @@ class CDRFileManager:
     def format_df(
         blocks: list, transform_func: Callable | None = None, format_types: bool = False
     ):
-        df = pd.DataFrame(blocks, copy=False, dtype="string")
+        df = pd.DataFrame(blocks, copy=False, dtype="object")
         if transform_func is not None:
             df = transform_func(df)
         # Use a try-finally block to ensure resources are released
@@ -274,7 +279,7 @@ class CDRFileManager:
                                 exc_info=False,
                             )
 
-            return df.astype("category", copy=False)
+            return df.astype("string", copy=False).astype("category", copy=False)
         finally:
             # Explicitly clean up resources
             del blocks
