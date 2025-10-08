@@ -256,14 +256,14 @@ class CDRFileManager:
 
     @staticmethod
     def format_df(
-        blocks: list, transform_func: Callable | None = None, format_df: bool = False
+        blocks: list, transform_func: Callable | None = None, format_types: bool = False
     ):
         df = pd.DataFrame(blocks, copy=False, dtype="string")
         if transform_func is not None:
             df = transform_func(df)
         # Use a try-finally block to ensure resources are released
         try:
-            if format_df:
+            if format_types:
                 for col, func in MAPPING_TYPES.items():
                     if col in df.columns:
                         try:
@@ -311,9 +311,7 @@ class CDRFileManager:
                 "file": file_path,
                 "records": counter,
                 "status": "success",
-                "dataframe": df
-                if output_path is None
-                else None,  # Return df only if not saving
+                "dataframe": df,
             }
 
         except Exception as e:
@@ -368,7 +366,6 @@ class CDRFileManager:
                 )
         return results
 
-
     def decode_files_parallel(self, workers: int):
         """Decode files using parallel processing with multiple CPU cores"""
         cpu_count = os.cpu_count() or 1
@@ -405,7 +402,9 @@ class CDRFileManager:
                             f"Failed to process {file_path}: {result.get('error', 'Unknown error')}"
                         )
                     if "traceback" in result:
-                        logger.debug(f"Traceback for {file_path}:\n{result['traceback']}")
+                        logger.debug(
+                            f"Traceback for {file_path}:\n{result['traceback']}"
+                        )
                     results.append(result)
                 except Exception as exc:
                     error_details = traceback.format_exc()
@@ -509,7 +508,7 @@ def main(
                 if "traceback" in failed:
                     logger.debug(f"Traceback:\n{failed['traceback']}")
 
-        return results if output_path is None else None
+        return results
 
     except Exception as e:
         error_details = traceback.format_exc()

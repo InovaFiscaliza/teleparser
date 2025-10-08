@@ -64,7 +64,7 @@ def process_cdrs():
             numeric_level = logging.INFO
 
         try:
-            main(
+            _ = main(
                 Path(entrada),
                 output_dir,
                 tipo_cdr,
