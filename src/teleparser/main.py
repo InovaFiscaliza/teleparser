@@ -465,7 +465,7 @@ def main(
     output_path: Path | None = None,
     cdr_type: str = "ericsson_voz",
     workers: int = os.cpu_count() // 2,
-    reprocess: bool = False,
+    reprocess: bool = True,
     log_level: int = logging.INFO,
     max_count: int | None = None,
 ):
