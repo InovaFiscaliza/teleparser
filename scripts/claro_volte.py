@@ -2,13 +2,17 @@ import subprocess
 from fastcore.xtras import Path
 
 root_source = Path("/data/cdr/cdr_bruto")
-root_destination = Path("/data/cdr/cdr_processado_novo")
+root_destination = Path("/data/cdr/cdr_traduzido")
+
+START = 42
+STOP = 59
 source = [
-    s
-    for i in range(55, 13, -1)
-    for s in (root_source / f"Semana{i}/Claro").ls().filter(lambda x: "_4G_" in x.stem)
+    (root_source / f"Semana{i}/Claro").ls().filter(lambda x: "_4G_" in x.stem)[0]
+    for i in range(START, STOP)
 ]
-destination = [root_destination / f"Semana{i}/claro/volte" for i in range(55, 13, -1)]
+destination = [
+    root_destination / f"Semana{i}/claro/ericsson" for i in range(START, STOP)
+]
 
 
 for s, d in zip(source, destination):
@@ -17,13 +21,13 @@ for s, d in zip(source, destination):
             "uv",
             "run",
             "src/teleparser/cli.py",
+            s,
+            "-s",
+            d,
+            "-n",
+            "1",
             "--tipo",
             "ericsson_volte",
-            "--nucleos",
-            "2",
-            "--log",
-            "INFO",
-            s,
-            d,
+            "-R",
         ]
     )
