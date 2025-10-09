@@ -69,7 +69,6 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
 
 # PyBuilder
 .pybuilder/
@@ -172,8 +171,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 data/
-
-*.md
+WARP.md
 *.htm
 output
 
