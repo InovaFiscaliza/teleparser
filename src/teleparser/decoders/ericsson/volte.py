@@ -666,10 +666,26 @@ class EricssonVolte:
         else:
             return binary_view.tobytes().hex()  # type: ignore # Fallback for unknown types
 
-    def process(self):
-        return list(
-            tqdm(self.avps(), desc="Parsing AVPs", unit=" block", leave=False)
-        )  # Process all AVPs and return as a list
+    def process(self, pbar_position=None, show_progress=True):
+        """Process the VoLTE data and return a list of parsed AVPs.
+        
+        Args:
+            pbar_position: Position for nested progress bar (for hierarchical display)
+            show_progress: Whether to show progress bar
+        """
+        if show_progress:
+            return list(
+                tqdm(
+                    self.avps(),
+                    desc="  ↳ Parsing AVPs",
+                    unit=" block",
+                    leave=False,
+                    position=pbar_position,
+                    colour="blue"
+                )
+            )  # Process all AVPs and return as a list
+        else:
+            return list(self.avps())
 
     @staticmethod
     def insert_vendor_info(df):

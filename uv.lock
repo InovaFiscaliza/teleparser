@@ -154,15 +154,6 @@ wheels = [
 ]
 
 [[package]]
-name = "fastprogress"
-version = "1.0.3"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/95/52/77c827febdf8aac3b0840ce0edb7c34cbd330fab9bbe032c2a79ec8f2d51/fastprogress-1.0.3.tar.gz", hash = "sha256:7a17d2b438890f838c048eefce32c4ded47197ecc8ea042cecc33d3deb8022f5", size = 14920, upload-time = "2022-07-22T07:02:14.983Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/8f/213223fdee199c55db81e2d0c669f30e8285c5be2526c4ed924de39247da/fastprogress-1.0.3-py3-none-any.whl", hash = "sha256:6dfea88f7a4717b0a8d6ee2048beae5dbed369f932a368c5dd9caff34796f7c5", size = 12744, upload-time = "2022-07-22T07:02:12.547Z" },
-]
-
-[[package]]
 name = "ipykernel"
 version = "6.29.5"
 source = { registry = "https://pypi.org/simple" }
@@ -704,11 +695,10 @@ wheels = [
 
 [[package]]
 name = "teleparser"
-version = "0.1.1"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastcore" },
-    { name = "fastprogress" },
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "tqdm" },
@@ -727,7 +717,6 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastcore", specifier = ">=1.8.2" },
-    { name = "fastprogress", specifier = ">=1.0.3" },
     { name = "pandas", specifier = ">=2.3.0" },
     { name = "pyarrow", specifier = ">=20.0.0" },
     { name = "tqdm", specifier = ">=4.67.1" },

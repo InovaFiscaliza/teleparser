@@ -16,7 +16,11 @@ from fastcore.basics import partialler
 
 from tqdm.auto import tqdm
 from rich import print
-from teleparser.decoders.ericsson import ericsson_voz_decoder, ericsson_volte_decoder
+from teleparser.decoders.ericsson import (
+    ericsson_voz_decoder,
+    ericsson_voz_decoder_optimized,
+    ericsson_volte_decoder,
+)
 from teleparser.buffer import BufferManager
 
 
@@ -69,6 +73,7 @@ def setup_logging(output_path: Path | None, log_level: int = logging.INFO):
 
 DECODERS = {
     "ericsson_voz": ericsson_voz_decoder,
+    "ericsson_voz_optimized": ericsson_voz_decoder_optimized,
     "ericsson_volte": ericsson_volte_decoder,
 }
 
@@ -258,7 +263,7 @@ class CDRFileManager:
     def format_df(
         blocks: list, transform_func: Callable | None = None, format_types: bool = False
     ):
-        df = pd.DataFrame(blocks, copy=False, dtype="string")
+        df = pd.DataFrame(blocks, copy=False, dtype="object")
         if transform_func is not None:
             df = transform_func(df)
         # Use a try-finally block to ensure resources are released
@@ -274,7 +279,7 @@ class CDRFileManager:
                                 exc_info=False,
                             )
 
-            return df.astype("category", copy=False)
+            return df.astype("string", copy=False).astype("category", copy=False)
         finally:
             # Explicitly clean up resources
             del blocks
@@ -285,13 +290,15 @@ class CDRFileManager:
         file_path: Path,
         decoder,
         output_path: Path | None = None,
+        pbar_position: int | None = None,
+        show_progress: bool = True,
     ):
         blocks = []
         buffer_manager = BufferManager(file_path)
         decoder = decoder(buffer_manager)
 
         try:
-            blocks = decoder.process()
+            blocks = decoder.process(pbar_position=pbar_position, show_progress=show_progress)
             if (counter := len(blocks)) == 0:
                 logger.warning(f"No records found in {file_path}")
                 return {
@@ -330,40 +337,60 @@ class CDRFileManager:
             buffer_manager.close()
 
     def decode_files_sequential(self):
-        """Decode all files sequentially with a progress bar and return results"""
+        """Decode all files sequentially with hierarchical progress bars and return results"""
         results = []
         logger.info(f"Starting sequential processing of {len(self.gz_files)} files")
-        for file_path in tqdm(self.gz_files, desc="Decoding CDR files", unit="file"):
-            try:
-                result = self.decode_file(
-                    file_path=file_path,
-                    decoder=self.decoder,
-                    output_path=self.output_path,
-                )
-                self.processed_files.add(file_path)
-                results.append(result)
-                if result["status"] == "success":
-                    logger.info(
-                        f"Successfully processed {file_path}: {result.get('records', 0)} records"
+        
+        # Master progress bar for files (position 0)
+        with tqdm(
+            total=len(self.gz_files),
+            desc="📂 Processing files",
+            unit="file",
+            position=0,
+            leave=True,
+            colour="green"
+        ) as pbar_files:
+            for file_path in self.gz_files:
+                # Update master bar with current file name
+                pbar_files.set_postfix_str(f"{file_path.name}", refresh=True)
+                
+                try:
+                    result = self.decode_file(
+                        file_path=file_path,
+                        decoder=self.decoder,
+                        output_path=self.output_path,
+                        pbar_position=1,  # Nested progress bar at position 1
+                        show_progress=True,
                     )
-                else:
+                    self.processed_files.add(file_path)
+                    results.append(result)
+                    
+                    if result["status"] == "success":
+                        logger.info(
+                            f"Successfully processed {file_path}: {result.get('records', 0)} records"
+                        )
+                    else:
+                        logger.error(
+                            f"Failed to process {file_path}: {result.get('error', 'Unknown error')}"
+                        )
+                except Exception as e:
+                    error_details = traceback.format_exc()
                     logger.error(
-                        f"Failed to process {file_path}: {result.get('error', 'Unknown error')}"
+                        f"Exception while processing {file_path}: {str(e)}\n{error_details}"
                     )
-            except Exception as e:
-                error_details = traceback.format_exc()
-                logger.error(
-                    f"Exception while processing {file_path}: {str(e)}\n{error_details}"
-                )
-                self.failed_files.add(file_path)
-                results.append(
-                    {
-                        "file": file_path,
-                        "error": str(e),
-                        "traceback": error_details,
-                        "status": "failed",
-                    }
-                )
+                    self.failed_files.add(file_path)
+                    results.append(
+                        {
+                            "file": file_path,
+                            "error": str(e),
+                            "traceback": error_details,
+                            "status": "failed",
+                        }
+                    )
+                finally:
+                    # Update master progress bar
+                    pbar_files.update(1)
+                    
         return results
 
     def decode_files_parallel(self, workers: int):
@@ -381,14 +408,17 @@ class CDRFileManager:
                     file_path,
                     self.decoder,
                     self.output_path,
+                    None,  # pbar_position: not used in parallel mode
+                    False,  # show_progress: disabled in parallel to avoid overlap
                 ): file_path
                 for file_path in self.gz_files
             }
             for future in tqdm(
                 concurrent.futures.as_completed(future_to_file),
                 total=len(future_to_file),
-                desc="Decoding CDR files (parallel)",
+                desc="🔄 Processing files (parallel)",
                 unit="file",
+                colour="green",
             ):
                 file_path = future_to_file[future]
                 try:
@@ -465,7 +495,7 @@ def main(
     output_path: Path | None = None,
     cdr_type: str = "ericsson_voz",
     workers: int = os.cpu_count() // 2,
-    reprocess: bool = False,
+    reprocess: bool = True,
     log_level: int = logging.INFO,
     max_count: int | None = None,
 ):
