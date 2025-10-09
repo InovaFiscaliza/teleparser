@@ -167,11 +167,26 @@ class BerDecoder:
                 record, _ = tlv
                 yield record
 
-    def process(self):
-        """Process the BER data and return a list of parsed blocks."""
-        return list(
-            tqdm(self.parse_blocks(), desc="Parsing TLVs", unit=" block", leave=False)
-        )
+    def process(self, pbar_position=None, show_progress=True):
+        """Process the BER data and return a list of parsed blocks.
+        
+        Args:
+            pbar_position: Position for nested progress bar (for hierarchical display)
+            show_progress: Whether to show progress bar
+        """
+        if show_progress:
+            return list(
+                tqdm(
+                    self.parse_blocks(),
+                    desc="  ↳ Parsing TLVs",
+                    unit=" block",
+                    leave=False,
+                    position=pbar_position,
+                    colour="blue"
+                )
+            )
+        else:
+            return list(self.parse_blocks())
 
     @property
     def transform_func(self):  # Just a placeholder for compatibility

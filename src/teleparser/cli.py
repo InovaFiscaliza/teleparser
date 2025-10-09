@@ -34,7 +34,10 @@ def process_cdrs():
             help="Número de núcleos para processamento paralelo, máximo é o número de núcleos da CPU - 1",
         ),
         reprocess: bool = typer.Option(
-            True, "--reprocessar", "-r", help="Reprocessar arquivos existentes"
+            False,
+            "--reprocessar/--nao-reprocessar",
+            "-r/-R",
+            help="Reprocessar arquivos existentes",
         ),
         log_level: str = typer.Option(
             "INFO",
