@@ -176,3 +176,5 @@ data/
 *.md
 *.htm
 output
+
+*.ducklake
