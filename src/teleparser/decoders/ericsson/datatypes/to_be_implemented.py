@@ -1,60 +1,6 @@
 from teleparser.ericsson.datatypes import primitives
 
 
-class AddressStringExtended(primitives.AddressString):
-    """ASN.1 Formal Description
-    AddressStringExtended ::= OCTET STRING (SIZE(1..20))
-    TBCD representation
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |        TON        |        NPI        |
-    +-------------------+-------------------+
-    |     2nd digit     |     1st digit     | octet 1 of TBCD
-    +-------------------+-------------------+
-    |     4th digit     |     3rd digit     | octet 2 of TBCD
-    +-------------------+-------------------+
-    |     6th digit     |     5th digit     | octet 3 of TBCD
-    /---------------------------------------/
-    .
-    .
-    .
-    /---------------------------------------/
-    |    (2n)th digit   | (2n - 1)th digit  | octet n of TBCD
-    /---------------------------------------/
-    Character representation
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |       TON         |        NPI        |
-    +---------------------------------------+
-    |               1st character           | octet 1 of char
-    +---------------------------------------+
-    |               2nd character           | octet 2 of char
-    +---------------------------------------+
-    |               3rd character           | octet 3 of char
-    /---------------------------------------/
-    .
-    .
-    .
-    /---------------------------------------/
-    |               Nth character           | octet N of char
-    /---------------------------------------/
-    Note: The OCTET STRING is coded as an unsigned INTEGER.
-    The first octet uses 4 bits for Type Of Number (TON)
-    and 4 bits for Numbering Plan Indicator (NPI):
-    - Bit 8-5: Type of number
-    - Bit 4-1: Numbering plan indicator
-    Note: The values and their meanings for TON and NPI are
-    described in the Application Information "Type Of
-    Number and Numbering Plan Indicator".
-    Subsequent octets representing address digits or characters
-    are encoded as TBCD string or as GSM 7-bit default alphabet
-    character depending on the NPI value.
-    """
-
 
 class AgeOfLocationEstimate(primitives.AddressString):
     """ASN.1 Formal Description
@@ -105,26 +51,6 @@ class AoCCurrencyAmountSent(primitives.AddressString):
     """
 
 
-class BSSMAPCauseCode(primitives.AddressString):
-    """ASN.1 Formal Description
-    BSSMAPCauseCode ::= OCTET STRING (SIZE(1..2))
-    |    |    |    |    |    |    |    |    |
-    | 8  | 7  | 6  | 5  | 4  | 3  | 2  | 1  |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |ext |         cause value              | octet 1
-    +---------------------------------------+
-    |          extended cause value         | octet 2
-    /---------------------------------------/
-    The second octet is used only if the ext bit is
-    set to one.
-    The cause value is specified in the Function
-    Specification "A-Interface, Section H:
-    Base Station System Management Application Part,
-    BSSMAP, Message Formats And Coding" in chapter
-    "Information Elements".
-    """
-
 
 class CAMELTDPData:
     """ASN.1 Formal Description
@@ -133,43 +59,6 @@ class CAMELTDPData:
     gsmSCFAddress  (1) IMPLICIT  AddressString (SIZE (1..9)))
     """
 
-
-class CarrierSelectionSubstitutionInformation(primitives.AddressString):
-    """ASN.1 Formal Description
-    CarrierSelectionSubstitutionInformation ::= OCTET STRING
-    (SIZE(1))
-    |   |   |   |   |   |   |   |   |
-    | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 |
-    |   |   |   |   |   |   |   |   |
-    /-------------------------------/
-    |MSB                         LSB|  Octet 1
-    /-------------------------------/
-    Note: The OCTET STRING is coded as an unsigned INTEGER.
-    CarrierSelectionSubstitionInformation
-    Bits  8 7 6 5 4 3 2 1
-    Presubscribed carrier exists,       0 0 0 0 0 0 0 1
-    and carrier is not input by
-    calling party. Presubscribed
-    carrier is used.
-    Presubscribed carrier is same as    0 0 0 0 0 0 1 0
-    carrier input by calling party.
-    Input carrier is used.
-    Presubscribed carrier exists,       0 0 0 0 0 0 1 1
-    and input by calling party is
-    undetermined. Presubscribed
-    carrier is used.
-    Carrier is input by calling party,  0 0 0 0 0 1 0 0
-    and it is not the presubscribed
-    carrier for the calling party.
-    Input carrier is used.
-    Carrier given by Carrier Analysis   0 0 0 0 0 1 0 1
-    is used instead of presubscribed
-    carrier.
-    Carrier given by Carrier Analysis   0 0 0 0 0 1 1 0
-    is used instead of carrier input
-    by calling party.
-    Default carrier is used.            0 0 0 0 0 1 1 1
-    """
 
 
 class CauseCode(primitives.AddressString):
@@ -208,26 +97,6 @@ class ChannelCodings(primitives.AddressString):
     1: Channel Coding Acceptable/Used
     """
 
-
-class ChargeAreaCode(primitives.AddressString):
-    """ASN.1 Formal Description
-    ChargeAreaCode ::= OCTET STRING (SIZE(3))
-    The digits for ID Code are encoded as a TBCD-STRING.
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | 2nd CA Code digit | 1st CA Code digit | octet 1 of TBCD
-    +-------------------+-------------------+
-    | 4th CA Code digit | 3rd CA Code digit | octet 2 of TBCD
-    +-------------------+-------------------+
-    | Filler            | 5th CA Code digit | octet 3 of TBCD
-    /---------------------------------------/
-    Acceptable digits are between 0 and 9.
-    Note1: CA Code consists currently of max 5 digits and
-    the 6th digit is filler (H'F).
-    Note2: In case of POICA the 6th digit is filler (H'0).
-    """
 
 
 class ChargeInformation(primitives.AddressString):
@@ -598,46 +467,6 @@ class C7ChargingMessage(primitives.AddressString):
     """
 
 
-class Date(primitives.AddressString):
-    """ASN.1 Formal Description
-    Date ::= OCTET STRING (SIZE(3..4))
-    Note: The OCTET STRING is coded as an unsigned
-    integer.
-    The number of year digits is determined by exchange
-    parameter.
-    Two digit (Year) format:
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                                       | octet 1 (Year)
-    +---------------------------------------+
-    |                                       | octet 2 (Month)
-    +---------------------------------------+
-    |                                       | octet 3 (Day)
-    /---------------------------------------/
-    Year  (octet 1): Value range 0-99 (H'0 - H'63)
-    Month (octet 2): Value range 1-12 (H'1 - H'C)
-    Day   (octet 3): Value range 1-31 (H'1 - H'1F)
-    Four digit (Year) format:
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                                       | octet 1 (Year)
-    +---------------------------------------+
-    |                                       | octet 2 (Year)
-    +---------------------------------------+
-    |                                       | octet 3 (Month)
-    +---------------------------------------+
-    |                                       | octet 4 (Day)
-    /---------------------------------------/
-    Year  (octet 1): Value range 19 or 20 (H'13 or H'14)
-    Year  (octet 2): Value range 0 - 99 (H'0 - H'63)
-    Month (octet 3): Value range 1 - 12 (H'1 - H'C)
-    Day   (octet 4): Value range 1 - 31 (H'1 - H'1F)
-    """
-
 
 class DecipheringKeys(primitives.AddressString):
     """ASN.1 Formal Description
@@ -818,25 +647,6 @@ class GenericNumbersSet(primitives.AddressString):
     provided IN service, and in INAP protocol specifications.
     """
 
-
-class GSMCallReferenceNumber(primitives.AddressString):
-    """ASN.1 Formal Description
-    GSMCallReferenceNumber ::= OCTET STRING (SIZE(1..8))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   |  octet 1
-    +---------------------------------------+
-    |                                       |  octet 2
-    /---------------------------------------/
-    .
-    .
-    .
-    /---------------------------------------/
-    |                                    LSB|  octet n
-    /---------------------------------------/
-    """
 
 
 class LCSAccuracy(primitives.AddressString):
@@ -1367,11 +1177,6 @@ class PositioningDelivery(primitives.AddressString):
     """
 
 
-class ServiceCode:
-    """ASN.1 Formal Description
-    ServiceCode ::= TBCDString (SIZE(1..2))
-    """
-
 
 class ServiceFeatureCode(primitives.AddressString):
     """ASN.1 Formal Description
@@ -1390,48 +1195,6 @@ class ServiceFeatureCode(primitives.AddressString):
     """
 
 
-class ServiceKey(primitives.AddressString):
-    """ASN.1 Formal Description
-    ServiceKey ::=  OCTET STRING (SIZE(4))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    | MSB                                   | octet 1
-    +---------------------------------------+
-    |                                       | octet 2
-    +---------------------------------------+
-    |                                       | octet 3
-    +---------------------------------------+
-    |                                 LSB   | octet 4
-    /---------------------------------------/
-    Value Range H'0 - H'7FFFFFFF
-    """
-
-
-class Time(primitives.AddressString):
-    """ASN.1 Formal Description
-    Time ::= OCTET STRING (SIZE(3..4))
-    |    |    |    |    |    |    |    |    |
-    |  8 |  7 |  6 |  5 |  4 |  3 |  2 |  1 |
-    |    |    |    |    |    |    |    |    |
-    /---------------------------------------/
-    |                                       | octet 1 (Hour)
-    +---------------------------------------+
-    |                                       | octet 2 (Minute)
-    +---------------------------------------+
-    |                                       | octet 3 (Second)
-    +---------------------------------------+
-    |                                       | octet 4 (10th of
-    /---------------------------------------/          a second)
-    Note: OCTET STRING is coded as an unsigned integer.
-    Hour             (octet 1): value range  0-23 (H'0 - H'17)
-    Minute           (octet 2): value range  0-59 (H'0 - H'3B)
-    Second           (octet 3): value range  0-59 (H'0 - H'3B)
-    10th of a second (octet 4): value range  0-9  (H'0 - H'9)
-    Note: 10th of a second is only included for the parameter
-    chargeableDuration and only used for WCDMA Japan.
-    """
 
 
 class TrafficActivityCode(primitives.AddressString):
