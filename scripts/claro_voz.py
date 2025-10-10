@@ -4,16 +4,17 @@ from fastcore.xtras import Path
 root_source = Path("/data/cdr/cdr_bruto")
 root_destination = Path("/data/cdr/cdr_traduzido")
 
-START = 42
+START = 15
 STOP = 59
-source = [
-    (root_source / f"Semana{i}/Claro").ls().filter(lambda x: "ERICSSON" in x.stem)[0]
-    for i in range(START, STOP)
-]
-destination = [
-    root_destination / f"Semana{i}/claro/ericsson" for i in range(START, STOP)
-]
 
+source = []
+destination = []
+for i in range(START, STOP):
+    source.extend(
+        (root_source / f"Semana{i}/Claro").ls().filter(lambda x: "ERICSSON" in x.stem)
+    )
+
+    destination.append(root_destination / f"Semana{i}/claro/ericsson")
 
 for s, d in zip(source, destination):
     subprocess.run(
@@ -25,7 +26,7 @@ for s, d in zip(source, destination):
             "-s",
             d,
             "-n",
-            "8",
+            "1",
             "--tipo",
             "ericsson_voz_optimized",
             "-R",
