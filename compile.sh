@@ -1,1 +1,1 @@
-uv run python -m nuitka --onefile --output-dir=build --output-filename=teleparser --follow-imports --lto=yes --jobs=8 /home/ronaldo/Work/teleparser/src/teleparser/cli.py
+uv run python -m nuitka --onefile --output-dir=build --output-filename=teleparser --lto=yes --jobs=8 ./src/teleparser/cli.py
