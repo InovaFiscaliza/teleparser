@@ -22,7 +22,7 @@ def process_cdrs():
             help="Caminho para o diretório de saída. Somente a tabela resultado é retornada caso None",
         ),
         tipo_cdr: str = typer.Option(
-            "ericsson_voz",
+            "ericsson_voz_optimized",
             "--tipo",
             "-t",
             help=f"Tipo de CDR para processar. Opções: {', '.join(DECODERS.keys())}",

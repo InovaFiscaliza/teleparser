@@ -199,7 +199,7 @@ class CDRFileManager:
             ]
 
         # Sort by size for better load balancing in parallel processing
-        gz_files.sort(key=lambda x: x.stat().st_size)
+        gz_files.sort(key=lambda x: x.stat().st_size, reverse=True)
 
         # Limit to max_count files if specified
         if self.max_count is not None and self.max_count > 0:
@@ -298,7 +298,9 @@ class CDRFileManager:
         decoder = decoder(buffer_manager)
 
         try:
-            blocks = decoder.process(pbar_position=pbar_position, show_progress=show_progress)
+            blocks = decoder.process(
+                pbar_position=pbar_position, show_progress=show_progress
+            )
             if (counter := len(blocks)) == 0:
                 logger.warning(f"No records found in {file_path}")
                 return {
@@ -340,7 +342,7 @@ class CDRFileManager:
         """Decode all files sequentially with hierarchical progress bars and return results"""
         results = []
         logger.info(f"Starting sequential processing of {len(self.gz_files)} files")
-        
+
         # Master progress bar for files (position 0)
         with tqdm(
             total=len(self.gz_files),
@@ -348,12 +350,12 @@ class CDRFileManager:
             unit="file",
             position=0,
             leave=True,
-            colour="green"
+            colour="green",
         ) as pbar_files:
             for file_path in self.gz_files:
                 # Update master bar with current file name
                 pbar_files.set_postfix_str(f"{file_path.name}", refresh=True)
-                
+
                 try:
                     result = self.decode_file(
                         file_path=file_path,
@@ -364,7 +366,7 @@ class CDRFileManager:
                     )
                     self.processed_files.add(file_path)
                     results.append(result)
-                    
+
                     if result["status"] == "success":
                         logger.info(
                             f"Successfully processed {file_path}: {result.get('records', 0)} records"
@@ -390,7 +392,7 @@ class CDRFileManager:
                 finally:
                     # Update master progress bar
                     pbar_files.update(1)
-                    
+
         return results
 
     def decode_files_parallel(self, workers: int):
