@@ -195,9 +195,7 @@ class CDRFileManager:
             shutil.rmtree(self.temp_dir)
 
     @staticmethod
-    def _save(
-        blocks: List[Dict[str, Any]], output_file: Path, fieldnames: Iterable[str]
-    ):
+    def _save(blocks: List[Dict[str, Any]], output_file: Path):
         """Save blocks to a gzipped CSV file.
 
         Args:
@@ -208,6 +206,9 @@ class CDRFileManager:
             if not blocks:
                 logger.warning(f"No data to save for {output_file}")
                 return
+
+            # Extract fieldnames from the first block
+            fieldnames = list(blocks[0].keys())
 
             # Write to gzipped CSV
             with gzip_module.open(output_file, "wt", encoding="utf-8", newline="") as f:
@@ -250,15 +251,19 @@ class CDRFileManager:
                 hasattr(decoder, "transform_func")
                 and decoder.transform_func is not None
             ):
-                # Note: transform_func was designed for pandas DataFrames
-                # For now, we skip transformation when using raw blocks
-                # If transformation is needed, it should be implemented for dict-based data
-                pass
+                try:
+                    blocks = decoder.transform_func(blocks)
+                    logger.debug(f"Applied transform function for {file_path}")
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to apply transform function for {file_path}: {e}"
+                    )
+                    # Continue without transformation
 
             # Only save to disk if output_path is provided
             if output_path is not None:
                 output_file = output_path / f"{file_path.stem}.csv.gz"
-                CDRFileManager._save(blocks, output_file, decoder.FIELDNAMES)
+                CDRFileManager._save(blocks, output_file)
 
             return {
                 "file": file_path,
