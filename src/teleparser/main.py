@@ -7,14 +7,14 @@ import logging
 import traceback
 import argparse
 import sys
+import csv
+import gzip as gzip_module
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
-from typing import Callable, List, Set
+from typing import Callable, List, Set, Dict, Any
 from time import perf_counter
-import pandas as pd
-from functools import partial
 from contextlib import suppress
 
 from tqdm.auto import tqdm
@@ -80,52 +80,6 @@ DECODERS = {
 }
 
 
-MAPPING_TYPES = {
-    "chargeableDuration": partial(lambda x: pd.to_timedelta(x)),
-    "dateForStartOfCharge": partial(lambda x: pd.to_datetime(x, format="%d-%m-%y")),
-    "interruptionTime": partial(lambda x: pd.to_timedelta(x)),
-    "timeForStartOfCharge": partial(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
-    "timeForStopOfCharge": partial(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
-    "timeForTCSeizureCalled": partial(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
-    "timeForTCSeizureCalling": partial(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
-    "timeForEvent": partial(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
-    "recordSequenceNumber": partial(pd.to_numeric, downcast="unsigned"),
-    "calledSubscriberIMSI.msin": partial(pd.to_numeric, downcast="unsigned"),
-    "firstCalledLocationInformation.lac": partial(pd.to_numeric, downcast="unsigned"),
-    "firstCalledLocationInformation.ci_sac": partial(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "calledSubscriberIMEI.TAC": partial(pd.to_numeric, downcast="unsigned"),
-    "internalCauseAndLoc.location": partial(pd.to_numeric, downcast="unsigned"),
-    "internalCauseAndLoc.cause": partial(pd.to_numeric, downcast="unsigned"),
-    "faultCode": partial(pd.to_numeric, downcast="unsigned"),
-    "lastCalledLocationInformation.lac": partial(pd.to_numeric, downcast="unsigned"),
-    "lastCalledLocationInformation.ci_sac": partial(pd.to_numeric, downcast="unsigned"),
-    "callingPartyNumber.digits": partial(pd.to_numeric, downcast="integer"),
-    "relatedCallNumber": partial(pd.to_numeric, downcast="unsigned"),
-    "callIdentificationNumber": partial(pd.to_numeric, downcast="unsigned"),
-    "originalCalledNumber.digits": partial(pd.to_numeric, downcast="integer"),
-    "redirectingNumber.digits": partial(pd.to_numeric, downcast="integer"),
-    "firstCallingLocationInformation.lac": partial(pd.to_numeric, downcast="unsigned"),
-    "firstCallingLocationInformation.ci_sac": partial(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "callingSubscriberIMEI.TAC": partial(pd.to_numeric, downcast="unsigned"),
-    "serviceKey": partial(pd.to_numeric, downcast="integer"),
-    "translatedNumber.digits": partial(pd.to_numeric, downcast="integer"),
-    "chargeNumber.digits": partial(pd.to_numeric, downcast="integer"),
-    "lastCallingLocationInformation.lac": partial(pd.to_numeric, downcast="unsigned"),
-    "lastCallingLocationInformation.ci_sac": partial(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "sCPAddress.globalTitleAndSubSystemNumber.digits": partial(
-        pd.to_numeric, downcast="integer"
-    ),
-    "speechCoderPreferenceList": partial(pd.to_numeric, downcast="unsigned"),
-    "originatingLocationNumber.digits": partial(pd.to_numeric, downcast="integer"),
-}
-
-
 class CDRFileManager:
     def __init__(
         self,
@@ -185,7 +139,7 @@ class CDRFileManager:
             gz_files = [
                 f
                 for f in gz_files
-                if not (self.output_path / f"{f.stem}.parquet").is_file()
+                if not (self.output_path / f"{f.stem}.csv.gz").is_file()
             ]
 
         # Sort by size for better load balancing in parallel processing
@@ -241,39 +195,31 @@ class CDRFileManager:
             shutil.rmtree(self.temp_dir)
 
     @staticmethod
-    def _save_parquet(df: pd.DataFrame, output_file: Path):
+    def _save(blocks: List[Dict[str, Any]], output_file: Path):
+        """Save blocks to a gzipped CSV file.
+        
+        Args:
+            blocks: List of dictionaries containing CDR data
+            output_file: Path to the output CSV.GZ file
+        """
         try:
-            df.to_parquet(output_file, index=False, compression="snappy")
+            if not blocks:
+                logger.warning(f"No data to save for {output_file}")
+                return
+            
+            # Extract fieldnames from the first block
+            fieldnames = list(blocks[0].keys())
+            
+            # Write to gzipped CSV
+            with gzip_module.open(output_file, 'wt', encoding='utf-8', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(blocks)
+            
             logger.info(f"Data saved to {output_file} successfully")
         except Exception as e:
             logger.error(f"Failed to save data to {output_file}: {e}", exc_info=True)
             raise
-
-    @staticmethod
-    def format_df(
-        blocks: list, transform_func: Callable | None = None, format_types: bool = False
-    ):
-        df = pd.DataFrame(blocks, copy=False, dtype="object")
-        if transform_func is not None:
-            df = transform_func(df)
-        # Use a try-finally block to ensure resources are released
-        try:
-            if format_types:
-                for col, func in MAPPING_TYPES.items():
-                    if col in df.columns:
-                        try:
-                            df[col] = func(df[col])
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to convert column {col} with custom function: {e}. Setting to category",
-                                exc_info=False,
-                            )
-
-            return df.astype("string", copy=False).astype("category", copy=False)
-        finally:
-            # Explicitly clean up resources
-            del blocks
-            gc.collect()
 
     @staticmethod
     def decode_file(
@@ -297,20 +243,26 @@ class CDRFileManager:
                     "file": file_path,
                     "records": 0,
                     "status": "success",
-                    "dataframe": None,
+                    "blocks": None,
                 }
-            df = CDRFileManager.format_df(blocks, transform_func=decoder.transform_func)
+            
+            # Apply transform function if provided
+            if hasattr(decoder, 'transform_func') and decoder.transform_func is not None:
+                # Note: transform_func was designed for pandas DataFrames
+                # For now, we skip transformation when using raw blocks
+                # If transformation is needed, it should be implemented for dict-based data
+                pass
 
             # Only save to disk if output_path is provided
             if output_path is not None:
-                output_file = output_path / f"{file_path.stem}.parquet"
-                CDRFileManager._save_parquet(df, output_file)
+                output_file = output_path / f"{file_path.stem}.csv.gz"
+                CDRFileManager._save(blocks, output_file)
 
             return {
                 "file": file_path,
                 "records": counter,
                 "status": "success",
-                "dataframe": df,
+                "blocks": blocks if output_path is None else None,  # Only return blocks if not saving to disk
             }
 
         except Exception as e:
@@ -322,11 +274,15 @@ class CDRFileManager:
                 "error": str(e),
                 "traceback": error_details,
                 "status": "failed",
-                "dataframe": None,
+                "blocks": None,
             }
 
         finally:
             buffer_manager.close()
+            # Clean up blocks to free memory
+            if blocks:
+                del blocks
+            gc.collect()
 
     def decode_files_sequential(self):
         """Decode all files sequentially with hierarchical progress bars and return results"""
@@ -439,7 +395,7 @@ class CDRFileManager:
                             "error": str(exc),
                             "traceback": error_details,
                             "status": "failed",
-                            "dataframe": None,
+                            "blocks": None,
                         }
                     )
                 gc.collect()
@@ -543,7 +499,7 @@ def cli():
     """Command-line interface entry point using argparse."""
     parser = argparse.ArgumentParser(
         prog="teleparser",
-        description="Processa arquivos CDR da ENTRADA (arquivo/pasta) e opcionalmente salva resultados na pasta SAIDA em formato .parquet.",
+        description="Processa arquivos CDR da ENTRADA (arquivo/pasta) e opcionalmente salva resultados na pasta SAIDA em formato CSV.GZ.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 O formato esperado é um arquivo ou pasta com um ou mais arquivos gzip.
