@@ -13,7 +13,7 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
-from typing import Callable, List, Set, Dict, Any
+from typing import Iterable, List, Set, Dict, Any
 from time import perf_counter
 from contextlib import suppress
 
@@ -195,9 +195,11 @@ class CDRFileManager:
             shutil.rmtree(self.temp_dir)
 
     @staticmethod
-    def _save(blocks: List[Dict[str, Any]], output_file: Path):
+    def _save(
+        blocks: List[Dict[str, Any]], output_file: Path, fieldnames: Iterable[str]
+    ):
         """Save blocks to a gzipped CSV file.
-        
+
         Args:
             blocks: List of dictionaries containing CDR data
             output_file: Path to the output CSV.GZ file
@@ -206,16 +208,13 @@ class CDRFileManager:
             if not blocks:
                 logger.warning(f"No data to save for {output_file}")
                 return
-            
-            # Extract fieldnames from the first block
-            fieldnames = list(blocks[0].keys())
-            
+
             # Write to gzipped CSV
-            with gzip_module.open(output_file, 'wt', encoding='utf-8', newline='') as f:
+            with gzip_module.open(output_file, "wt", encoding="utf-8", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(blocks)
-            
+
             logger.info(f"Data saved to {output_file} successfully")
         except Exception as e:
             logger.error(f"Failed to save data to {output_file}: {e}", exc_info=True)
@@ -245,9 +244,12 @@ class CDRFileManager:
                     "status": "success",
                     "blocks": None,
                 }
-            
+
             # Apply transform function if provided
-            if hasattr(decoder, 'transform_func') and decoder.transform_func is not None:
+            if (
+                hasattr(decoder, "transform_func")
+                and decoder.transform_func is not None
+            ):
                 # Note: transform_func was designed for pandas DataFrames
                 # For now, we skip transformation when using raw blocks
                 # If transformation is needed, it should be implemented for dict-based data
@@ -256,13 +258,15 @@ class CDRFileManager:
             # Only save to disk if output_path is provided
             if output_path is not None:
                 output_file = output_path / f"{file_path.stem}.csv.gz"
-                CDRFileManager._save(blocks, output_file)
+                CDRFileManager._save(blocks, output_file, decoder.FIELDNAMES)
 
             return {
                 "file": file_path,
                 "records": counter,
                 "status": "success",
-                "blocks": blocks if output_path is None else None,  # Only return blocks if not saving to disk
+                "blocks": blocks
+                if output_path is None
+                else None,  # Only return blocks if not saving to disk
             }
 
         except Exception as e:
