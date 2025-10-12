@@ -5,6 +5,8 @@ import zipfile
 import concurrent.futures
 import logging
 import traceback
+import argparse
+import sys
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
 from functools import cached_property
@@ -12,10 +14,10 @@ from pathlib import Path
 from typing import Callable, List, Set
 from time import perf_counter
 import pandas as pd
-from fastcore.basics import partialler
+from functools import partial
+from contextlib import suppress
 
 from tqdm.auto import tqdm
-from rich import print
 from teleparser.decoders.ericsson import (
     ericsson_voz_decoder,
     ericsson_voz_decoder_optimized,
@@ -79,60 +81,48 @@ DECODERS = {
 
 
 MAPPING_TYPES = {
-    "chargeableDuration": partialler(lambda x: pd.to_timedelta(x)),
-    "dateForStartOfCharge": partialler(lambda x: pd.to_datetime(x, format="%d-%m-%y")),
-    "interruptionTime": partialler(lambda x: pd.to_timedelta(x)),
-    "timeForStartOfCharge": partialler(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
-    "timeForStopOfCharge": partialler(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
-    "timeForTCSeizureCalled": partialler(
-        lambda x: pd.to_datetime(x, format="%H:%M:%S")
-    ),
-    "timeForTCSeizureCalling": partialler(
-        lambda x: pd.to_datetime(x, format="%H:%M:%S")
-    ),
-    "timeForEvent": partialler(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
-    "recordSequenceNumber": partialler(pd.to_numeric, downcast="unsigned"),
-    "calledSubscriberIMSI.msin": partialler(pd.to_numeric, downcast="unsigned"),
-    "firstCalledLocationInformation.lac": partialler(
+    "chargeableDuration": partial(lambda x: pd.to_timedelta(x)),
+    "dateForStartOfCharge": partial(lambda x: pd.to_datetime(x, format="%d-%m-%y")),
+    "interruptionTime": partial(lambda x: pd.to_timedelta(x)),
+    "timeForStartOfCharge": partial(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
+    "timeForStopOfCharge": partial(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
+    "timeForTCSeizureCalled": partial(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
+    "timeForTCSeizureCalling": partial(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
+    "timeForEvent": partial(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
+    "recordSequenceNumber": partial(pd.to_numeric, downcast="unsigned"),
+    "calledSubscriberIMSI.msin": partial(pd.to_numeric, downcast="unsigned"),
+    "firstCalledLocationInformation.lac": partial(pd.to_numeric, downcast="unsigned"),
+    "firstCalledLocationInformation.ci_sac": partial(
         pd.to_numeric, downcast="unsigned"
     ),
-    "firstCalledLocationInformation.ci_sac": partialler(
+    "calledSubscriberIMEI.TAC": partial(pd.to_numeric, downcast="unsigned"),
+    "internalCauseAndLoc.location": partial(pd.to_numeric, downcast="unsigned"),
+    "internalCauseAndLoc.cause": partial(pd.to_numeric, downcast="unsigned"),
+    "faultCode": partial(pd.to_numeric, downcast="unsigned"),
+    "lastCalledLocationInformation.lac": partial(pd.to_numeric, downcast="unsigned"),
+    "lastCalledLocationInformation.ci_sac": partial(pd.to_numeric, downcast="unsigned"),
+    "callingPartyNumber.digits": partial(pd.to_numeric, downcast="integer"),
+    "relatedCallNumber": partial(pd.to_numeric, downcast="unsigned"),
+    "callIdentificationNumber": partial(pd.to_numeric, downcast="unsigned"),
+    "originalCalledNumber.digits": partial(pd.to_numeric, downcast="integer"),
+    "redirectingNumber.digits": partial(pd.to_numeric, downcast="integer"),
+    "firstCallingLocationInformation.lac": partial(pd.to_numeric, downcast="unsigned"),
+    "firstCallingLocationInformation.ci_sac": partial(
         pd.to_numeric, downcast="unsigned"
     ),
-    "calledSubscriberIMEI.TAC": partialler(pd.to_numeric, downcast="unsigned"),
-    "internalCauseAndLoc.location": partialler(pd.to_numeric, downcast="unsigned"),
-    "internalCauseAndLoc.cause": partialler(pd.to_numeric, downcast="unsigned"),
-    "faultCode": partialler(pd.to_numeric, downcast="unsigned"),
-    "lastCalledLocationInformation.lac": partialler(pd.to_numeric, downcast="unsigned"),
-    "lastCalledLocationInformation.ci_sac": partialler(
+    "callingSubscriberIMEI.TAC": partial(pd.to_numeric, downcast="unsigned"),
+    "serviceKey": partial(pd.to_numeric, downcast="integer"),
+    "translatedNumber.digits": partial(pd.to_numeric, downcast="integer"),
+    "chargeNumber.digits": partial(pd.to_numeric, downcast="integer"),
+    "lastCallingLocationInformation.lac": partial(pd.to_numeric, downcast="unsigned"),
+    "lastCallingLocationInformation.ci_sac": partial(
         pd.to_numeric, downcast="unsigned"
     ),
-    "callingPartyNumber.digits": partialler(pd.to_numeric, downcast="integer"),
-    "relatedCallNumber": partialler(pd.to_numeric, downcast="unsigned"),
-    "callIdentificationNumber": partialler(pd.to_numeric, downcast="unsigned"),
-    "originalCalledNumber.digits": partialler(pd.to_numeric, downcast="integer"),
-    "redirectingNumber.digits": partialler(pd.to_numeric, downcast="integer"),
-    "firstCallingLocationInformation.lac": partialler(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "firstCallingLocationInformation.ci_sac": partialler(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "callingSubscriberIMEI.TAC": partialler(pd.to_numeric, downcast="unsigned"),
-    "serviceKey": partialler(pd.to_numeric, downcast="integer"),
-    "translatedNumber.digits": partialler(pd.to_numeric, downcast="integer"),
-    "chargeNumber.digits": partialler(pd.to_numeric, downcast="integer"),
-    "lastCallingLocationInformation.lac": partialler(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "lastCallingLocationInformation.ci_sac": partialler(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "sCPAddress.globalTitleAndSubSystemNumber.digits": partialler(
+    "sCPAddress.globalTitleAndSubSystemNumber.digits": partial(
         pd.to_numeric, downcast="integer"
     ),
-    "speechCoderPreferenceList": partialler(pd.to_numeric, downcast="unsigned"),
-    "originatingLocationNumber.digits": partialler(pd.to_numeric, downcast="integer"),
+    "speechCoderPreferenceList": partial(pd.to_numeric, downcast="unsigned"),
+    "originatingLocationNumber.digits": partial(pd.to_numeric, downcast="integer"),
 }
 
 
@@ -495,7 +485,7 @@ def display_summary(results, total_time, output_path):
 def main(
     input_path: Path,
     output_path: Path | None = None,
-    cdr_type: str = "ericsson_voz",
+    cdr_type: str = "ericsson_voz_optimized",
     workers: int = os.cpu_count() // 2,
     reprocess: bool = True,
     log_level: int = logging.INFO,
@@ -547,3 +537,117 @@ def main(
         logger.critical(f"Critical error in main process: {str(e)}\n{error_details}")
         print(f"[bold red]Critical error: {str(e)}[/bold red]")
         raise
+
+
+def cli():
+    """Command-line interface entry point using argparse."""
+    parser = argparse.ArgumentParser(
+        prog="teleparser",
+        description="Processa arquivos CDR da ENTRADA (arquivo/pasta) e opcionalmente salva resultados na pasta SAIDA em formato .parquet.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+O formato esperado é um arquivo ou pasta com um ou mais arquivos gzip.
+Se os arquivos gzip estiverem em um arquivo ZIP, eles serão extraídos primeiro.
+O modo padrão é processamento paralelo utilizando múltiplos núcleos da CPU.
+Se --saida não for especificado, os resultados são processados em memória e não salvos em disco.
+        """,
+    )
+
+    parser.add_argument(
+        "entrada",
+        type=str,
+        help="Caminho para um arquivo CDR único ou diretório",
+    )
+
+    parser.add_argument(
+        "-s",
+        "--saida",
+        type=str,
+        default=None,
+        help="Caminho para o diretório de saída. Somente a tabela resultado é retornada caso None",
+    )
+
+    parser.add_argument(
+        "-t",
+        "--tipo",
+        type=str,
+        default="ericsson_voz_optimized",
+        choices=list(DECODERS.keys()),
+        help=f"Tipo de CDR para processar. Opções: {', '.join(DECODERS.keys())} (padrão: ericsson_voz_optimized)",
+    )
+
+    parser.add_argument(
+        "-n",
+        "--nucleos",
+        type=int,
+        default=os.cpu_count() // 2 if os.cpu_count() else 1,
+        help=f"Número de núcleos para processamento paralelo, máximo é o número de núcleos da CPU - 1 (padrão: {os.cpu_count() // 2 if os.cpu_count() else 1})",
+    )
+
+    parser.add_argument(
+        "-r",
+        "--reprocessar",
+        action="store_true",
+        default=False,
+        help="Reprocessar arquivos existentes (padrão: False)",
+    )
+
+    parser.add_argument(
+        "--log",
+        type=str,
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Nível de log (padrão: INFO)",
+    )
+
+    parser.add_argument(
+        "-m",
+        "--max-arquivos",
+        type=int,
+        default=None,
+        help="Número máximo de arquivos para processar. Padrão: None (processar todos)",
+    )
+
+    args = parser.parse_args()
+
+    # Convert entrada to Path
+    entrada_path = Path(args.entrada)
+
+    # Convert saída to Path if provided
+    output_dir = Path(args.saida) if args.saida is not None else None
+
+    # Set log level based on command line argument
+    numeric_level = getattr(logging, args.log.upper(), None)
+    if not isinstance(numeric_level, int):
+        print(f"Nível de log inválido: {args.log}")
+        numeric_level = logging.INFO
+
+    try:
+        _ = main(
+            entrada_path,
+            output_dir,
+            args.tipo,
+            args.nucleos,
+            args.reprocessar,
+            numeric_level,
+            args.max_arquivos,
+        )
+    except Exception as e:
+        # At this point, logger might not be initialized yet, so we print to console
+        error_details = traceback.format_exc()
+        print(f"Fatal Error: {str(e)}")
+
+        # Try to log to file if possible
+        with suppress(Exception):
+            temp_logger = setup_logging(output_dir, logging.ERROR)
+            temp_logger.critical(
+                f"Exception untreated in main process: {str(e)}\n{error_details}"
+            )
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    import multiprocessing
+
+    multiprocessing.freeze_support()
+    cli()
