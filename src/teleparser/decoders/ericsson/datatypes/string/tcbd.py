@@ -117,7 +117,9 @@ class IMSI(TBCDString):
         else:
             self.mnc = "".join(mnc_digits)
             self.msin = "".join(msin_digits)
-            self.carrier = Prestadora(mnc=int(self.mnc), mcc=int(self.mcc))
+            self.carrier = Prestadora(
+                mnc=self.mnc, mcc=self.mcc, nome="Desconhecida", cnpj=None, pais=None
+            )
 
     def _value(self):
         return {
