@@ -215,10 +215,9 @@ class CDRFileManager:
             if fieldnames_set is None:
                 fieldnames_set = set()
 
-            if not fieldnames_set:
-                # Collect all unique fieldnames from all blocks
-                # This handles cases where different records have different fields
-                fieldnames_set = {k for block in blocks for k in block}
+            # Collect all unique fieldnames from all blocks
+            # This handles cases where different records have different fields
+            fieldnames_set.update({k for block in blocks for k in block})
 
             # Sort fieldnames for consistent output
             fieldnames = sorted(fieldnames_set)
