@@ -193,12 +193,15 @@ class BerDecoderOptimized:
 
             while child_position < end_position:
                 child_result = self.decode(data, child_position, depth + 1, schema)
-                if child_result[0] is not None:
-                    child_data, child_bytes = child_result
-                    child_position += child_bytes
+                child_data, child_bytes = child_result
+                
+                # Always advance position, even if decode returned None
+                # (e.g., unknown tags that were still valid TLV structures)
+                child_position += child_bytes
+                
+                # Only update decoded_data if we got actual data
+                if child_data is not None:
                     decoded_data.update(child_data)
-                else:
-                    break
 
         return decoded_data, total_bytes_read
 
