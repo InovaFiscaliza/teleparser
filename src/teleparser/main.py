@@ -9,12 +9,11 @@ import argparse
 import sys
 import csv
 import gzip as gzip_module
-import io
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
-from typing import Iterable, List, Set, Dict, Any
+from typing import Collection, Iterable, List, Set, Dict, Any
 from time import perf_counter
 from contextlib import suppress
 
@@ -144,7 +143,7 @@ class CDRFileManager:
             ]
 
         # Sort by size for better load balancing in parallel processing
-        gz_files.sort(key=lambda x: x.stat().st_size, reverse=True)
+        gz_files.sort(key=lambda x: x.stat().st_size)
 
         # Limit to max_count files if specified
         if self.max_count is not None and self.max_count > 0:
@@ -196,81 +195,6 @@ class CDRFileManager:
             shutil.rmtree(self.temp_dir)
 
     @staticmethod
-    def _create_csv_buffer(
-        blocks: List[Dict[str, Any]],
-        fieldnames_set: Set[str] | None = None,
-    ) -> io.BytesIO:
-        """Create an in-memory gzipped CSV buffer from blocks.
-
-        Args:
-            blocks: List of dictionaries containing CDR data
-            fieldnames_set: Optional set of fieldnames to use. If None or empty,
-                          will be collected from all blocks.
-
-        Returns:
-            io.BytesIO: An in-memory buffer containing gzipped CSV data,
-                       positioned at the start for reading.
-        """
-        if not blocks:
-            logger.warning("No data to create buffer")
-            # Return empty gzipped buffer
-            buffer = io.BytesIO()
-            with gzip_module.open(buffer, "wt", encoding="utf-8", newline="") as gz:
-                gz.write("")
-            buffer.seek(0)
-            return buffer
-
-        # Collect fieldnames if not provided or empty
-        if fieldnames_set is None:
-            fieldnames_set = set()
-
-        if not fieldnames_set:
-            # Collect all unique fieldnames from all blocks
-            # This handles cases where different records have different fields
-            for block in blocks:
-                fieldnames_set.update(block.keys())
-
-        # Sort fieldnames for consistent output
-        fieldnames = sorted(fieldnames_set)
-
-        logger.debug(
-            f"Found {len(fieldnames)} unique fields across {len(blocks)} records"
-        )
-
-        # Create in-memory buffer with gzipped CSV data
-        buffer = io.BytesIO()
-        with gzip_module.open(buffer, "wt", encoding="utf-8", newline="") as gz:
-            writer = csv.DictWriter(gz, fieldnames=fieldnames, extrasaction="ignore")
-            writer.writeheader()
-            writer.writerows(blocks)
-
-        # Seek to beginning so buffer is ready for reading
-        buffer.seek(0)
-        logger.debug(f"Created CSV buffer with {buffer.getbuffer().nbytes} bytes")
-        return buffer
-
-    @staticmethod
-    def _save_buffer_to_disk(buffer: io.BytesIO, output_file: Path):
-        """Save an in-memory buffer to disk.
-
-        Args:
-            buffer: io.BytesIO buffer containing the data to save
-            output_file: Path to the output file
-        """
-        try:
-            # Ensure buffer is at the start
-            buffer.seek(0)
-
-            # Write buffer contents to file
-            with open(output_file, "wb") as f:
-                f.write(buffer.read())
-
-            logger.info(f"Data saved to {output_file} successfully")
-        except Exception as e:
-            logger.error(f"Failed to save buffer to {output_file}: {e}", exc_info=True)
-            raise
-
-    @staticmethod
     def _save(
         blocks: List[Dict[str, Any]],
         output_file: Path,
@@ -281,15 +205,31 @@ class CDRFileManager:
         Args:
             blocks: List of dictionaries containing CDR data
             output_file: Path to the output CSV.GZ file
-            fieldnames_set: Optional set of fieldnames to use
         """
         try:
-            # Create in-memory buffer
-            buffer = CDRFileManager._create_csv_buffer(blocks, fieldnames_set)
+            if not blocks:
+                logger.warning(f"No data to save for {output_file}")
+                return
 
-            # Save buffer to disk
-            CDRFileManager._save_buffer_to_disk(buffer, output_file)
+            # Collect fieldnames if not provided or empty
+            if fieldnames_set is None:
+                fieldnames_set = set()
 
+            if not fieldnames_set:
+                # Collect all unique fieldnames from all blocks
+                # This handles cases where different records have different fields
+                fieldnames_set = {k for block in blocks for k in block}
+
+            # Sort fieldnames for consistent output
+            fieldnames = sorted(fieldnames_set)
+
+            # Write to gzipped CSV
+            with gzip_module.open(output_file, "wt", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(blocks)
+
+            logger.info(f"Data saved to {output_file} successfully")
         except Exception as e:
             logger.error(f"Failed to save data to {output_file}: {e}", exc_info=True)
             raise
@@ -317,7 +257,6 @@ class CDRFileManager:
                     "records": 0,
                     "status": "success",
                     "blocks": None,
-                    "buffer": None,
                 }
 
             # Apply transform function if provided
@@ -341,23 +280,19 @@ class CDRFileManager:
             elif hasattr(decoder_instance, "fieldnames"):
                 fieldnames_set = decoder_instance.fieldnames
 
-            # Create CSV buffer in memory
-            csv_buffer = CDRFileManager._create_csv_buffer(blocks, fieldnames_set)
-
             # Save to disk if output_path is provided
             if output_path is not None:
                 output_file = output_path / f"{file_path.stem}.csv.gz"
-                CDRFileManager._save_buffer_to_disk(csv_buffer, output_file)
-                # Reset buffer position for potential reuse
-                csv_buffer.seek(0)
+                CDRFileManager._save(blocks, output_file, fieldnames_set)
 
             return {
                 "file": file_path,
                 "records": counter,
                 "status": "success",
-                "buffer": csv_buffer
+                "fieldnames": fieldnames_set,
+                "blocks": blocks
                 if output_path is None
-                else None,  # Return buffer for in-memory processing
+                else None,  # Return blocks for in-memory processing
             }
 
         except Exception as e:
