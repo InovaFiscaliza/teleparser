@@ -1,30 +1,29 @@
+import argparse
+import concurrent.futures
+import csv
 import gc
+import gzip as gzip_module
+import logging
 import os
 import shutil
-import zipfile
-import concurrent.futures
-import logging
-import traceback
-import argparse
 import sys
-import csv
-import gzip as gzip_module
+import traceback
+import zipfile
 from concurrent.futures import ProcessPoolExecutor
+from contextlib import suppress
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
-from typing import Collection, Iterable, List, Set, Dict, Any
 from time import perf_counter
-from contextlib import suppress
+from typing import Any, Dict, List, Set
 
 from tqdm.auto import tqdm
+from teleparser.buffer import BufferManager
 from teleparser.decoders.ericsson import (
+    ericsson_volte_decoder,
     ericsson_voz_decoder,
     ericsson_voz_decoder_optimized,
-    ericsson_volte_decoder,
 )
-from teleparser.buffer import BufferManager
-
 
 # Initialize a placeholder logger - will be properly configured later
 logger = logging.getLogger("teleparser")
@@ -450,21 +449,20 @@ def display_summary(results, total_time, output_path):
     logger.info(f"Total Time: {total_time:.2f} seconds")
     logger.info("Cleaning up temporary files now, if present...")
 
-    # Also print for user-friendly output
-    print("\n[bold cyan]Processing Summary:[/bold cyan]")
-    print(f"[green]Files processed successfully: {success_count}[/green]")
-    print(f"[red]Files failed: {failed_count}[/red]")
-    print(f"[yellow]Total records processed: {total_records}[/yellow]")
+    # Also print for user-friendly output (no color formatting)
+    print("\n==================== 📊 Processing Summary ====================")
+    print(f"✅ Files processed successfully: {success_count}")
+    print(f"❌ Files failed: {failed_count}")
+    print(f"📄 Total records processed: {total_records}")
 
     if output_path is not None:
-        print(f"[magenta]Output directory: {output_path}[/magenta]")
+        print(f"📁 Output directory: {output_path}")
     else:
-        print(
-            "[magenta]No output directory - results returned in memory only[/magenta]"
-        )
+        print("📦 No output directory - results returned in memory only")
 
-    print(f"[green]Total Time: {total_time:.2f} seconds[/green]")
-    print("[blue]Cleaning up temporary files now, if present...[/blue]")
+    print(f"⏱️ Total Time: {total_time:.2f} seconds")
+    print("🧹 Cleaning up temporary files now, if present...")
+    print("===============================================================")
 
 
 def main(
