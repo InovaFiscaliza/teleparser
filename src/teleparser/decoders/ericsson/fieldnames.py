@@ -1,4 +1,4 @@
-ERICSSON_VOZ_FIELDS = (
+ERICSSON_VOZ_FIELDS = {
     "acceptanceOfCallWaiting",
     "accountCode",
     "aCMChargingIndicator",
@@ -370,6 +370,6 @@ ERICSSON_VOZ_FIELDS = (
     "uSSDServiceCode",
     "verticalCoordinateRequest",
     "wPSCallIndicator",
-)
+}
 
-ERICSSON_VOLTE = None
+ERICSSON_VOLTE = set()

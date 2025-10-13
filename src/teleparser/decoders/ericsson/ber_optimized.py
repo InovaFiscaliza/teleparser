@@ -44,12 +44,14 @@ class BerDecoderOptimized:
 
     parser: Callable
     buffer_manager: MemoryBufferManager
-    FIELDNAMES: tuple = ERICSSON_VOZ_FIELDS  # Default field names
+    FIELDNAMES: set = None  # Default field names - set in __post_init__
 
     def __post_init__(self):
         """Initialize the memory buffer after dataclass initialization."""
         self._data: Optional[memoryview] = None
         self._size: int = 0
+        if self.FIELDNAMES is None:
+            self.FIELDNAMES = ERICSSON_VOZ_FIELDS
 
     @staticmethod
     def read_tag(data: memoryview, position: int) -> Tuple[Optional[bytes], int]:
