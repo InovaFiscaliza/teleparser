@@ -447,11 +447,11 @@ class EricssonVolte:
             parsed_blocks.append(avp)
         return {k: v for block in parsed_blocks for k, v in block.items()}
 
-    def avps(self) -> Generator[dict[str, int | str | bool]]:
+    def avps(self) -> Generator[dict[str, int | str | bool], None, None]:
         """Parse all blocks in the binary data"""
         return (self.parse_block(block) for block in self.blocks())
 
-    def blocks(self) -> Generator[bytes]:
+    def blocks(self) -> Generator[bytes, None, None]:
         """Generator to yield sliced blocks from binary data to"""
         idx = 0
         length = self.length
