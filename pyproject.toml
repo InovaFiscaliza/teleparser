@@ -21,9 +21,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "duckdb>=1.4.1",
-    "ipykernel>=6.29.5",
-    "ipywidgets>=8.1.7",
+
     "nuitka>=2.6.9",
 ]
 
