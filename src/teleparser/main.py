@@ -1,28 +1,30 @@
+import argparse
+import concurrent.futures
+import csv
 import gc
+import gzip as gzip_module
+import logging
 import os
 import shutil
-import zipfile
-import concurrent.futures
-import logging
+import sys
 import traceback
+import zipfile
 from concurrent.futures import ProcessPoolExecutor
+from contextlib import suppress
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
-from typing import Callable, List, Set
 from time import perf_counter
-import pandas as pd
-from fastcore.basics import partialler
+from typing import Any, Dict, List, Set
 
 from tqdm.auto import tqdm
-from rich import print
+from teleparser.buffer import BufferManager
 from teleparser.decoders.ericsson import (
+    ericsson_volte_decoder,
     ericsson_voz_decoder,
     ericsson_voz_decoder_optimized,
-    ericsson_volte_decoder,
+    # ericsson_voz_decoder_two_phase,
 )
-from teleparser.buffer import BufferManager
-
 
 # Initialize a placeholder logger - will be properly configured later
 logger = logging.getLogger("teleparser")
@@ -74,65 +76,8 @@ def setup_logging(output_path: Path | None, log_level: int = logging.INFO):
 DECODERS = {
     "ericsson_voz": ericsson_voz_decoder,
     "ericsson_voz_optimized": ericsson_voz_decoder_optimized,
+    # "ericsson_voz_two_phase": ericsson_voz_decoder_two_phase,
     "ericsson_volte": ericsson_volte_decoder,
-}
-
-
-MAPPING_TYPES = {
-    "chargeableDuration": partialler(lambda x: pd.to_timedelta(x)),
-    "dateForStartOfCharge": partialler(lambda x: pd.to_datetime(x, format="%d-%m-%y")),
-    "interruptionTime": partialler(lambda x: pd.to_timedelta(x)),
-    "timeForStartOfCharge": partialler(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
-    "timeForStopOfCharge": partialler(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
-    "timeForTCSeizureCalled": partialler(
-        lambda x: pd.to_datetime(x, format="%H:%M:%S")
-    ),
-    "timeForTCSeizureCalling": partialler(
-        lambda x: pd.to_datetime(x, format="%H:%M:%S")
-    ),
-    "timeForEvent": partialler(lambda x: pd.to_datetime(x, format="%H:%M:%S")),
-    "recordSequenceNumber": partialler(pd.to_numeric, downcast="unsigned"),
-    "calledSubscriberIMSI.msin": partialler(pd.to_numeric, downcast="unsigned"),
-    "firstCalledLocationInformation.lac": partialler(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "firstCalledLocationInformation.ci_sac": partialler(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "calledSubscriberIMEI.TAC": partialler(pd.to_numeric, downcast="unsigned"),
-    "internalCauseAndLoc.location": partialler(pd.to_numeric, downcast="unsigned"),
-    "internalCauseAndLoc.cause": partialler(pd.to_numeric, downcast="unsigned"),
-    "faultCode": partialler(pd.to_numeric, downcast="unsigned"),
-    "lastCalledLocationInformation.lac": partialler(pd.to_numeric, downcast="unsigned"),
-    "lastCalledLocationInformation.ci_sac": partialler(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "callingPartyNumber.digits": partialler(pd.to_numeric, downcast="integer"),
-    "relatedCallNumber": partialler(pd.to_numeric, downcast="unsigned"),
-    "callIdentificationNumber": partialler(pd.to_numeric, downcast="unsigned"),
-    "originalCalledNumber.digits": partialler(pd.to_numeric, downcast="integer"),
-    "redirectingNumber.digits": partialler(pd.to_numeric, downcast="integer"),
-    "firstCallingLocationInformation.lac": partialler(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "firstCallingLocationInformation.ci_sac": partialler(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "callingSubscriberIMEI.TAC": partialler(pd.to_numeric, downcast="unsigned"),
-    "serviceKey": partialler(pd.to_numeric, downcast="integer"),
-    "translatedNumber.digits": partialler(pd.to_numeric, downcast="integer"),
-    "chargeNumber.digits": partialler(pd.to_numeric, downcast="integer"),
-    "lastCallingLocationInformation.lac": partialler(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "lastCallingLocationInformation.ci_sac": partialler(
-        pd.to_numeric, downcast="unsigned"
-    ),
-    "sCPAddress.globalTitleAndSubSystemNumber.digits": partialler(
-        pd.to_numeric, downcast="integer"
-    ),
-    "speechCoderPreferenceList": partialler(pd.to_numeric, downcast="unsigned"),
-    "originatingLocationNumber.digits": partialler(pd.to_numeric, downcast="integer"),
 }
 
 
@@ -195,11 +140,11 @@ class CDRFileManager:
             gz_files = [
                 f
                 for f in gz_files
-                if not (self.output_path / f"{f.stem}.parquet").is_file()
+                if not (self.output_path / f"{f.stem}.csv.gz").is_file()
             ]
 
         # Sort by size for better load balancing in parallel processing
-        gz_files.sort(key=lambda x: x.stat().st_size, reverse=True)
+        gz_files.sort(key=lambda x: x.stat().st_size)
 
         # Limit to max_count files if specified
         if self.max_count is not None and self.max_count > 0:
@@ -251,39 +196,46 @@ class CDRFileManager:
             shutil.rmtree(self.temp_dir)
 
     @staticmethod
-    def _save_parquet(df: pd.DataFrame, output_file: Path):
+    def _save(
+        blocks: List[Dict[str, Any]],
+        output_file: Path,
+        fieldnames_set: Set[str] | None = None,
+    ):
+        """Save blocks to a gzipped CSV file.
+
+        Args:
+            blocks: List of dictionaries containing CDR data
+            output_file: Path to the output CSV.GZ file
+        """
         try:
-            df.to_parquet(output_file, index=False, compression="snappy")
+            if not blocks:
+                logger.warning(f"No data to save for {output_file}")
+                return
+
+            # Collect fieldnames if not provided or empty
+            if fieldnames_set is None:
+                fieldnames_set = set()
+
+            # Collect all unique fieldnames from all blocks
+            # This handles cases where different records have different fields
+            block_fields = {k for block in blocks for k in block}
+            if new_fields := block_fields - fieldnames_set:
+                logger.warning(f"New fields found not in schema: {new_fields}")
+                fieldnames_set |= new_fields
+
+            # Sort fieldnames for consistent output
+            fieldnames = sorted(fieldnames_set, key=lambda x: x.lower())
+
+            # Write to gzipped CSV
+            with gzip_module.open(output_file, "wt", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(blocks)
+
             logger.info(f"Data saved to {output_file} successfully")
         except Exception as e:
             logger.error(f"Failed to save data to {output_file}: {e}", exc_info=True)
             raise
-
-    @staticmethod
-    def format_df(
-        blocks: list, transform_func: Callable | None = None, format_types: bool = False
-    ):
-        df = pd.DataFrame(blocks, copy=False, dtype="object")
-        if transform_func is not None:
-            df = transform_func(df)
-        # Use a try-finally block to ensure resources are released
-        try:
-            if format_types:
-                for col, func in MAPPING_TYPES.items():
-                    if col in df.columns:
-                        try:
-                            df[col] = func(df[col])
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to convert column {col} with custom function: {e}. Setting to category",
-                                exc_info=False,
-                            )
-
-            return df.astype("string", copy=False).astype("category", copy=False)
-        finally:
-            # Explicitly clean up resources
-            del blocks
-            gc.collect()
 
     @staticmethod
     def decode_file(
@@ -295,10 +247,10 @@ class CDRFileManager:
     ):
         blocks = []
         buffer_manager = BufferManager(file_path)
-        decoder = decoder(buffer_manager)
+        decoder_instance = decoder(buffer_manager)
 
         try:
-            blocks = decoder.process(
+            blocks = decoder_instance.process(
                 pbar_position=pbar_position, show_progress=show_progress
             )
             if (counter := len(blocks)) == 0:
@@ -307,20 +259,43 @@ class CDRFileManager:
                     "file": file_path,
                     "records": 0,
                     "status": "success",
-                    "dataframe": None,
+                    "blocks": None,
                 }
-            df = CDRFileManager.format_df(blocks, transform_func=decoder.transform_func)
 
-            # Only save to disk if output_path is provided
+            # Apply transform function if provided
+            if (
+                hasattr(decoder_instance, "transform_func")
+                and decoder_instance.transform_func is not None
+            ):
+                try:
+                    blocks = decoder_instance.transform_func(blocks)
+                    logger.debug(f"Applied transform function for {file_path}")
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to apply transform function for {file_path}: {e}"
+                    )
+                    # Continue without transformation
+
+            # Get fieldnames from decoder if available
+            fieldnames_set = None
+            if hasattr(decoder_instance, "FIELDNAMES"):
+                fieldnames_set = decoder_instance.FIELDNAMES
+            elif hasattr(decoder_instance, "fieldnames"):
+                fieldnames_set = decoder_instance.fieldnames
+
+            # Save to disk if output_path is provided
             if output_path is not None:
-                output_file = output_path / f"{file_path.stem}.parquet"
-                CDRFileManager._save_parquet(df, output_file)
+                output_file = output_path / f"{file_path.stem}.csv.gz"
+                CDRFileManager._save(blocks, output_file, fieldnames_set)
 
             return {
                 "file": file_path,
                 "records": counter,
                 "status": "success",
-                "dataframe": df,
+                "fieldnames": fieldnames_set,
+                "blocks": blocks
+                if output_path is None
+                else None,  # Return blocks for in-memory processing
             }
 
         except Exception as e:
@@ -332,11 +307,15 @@ class CDRFileManager:
                 "error": str(e),
                 "traceback": error_details,
                 "status": "failed",
-                "dataframe": None,
+                "blocks": None,
             }
 
         finally:
             buffer_manager.close()
+            # Clean up blocks to free memory
+            if blocks:
+                del blocks
+            gc.collect()
 
     def decode_files_sequential(self):
         """Decode all files sequentially with hierarchical progress bars and return results"""
@@ -449,7 +428,7 @@ class CDRFileManager:
                             "error": str(exc),
                             "traceback": error_details,
                             "status": "failed",
-                            "dataframe": None,
+                            "blocks": None,
                         }
                     )
                 gc.collect()
@@ -475,27 +454,26 @@ def display_summary(results, total_time, output_path):
     logger.info(f"Total Time: {total_time:.2f} seconds")
     logger.info("Cleaning up temporary files now, if present...")
 
-    # Also print for user-friendly output
-    print("\n[bold cyan]Processing Summary:[/bold cyan]")
-    print(f"[green]Files processed successfully: {success_count}[/green]")
-    print(f"[red]Files failed: {failed_count}[/red]")
-    print(f"[yellow]Total records processed: {total_records}[/yellow]")
+    # Also print for user-friendly output (no color formatting)
+    print("\n==================== 📊 Processing Summary ====================")
+    print(f"✅ Files processed successfully: {success_count}")
+    print(f"❌ Files failed: {failed_count}")
+    print(f"📄 Total records processed: {total_records}")
 
     if output_path is not None:
-        print(f"[magenta]Output directory: {output_path}[/magenta]")
+        print(f"📁 Output directory: {output_path}")
     else:
-        print(
-            "[magenta]No output directory - results returned in memory only[/magenta]"
-        )
+        print("📦 No output directory - results returned in memory only")
 
-    print(f"[green]Total Time: {total_time:.2f} seconds[/green]")
-    print("[blue]Cleaning up temporary files now, if present...[/blue]")
+    print(f"⏱️ Total Time: {total_time:.2f} seconds")
+    print("🧹 Cleaning up temporary files now, if present...")
+    print("===============================================================")
 
 
 def main(
     input_path: Path,
     output_path: Path | None = None,
-    cdr_type: str = "ericsson_voz",
+    cdr_type: str = "ericsson_voz_optimized",
     workers: int = os.cpu_count() // 2,
     reprocess: bool = True,
     log_level: int = logging.INFO,
@@ -547,3 +525,117 @@ def main(
         logger.critical(f"Critical error in main process: {str(e)}\n{error_details}")
         print(f"[bold red]Critical error: {str(e)}[/bold red]")
         raise
+
+
+def cli():
+    """Command-line interface entry point using argparse."""
+    parser = argparse.ArgumentParser(
+        prog="teleparser",
+        description="Processa arquivos CDR da ENTRADA (arquivo/pasta) e opcionalmente salva resultados na pasta SAIDA em formato CSV.GZ.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+O formato esperado é um arquivo ou pasta com um ou mais arquivos gzip.
+Se os arquivos gzip estiverem em um arquivo ZIP, eles serão extraídos primeiro.
+O modo padrão é processamento paralelo utilizando múltiplos núcleos da CPU.
+Se --saida não for especificado, os resultados são processados em memória e não salvos em disco.
+        """,
+    )
+
+    parser.add_argument(
+        "entrada",
+        type=str,
+        help="Caminho para um arquivo CDR único ou diretório",
+    )
+
+    parser.add_argument(
+        "-s",
+        "--saida",
+        type=str,
+        default=None,
+        help="Caminho para o diretório de saída. Somente a tabela resultado é retornada caso None",
+    )
+
+    parser.add_argument(
+        "-t",
+        "--tipo",
+        type=str,
+        default="ericsson_voz_optimized",
+        choices=list(DECODERS.keys()),
+        help=f"Tipo de CDR para processar. Opções: {', '.join(DECODERS.keys())} (padrão: ericsson_voz_optimized)",
+    )
+
+    parser.add_argument(
+        "-n",
+        "--nucleos",
+        type=int,
+        default=os.cpu_count() // 2 if os.cpu_count() else 1,
+        help=f"Número de núcleos para processamento paralelo, máximo é o número de núcleos da CPU - 1 (padrão: {os.cpu_count() // 2 if os.cpu_count() else 1})",
+    )
+
+    parser.add_argument(
+        "-r",
+        "--reprocessar",
+        action="store_true",
+        default=False,
+        help="Reprocessar arquivos existentes (padrão: False)",
+    )
+
+    parser.add_argument(
+        "--log",
+        type=str,
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Nível de log (padrão: INFO)",
+    )
+
+    parser.add_argument(
+        "-m",
+        "--max-arquivos",
+        type=int,
+        default=None,
+        help="Número máximo de arquivos para processar. Padrão: None (processar todos)",
+    )
+
+    args = parser.parse_args()
+
+    # Convert entrada to Path
+    entrada_path = Path(args.entrada)
+
+    # Convert saída to Path if provided
+    output_dir = Path(args.saida) if args.saida is not None else None
+
+    # Set log level based on command line argument
+    numeric_level = getattr(logging, args.log.upper(), None)
+    if not isinstance(numeric_level, int):
+        print(f"Nível de log inválido: {args.log}")
+        numeric_level = logging.INFO
+
+    try:
+        _ = main(
+            entrada_path,
+            output_dir,
+            args.tipo,
+            args.nucleos,
+            args.reprocessar,
+            numeric_level,
+            args.max_arquivos,
+        )
+    except Exception as e:
+        # At this point, logger might not be initialized yet, so we print to console
+        error_details = traceback.format_exc()
+        print(f"Fatal Error: {str(e)}")
+
+        # Try to log to file if possible
+        with suppress(Exception):
+            temp_logger = setup_logging(output_dir, logging.ERROR)
+            temp_logger.critical(
+                f"Exception untreated in main process: {str(e)}\n{error_details}"
+            )
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    import multiprocessing
+
+    multiprocessing.freeze_support()
+    cli()

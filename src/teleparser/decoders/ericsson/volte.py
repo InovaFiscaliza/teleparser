@@ -1,9 +1,14 @@
+import logging
 import struct
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from typing import Generator, Tuple
 import socket
 from tqdm.auto import tqdm
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 # Vendor IDs
 VENDOR_3GPP = 10415
@@ -447,11 +452,11 @@ class EricssonVolte:
             parsed_blocks.append(avp)
         return {k: v for block in parsed_blocks for k, v in block.items()}
 
-    def avps(self) -> Generator[dict[str, int | str | bool]]:
+    def avps(self) -> Generator[dict[str, int | str | bool], None, None]:
         """Parse all blocks in the binary data"""
         return (self.parse_block(block) for block in self.blocks())
 
-    def blocks(self) -> Generator[bytes]:
+    def blocks(self) -> Generator[bytes, None, None]:
         """Generator to yield sliced blocks from binary data to"""
         idx = 0
         length = self.length
@@ -668,7 +673,7 @@ class EricssonVolte:
 
     def process(self, pbar_position=None, show_progress=True):
         """Process the VoLTE data and return a list of parsed AVPs.
-        
+
         Args:
             pbar_position: Position for nested progress bar (for hierarchical display)
             show_progress: Whether to show progress bar
@@ -681,67 +686,96 @@ class EricssonVolte:
                     unit=" block",
                     leave=False,
                     position=pbar_position,
-                    colour="blue"
+                    colour="blue",
                 )
             )  # Process all AVPs and return as a list
         else:
             return list(self.avps())
 
     @staticmethod
-    def insert_vendor_info(df):
-        df["Origin-Host"] = df["Session-Id"].str.split(";", n=1, expand=True)[0]
-        df.loc[df["Vendor-Id"].notna(), ["Vendor", "Type"]] = ["HUAWEI", "TAS"]
-        df.loc[df["Origin-Host"].str.startswith("pcscf"), ["Vendor", "Type"]] = [
-            "ERICSSON",
-            "SBG",
-        ]
-        df.loc[df["Origin-Host"].str.startswith("scscf"), ["Vendor", "Type"]] = [
-            "ERICSSON",
-            "IMS",
-        ]
-        slice = df["Origin-Host"].str.startswith("tas") & df["Vendor-Id"].isna()
-        df.loc[slice, ["Vendor", "Type"]] = ["ERICSSON", "TAS"]
-        df["Accounting-Record-Type"] = df["Accounting-Record-Type"].map(
-            {1.0: "EVENT", 2.0: "START", 3.0: "INTERIM", 4.0: "STOP"}
-        )
-        return df.drop(["Vendor-Id"], axis=1)
+    def insert_vendor_info(blocks):
+        """Insert vendor information into blocks (pure Python implementation).
+
+        Args:
+            blocks: List of dictionaries containing CDR data
+
+        Returns:
+            List of dictionaries with vendor information added and Vendor-Id removed
+        """
+        # Accounting record type mapping
+        accounting_type_map = {
+            1.0: "EVENT",
+            2.0: "START",
+            3.0: "INTERIM",
+            4.0: "STOP",
+            "1.0": "EVENT",
+            "2.0": "START",
+            "3.0": "INTERIM",
+            "4.0": "STOP",
+            1: "EVENT",
+            2: "START",
+            3: "INTERIM",
+            4: "STOP",
+        }
+
+        for block in blocks:
+            # Extract Origin-Host from Session-Id by splitting on first semicolon
+            session_id = block.get("Session-Id", "")
+            if session_id and ";" in session_id:
+                origin_host = session_id.split(";", 1)[0]
+            else:
+                origin_host = session_id
+            block["Origin-Host"] = origin_host
+
+            # Determine Vendor and Type based on Vendor-Id and Origin-Host
+            vendor_id = block.get("Vendor-Id")
+
+            # Rule 1: If Vendor-Id is present (not None/empty), it's HUAWEI TAS
+            if vendor_id is not None and vendor_id != "":
+                block["Vendor"] = "HUAWEI"
+                block["Type"] = "TAS"
+            # Rule 2: If Origin-Host starts with "pcscf", it's ERICSSON SBG
+            elif origin_host.startswith("pcscf"):
+                block["Vendor"] = "ERICSSON"
+                block["Type"] = "SBG"
+            # Rule 3: If Origin-Host starts with "scscf", it's ERICSSON IMS
+            elif origin_host.startswith("scscf"):
+                block["Vendor"] = "ERICSSON"
+                block["Type"] = "IMS"
+            # Rule 4: If Origin-Host starts with "tas" and no Vendor-Id, it's ERICSSON TAS
+            elif origin_host.startswith("tas") and (
+                vendor_id is None or vendor_id == ""
+            ):
+                block["Vendor"] = "ERICSSON"
+                block["Type"] = "TAS"
+            else:
+                # Default values if no rule matches
+                block["Vendor"] = block.get("Vendor", "")
+                block["Type"] = block.get("Type", "")
+
+            # Map Accounting-Record-Type to human-readable values
+            acct_type = block.get("Accounting-Record-Type")
+            if acct_type in accounting_type_map:
+                block["Accounting-Record-Type"] = accounting_type_map[acct_type]
+            else:
+                logger.warning(
+                    f"Unmapped Accounting-Record-Type encountered: {acct_type!r} in block: {block}"
+                )
+                block["Accounting-Record-Type"] = "UNKNOWN"
+            # Remove Vendor-Id as it's no longer needed
+            if "Vendor-Id" in block:
+                del block["Vendor-Id"]
+
+        return blocks
 
     @staticmethod
-    def transform_func(df):
-        return EricssonVolte.insert_vendor_info(df)
+    def transform_func(blocks):
+        """Transform function that applies vendor information enrichment.
 
+        Args:
+            blocks: List of dictionaries containing CDR data
 
-def run(
-    buffer_manager,
-    output_file: str | None = None,
-) -> list[dict[str, int | str | bool]]:
-    """Run the Ericsson Volte parser on the provided buffer manager"""
-
-    parser = EricssonVolte(buffer_manager)
-    parsed_data = parser.process()
-    df = pd.DataFrame(parsed_data, copy=False)
-    df.astype("category", copy=False).to_parquet(
-        output_file, index=False, compression="snappy"
-    )
-
-    # if transform:
-    #     df = parser.transform_func(df)
-
-
-if __name__ == "__main__":
-    import typer
-    from teleparser.buffer import BufferManager
-    from pathlib import Path
-    import pandas as pd
-
-    app = typer.Typer()
-
-    @app.command()
-    def run_parser(
-        input_file: Path,
-        output_file: Path,
-    ):
-        buffer_manager = BufferManager(input_file)
-        run(buffer_manager, output_file)
-
-    app()
+        Returns:
+            List of dictionaries with transformations applied
+        """
+        return EricssonVolte.insert_vendor_info(blocks)

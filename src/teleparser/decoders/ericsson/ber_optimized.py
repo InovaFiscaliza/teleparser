@@ -3,6 +3,7 @@ from collections import namedtuple
 from typing import Optional, Tuple, Callable
 from tqdm.auto import tqdm
 from teleparser.buffer import MemoryBufferManager
+from teleparser.decoders.ericsson.fieldnames import ERICSSON_VOZ_FIELDS
 
 # Basic ASN.1 Reference
 # https://luca.ntop.org/Teaching/Appunti/asn1.html
@@ -36,33 +37,36 @@ BerTag = namedtuple("BerTag", ["tag_class", "constructed", "number"])
 @dataclass
 class BerDecoderOptimized:
     """Optimized Basic Encoding Rules decoder using memory-mapped data.
-    
+
     This decoder reads the entire file into memory once and uses memoryview
     for efficient byte access, eliminating repetitive disk I/O operations.
     """
 
     parser: Callable
     buffer_manager: MemoryBufferManager
+    FIELDNAMES: set = None  # Default field names - set in __post_init__
 
     def __post_init__(self):
         """Initialize the memory buffer after dataclass initialization."""
         self._data: Optional[memoryview] = None
         self._size: int = 0
+        if self.FIELDNAMES is None:
+            self.FIELDNAMES = ERICSSON_VOZ_FIELDS
 
     @staticmethod
     def read_tag(data: memoryview, position: int) -> Tuple[Optional[bytes], int]:
         """Read a BER tag from memoryview starting at position.
-        
+
         Returns:
             Tuple of (tag_bytes, bytes_read) or (None, 0) if EOF
         """
         if position >= len(data):
             return None, 0
-        
+
         first_byte = data[position]
         tag_bytes = bytes([first_byte])
         bytes_read = 1
-        
+
         if first_byte & HIGH_CLASS_NUM == HIGH_CLASS_NUM:
             # Multi-byte tag
             while position + bytes_read < len(data):
@@ -73,7 +77,7 @@ class BerDecoderOptimized:
                     break
             else:
                 raise ValueError("Unexpected end of tag")
-        
+
         return tag_bytes, bytes_read
 
     @staticmethod
@@ -97,34 +101,34 @@ class BerDecoderOptimized:
     @staticmethod
     def read_length(data: memoryview, position: int) -> Tuple[int, int]:
         """Read BER length from memoryview starting at position.
-        
+
         Returns:
             Tuple of (length_value, bytes_read)
         """
         if position >= len(data):
             raise ValueError("Unexpected end of data while reading length")
-        
+
         first_byte = data[position]
-        
+
         # Definite short form
         if first_byte >> SHIFT_7 == 0:
             return first_byte, 1
-        
+
         length = 0
         length_size = first_byte & MASK_BIT7
-        
+
         # Indefinite form
         if length_size == 0:
             return 0, 1
-        
+
         # Check if we have enough data
         if position + 1 + length_size > len(data):
             raise ValueError("Unexpected end of length")
-        
+
         # Definite long form
         for i in range(length_size):
             length = (length << SHIFT_8) | data[position + 1 + i]
-        
+
         return length, length_size + 1
 
     @staticmethod
@@ -140,7 +144,7 @@ class BerDecoderOptimized:
         schema: dict | None = None,
     ) -> Tuple[Optional[dict], int]:
         """Decode BER data from memoryview starting at position.
-        
+
         Returns:
             Tuple of (decoded_data, bytes_consumed) or (None, 0) if EOF
         """
@@ -148,52 +152,57 @@ class BerDecoderOptimized:
         tag_bytes, tag_bytes_read = BerDecoderOptimized.read_tag(data, position)
         if tag_bytes is None:
             return None, 0
-        
+
         position += tag_bytes_read
         tag: BerTag = BerDecoderOptimized.decode_tag(tag_bytes)
-        
+
         # Read length
         length, length_bytes_read = BerDecoderOptimized.read_length(data, position)
         position += length_bytes_read
-        
+
         total_bytes_read = tag_bytes_read + length_bytes_read
-        
+
         # Handle EOC or zero-length
         if BerDecoderOptimized.reached_eoc(tag, length) or length == 0:
             result = self.decode(data, position, depth, schema)
             if result[0] is not None:
                 return result[0], total_bytes_read + result[1]
             return None, total_bytes_read
-        
+
         # Check if we have enough data for the value
         if position + length > len(data):
-            raise ValueError(f"Unexpected end of data: need {length} bytes at position {position}, but only {len(data) - position} available")
-        
+            raise ValueError(
+                f"Unexpected end of data: need {length} bytes at position {position}, but only {len(data) - position} available"
+            )
+
         # Read value
-        value = bytes(data[position:position + length])
+        value = bytes(data[position : position + length])
         total_bytes_read += length
-        
+
         # Unravel the TLV
         decoded_tlv = self.unravel_decoded_tlv(tag.number, value, schema)
         if decoded_tlv is None:
             return None, total_bytes_read
-        
+
         decoded_data, schema = decoded_tlv
-        
+
         # Parse constructed types recursively
         if tag.constructed:
             child_position = position
             end_position = position + length
-            
+
             while child_position < end_position:
                 child_result = self.decode(data, child_position, depth + 1, schema)
-                if child_result[0] is not None:
-                    child_data, child_bytes = child_result
-                    child_position += child_bytes
+                child_data, child_bytes = child_result
+                
+                # Always advance position, even if decode returned None
+                # (e.g., unknown tags that were still valid TLV structures)
+                child_position += child_bytes
+                
+                # Only update decoded_data if we got actual data
+                if child_data is not None:
                     decoded_data.update(child_data)
-                else:
-                    break
-        
+
         return decoded_data, total_bytes_read
 
     def unravel_decoded_tlv(
@@ -205,15 +214,15 @@ class BerDecoderOptimized:
         except KeyError:
             # Unknown tag in schema
             return None
-        
+
         if tlv.value is None:
             return None
-        
+
         if isinstance(tlv.value, dict):
             output = {f"{tlv.name}.{k}": v for k, v in tlv.value.items()}
         else:
             output = {tlv.name: tlv.value}
-        
+
         return output, tlv.schema
 
     def parse_blocks(self):
@@ -223,7 +232,7 @@ class BerDecoderOptimized:
             data = self.buffer_manager.get_memoryview()
             data_size = len(data)
             position = 0
-            
+
             while position < data_size:
                 result = self.decode(data, position)
                 if result[0] is not None:
@@ -236,7 +245,7 @@ class BerDecoderOptimized:
 
     def process(self, pbar_position=None, show_progress=True):
         """Process the BER data and return a list of parsed blocks.
-        
+
         Args:
             pbar_position: Position for nested progress bar (for hierarchical display)
             show_progress: Whether to show progress bar
@@ -249,7 +258,7 @@ class BerDecoderOptimized:
                     unit=" block",
                     leave=False,
                     position=pbar_position,
-                    colour="blue"
+                    colour="blue",
                 )
             )
         else:
