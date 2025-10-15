@@ -1,9 +1,14 @@
+import logging
 import struct
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from typing import Generator, Tuple
 import socket
 from tqdm.auto import tqdm
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 # Vendor IDs
 VENDOR_3GPP = 10415
@@ -690,10 +695,10 @@ class EricssonVolte:
     @staticmethod
     def insert_vendor_info(blocks):
         """Insert vendor information into blocks (pure Python implementation).
-        
+
         Args:
             blocks: List of dictionaries containing CDR data
-            
+
         Returns:
             List of dictionaries with vendor information added and Vendor-Id removed
         """
@@ -712,7 +717,7 @@ class EricssonVolte:
             3: "INTERIM",
             4: "STOP",
         }
-        
+
         for block in blocks:
             # Extract Origin-Host from Session-Id by splitting on first semicolon
             session_id = block.get("Session-Id", "")
@@ -721,10 +726,10 @@ class EricssonVolte:
             else:
                 origin_host = session_id
             block["Origin-Host"] = origin_host
-            
+
             # Determine Vendor and Type based on Vendor-Id and Origin-Host
             vendor_id = block.get("Vendor-Id")
-            
+
             # Rule 1: If Vendor-Id is present (not None/empty), it's HUAWEI TAS
             if vendor_id is not None and vendor_id != "":
                 block["Vendor"] = "HUAWEI"
@@ -738,32 +743,38 @@ class EricssonVolte:
                 block["Vendor"] = "ERICSSON"
                 block["Type"] = "IMS"
             # Rule 4: If Origin-Host starts with "tas" and no Vendor-Id, it's ERICSSON TAS
-            elif origin_host.startswith("tas") and (vendor_id is None or vendor_id == ""):
+            elif origin_host.startswith("tas") and (
+                vendor_id is None or vendor_id == ""
+            ):
                 block["Vendor"] = "ERICSSON"
                 block["Type"] = "TAS"
             else:
                 # Default values if no rule matches
                 block["Vendor"] = block.get("Vendor", "")
                 block["Type"] = block.get("Type", "")
-            
+
             # Map Accounting-Record-Type to human-readable values
             acct_type = block.get("Accounting-Record-Type")
             if acct_type in accounting_type_map:
                 block["Accounting-Record-Type"] = accounting_type_map[acct_type]
-            
+            else:
+                logger.warning(
+                    f"Unmapped Accounting-Record-Type encountered: {acct_type!r} in block: {block}"
+                )
+                block["Accounting-Record-Type"] = "UNKNOWN"
             # Remove Vendor-Id as it's no longer needed
             if "Vendor-Id" in block:
                 del block["Vendor-Id"]
-        
+
         return blocks
 
     @staticmethod
     def transform_func(blocks):
         """Transform function that applies vendor information enrichment.
-        
+
         Args:
             blocks: List of dictionaries containing CDR data
-            
+
         Returns:
             List of dictionaries with transformations applied
         """
