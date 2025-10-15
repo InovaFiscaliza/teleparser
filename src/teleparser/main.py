@@ -21,6 +21,7 @@ from tqdm.auto import tqdm
 from teleparser.buffer import BufferManager
 from teleparser.decoders.ericsson import (
     ericsson_volte_decoder,
+    ericsson_volte_decoder_optimized,
     ericsson_voz_decoder,
     ericsson_voz_decoder_optimized,
     ericsson_voz_decoder_two_phase,
@@ -78,6 +79,7 @@ DECODERS = {
     "ericsson_voz_optimized": ericsson_voz_decoder_optimized,
     "ericsson_voz_two_phase": ericsson_voz_decoder_two_phase,
     "ericsson_volte": ericsson_volte_decoder,
+    "ericsson_volte_optimized": ericsson_volte_decoder_optimized,
 }
 
 
