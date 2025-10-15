@@ -218,13 +218,10 @@ class CDRFileManager:
 
             # Collect all unique fieldnames from all blocks
             # This handles cases where different records have different fields
-            fieldnames_from_blocks = {k for block in blocks for k in block}
-            extra_fieldnames = fieldnames_from_blocks - fieldnames_set
-            if extra_fieldnames:
-                logger.debug(
-                    f"Adding extra fieldnames not present in schema: {extra_fieldnames}"
-                )
-                fieldnames_set.update(extra_fieldnames)
+            block_fields = {k for block in blocks for k in block}
+            if new_fields := block_fields - fieldnames_set:
+                logger.warning(f"New fields found not in schema: {new_fields}")
+                fieldnames_set |= new_fields
 
             # Sort fieldnames for consistent output
             fieldnames = sorted(fieldnames_set, key=lambda x: x.lower())
