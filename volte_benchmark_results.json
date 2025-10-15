@@ -1,0 +1,275 @@
+{
+  "timestamp": 1760469837.6474397,
+  "results": [
+    {
+      "decoder_name": "Original",
+      "file_size": 2179,
+      "records_parsed": 716,
+      "parse_time": 0.06307183399985661,
+      "memory_peak": 468803,
+      "memory_current": 0,
+      "records_per_second": 11352.135408043277,
+      "mb_per_second": 0.0329474537787175
+    },
+    {
+      "decoder_name": "Pre-compiled AVP",
+      "file_size": 2179,
+      "records_parsed": 716,
+      "parse_time": 0.06389042180016986,
+      "memory_peak": 439431,
+      "memory_current": 0,
+      "records_per_second": 11206.687635267675,
+      "mb_per_second": 0.03252531877076595
+    },
+    {
+      "decoder_name": "Memory Pooled",
+      "file_size": 2179,
+      "records_parsed": 716,
+      "parse_time": 0.06722367059992393,
+      "memory_peak": 439267,
+      "memory_current": 0,
+      "records_per_second": 10651.010181535821,
+      "mb_per_second": 0.03091256869647297
+    },
+    {
+      "decoder_name": "Parallel (2 workers)",
+      "file_size": 2179,
+      "records_parsed": 716,
+      "parse_time": 0.07707128540059785,
+      "memory_peak": 1880340,
+      "memory_current": 0,
+      "records_per_second": 9290.100668211328,
+      "mb_per_second": 0.026962782891812247
+    },
+    {
+      "decoder_name": "Parallel (4 workers)",
+      "file_size": 2179,
+      "records_parsed": 716,
+      "parse_time": 0.07770597260023351,
+      "memory_peak": 1884411,
+      "memory_current": 0,
+      "records_per_second": 9214.220941336604,
+      "mb_per_second": 0.02674255614996284
+    },
+    {
+      "decoder_name": "Two-Phase (1 worker)",
+      "file_size": 2179,
+      "records_parsed": 716,
+      "parse_time": 0.0816661192002357,
+      "memory_peak": 439335,
+      "memory_current": 0,
+      "records_per_second": 8767.405712575277,
+      "mb_per_second": 0.025445758360992637
+    },
+    {
+      "decoder_name": "Two-Phase (2 workers)",
+      "file_size": 2179,
+      "records_parsed": 716,
+      "parse_time": 0.32463726100031637,
+      "memory_peak": 439279,
+      "memory_current": 0,
+      "records_per_second": 2205.5385687821654,
+      "mb_per_second": 0.006401163960803605
+    },
+    {
+      "decoder_name": "Two-Phase (4 workers)",
+      "file_size": 2179,
+      "records_parsed": 716,
+      "parse_time": 0.37244715240085496,
+      "memory_peak": 439224,
+      "memory_current": 0,
+      "records_per_second": 1922.4203900729203,
+      "mb_per_second": 0.005579466300262277
+    },
+    {
+      "decoder_name": "Final Optimized",
+      "file_size": 2179,
+      "records_parsed": 716,
+      "parse_time": 0.0462135012006911,
+      "memory_peak": 439007,
+      "memory_current": 0,
+      "records_per_second": 15493.307829905183,
+      "mb_per_second": 0.04496643364944058
+    },
+    {
+      "decoder_name": "Original",
+      "file_size": 10066,
+      "records_parsed": 3581,
+      "parse_time": 0.2995581740004127,
+      "memory_peak": 1911984,
+      "memory_current": 0,
+      "records_per_second": 11954.272361117633,
+      "mb_per_second": 0.032046148301505165
+    },
+    {
+      "decoder_name": "Pre-compiled AVP",
+      "file_size": 10066,
+      "records_parsed": 3581,
+      "parse_time": 0.3159661040001083,
+      "memory_peak": 1911752,
+      "memory_current": 0,
+      "records_per_second": 11333.49417758676,
+      "mb_per_second": 0.030382011068320232
+    },
+    {
+      "decoder_name": "Memory Pooled",
+      "file_size": 10066,
+      "records_parsed": 3581,
+      "parse_time": 0.3280350541994267,
+      "memory_peak": 1920688,
+      "memory_current": 0,
+      "records_per_second": 10916.516250799694,
+      "mb_per_second": 0.029264206815864405
+    },
+    {
+      "decoder_name": "Parallel (2 workers)",
+      "file_size": 10066,
+      "records_parsed": 3580,
+      "parse_time": 0.3761069794003561,
+      "memory_peak": 9155834,
+      "memory_current": 0,
+      "records_per_second": 9518.568375699253,
+      "mb_per_second": 0.0255238168785129
+    },
+    {
+      "decoder_name": "Parallel (4 workers)",
+      "file_size": 10066,
+      "records_parsed": 3580,
+      "parse_time": 0.3741629506002937,
+      "memory_peak": 9089050,
+      "memory_current": 0,
+      "records_per_second": 9568.023756110475,
+      "mb_per_second": 0.02565643031610671
+    },
+    {
+      "decoder_name": "Two-Phase (1 worker)",
+      "file_size": 10066,
+      "records_parsed": 3581,
+      "parse_time": 0.40485977220087077,
+      "memory_peak": 1915139,
+      "memory_current": 0,
+      "records_per_second": 8845.037827624154,
+      "mb_per_second": 0.023711137356917836
+    },
+    {
+      "decoder_name": "Two-Phase (2 workers)",
+      "file_size": 10066,
+      "records_parsed": 3581,
+      "parse_time": 1.5916387664008653,
+      "memory_peak": 1937242,
+      "memory_current": 0,
+      "records_per_second": 2249.882370041558,
+      "mb_per_second": 0.006031321849902445
+    },
+    {
+      "decoder_name": "Two-Phase (4 workers)",
+      "file_size": 10066,
+      "records_parsed": 3581,
+      "parse_time": 1.8578646415997355,
+      "memory_peak": 1941239,
+      "memory_current": 0,
+      "records_per_second": 1927.4816473801552,
+      "mb_per_second": 0.005167053322398877
+    },
+    {
+      "decoder_name": "Final Optimized",
+      "file_size": 10066,
+      "records_parsed": 3581,
+      "parse_time": 0.22926186699987738,
+      "memory_peak": 1911648,
+      "memory_current": 0,
+      "records_per_second": 15619.693090966215,
+      "mb_per_second": 0.04187214295411128
+    },
+    {
+      "decoder_name": "Original",
+      "file_size": 19928,
+      "records_parsed": 7161,
+      "parse_time": 0.6012068860007276,
+      "memory_peak": 3817147,
+      "memory_current": 0,
+      "records_per_second": 11911.041218498842,
+      "mb_per_second": 0.03161111793606561
+    },
+    {
+      "decoder_name": "Pre-compiled AVP",
+      "file_size": 19928,
+      "records_parsed": 7161,
+      "parse_time": 0.6290321890010091,
+      "memory_peak": 3816893,
+      "memory_current": 0,
+      "records_per_second": 11384.155096057433,
+      "mb_per_second": 0.0302127969119133
+    },
+    {
+      "decoder_name": "Memory Pooled",
+      "file_size": 19928,
+      "records_parsed": 7161,
+      "parse_time": 0.6465891584004566,
+      "memory_peak": 3825585,
+      "memory_current": 0,
+      "records_per_second": 11075.038773794175,
+      "mb_per_second": 0.029392422576892886
+    },
+    {
+      "decoder_name": "Parallel (2 workers)",
+      "file_size": 19928,
+      "records_parsed": 7161,
+      "parse_time": 0.7593997873998888,
+      "memory_peak": 17994736,
+      "memory_current": 0,
+      "records_per_second": 9429.81565022367,
+      "mb_per_second": 0.025026108898995637
+    },
+    {
+      "decoder_name": "Parallel (4 workers)",
+      "file_size": 19928,
+      "records_parsed": 7161,
+      "parse_time": 0.7608996060000208,
+      "memory_peak": 18291305,
+      "memory_current": 0,
+      "records_per_second": 9411.228424265742,
+      "mb_per_second": 0.02497677962701328
+    },
+    {
+      "decoder_name": "Two-Phase (1 worker)",
+      "file_size": 19928,
+      "records_parsed": 7161,
+      "parse_time": 0.8680509022007754,
+      "memory_peak": 3820302,
+      "memory_current": 0,
+      "records_per_second": 8249.516222890463,
+      "mb_per_second": 0.02189367205213507
+    },
+    {
+      "decoder_name": "Two-Phase (2 workers)",
+      "file_size": 19928,
+      "records_parsed": 7161,
+      "parse_time": 3.188233745200705,
+      "memory_peak": 3842413,
+      "memory_current": 0,
+      "records_per_second": 2246.0712018933864,
+      "mb_per_second": 0.005960924855635816
+    },
+    {
+      "decoder_name": "Two-Phase (4 workers)",
+      "file_size": 19928,
+      "records_parsed": 7161,
+      "parse_time": 3.7422047334002855,
+      "memory_peak": 3846463,
+      "memory_current": 0,
+      "records_per_second": 1913.5778264844664,
+      "mb_per_second": 0.00507850936313561
+    },
+    {
+      "decoder_name": "Final Optimized",
+      "file_size": 19928,
+      "records_parsed": 7161,
+      "parse_time": 0.4656844609991822,
+      "memory_peak": 3816778,
+      "memory_current": 0,
+      "records_per_second": 15377.365146853323,
+      "mb_per_second": 0.040810513059780035
+    }
+  ]
+}
