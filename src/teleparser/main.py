@@ -23,7 +23,7 @@ from teleparser.decoders.ericsson import (
     ericsson_volte_decoder,
     ericsson_voz_decoder,
     ericsson_voz_decoder_optimized,
-    ericsson_voz_decoder_two_phase,
+    # ericsson_voz_decoder_two_phase,
 )
 
 # Initialize a placeholder logger - will be properly configured later
@@ -76,7 +76,7 @@ def setup_logging(output_path: Path | None, log_level: int = logging.INFO):
 DECODERS = {
     "ericsson_voz": ericsson_voz_decoder,
     "ericsson_voz_optimized": ericsson_voz_decoder_optimized,
-    "ericsson_voz_two_phase": ericsson_voz_decoder_two_phase,
+    # "ericsson_voz_two_phase": ericsson_voz_decoder_two_phase,
     "ericsson_volte": ericsson_volte_decoder,
 }
 
