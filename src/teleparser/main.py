@@ -227,7 +227,7 @@ class CDRFileManager:
                 fieldnames_set.update(extra_fieldnames)
 
             # Sort fieldnames for consistent output
-            fieldnames = sorted(fieldnames_set)
+            fieldnames = sorted(fieldnames_set, key=lambda x: x.lower())
 
             # Write to gzipped CSV
             with gzip_module.open(output_file, "wt", encoding="utf-8", newline="") as f:
