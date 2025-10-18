@@ -146,7 +146,7 @@ class CDRFileManager:
             ]
 
         # Sort by size for better load balancing in parallel processing
-        gz_files.sort(key=lambda x: x.stat().st_size)
+        gz_files.sort(key=lambda x: x.stat().st_size, reverse=True)
 
         # Limit to max_count files if specified
         if self.max_count is not None and self.max_count > 0:
