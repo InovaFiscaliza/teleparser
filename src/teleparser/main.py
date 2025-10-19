@@ -24,7 +24,7 @@ from teleparser.decoders.ericsson import (
     ericsson_volte_decoder_optimized,
     ericsson_voz_decoder,
     ericsson_voz_decoder_optimized,
-    ericsson_voz_decoder_two_phase,
+    # ericsson_voz_decoder_two_phase,
 )
 
 # Initialize a placeholder logger - will be properly configured later
@@ -77,7 +77,7 @@ def setup_logging(output_path: Path | None, log_level: int = logging.INFO):
 DECODERS = {
     "ericsson_voz": ericsson_voz_decoder,
     "ericsson_voz_optimized": ericsson_voz_decoder_optimized,
-    "ericsson_voz_two_phase": ericsson_voz_decoder_two_phase,
+    # "ericsson_voz_two_phase": ericsson_voz_decoder_two_phase,
     "ericsson_volte": ericsson_volte_decoder,
     "ericsson_volte_optimized": ericsson_volte_decoder_optimized,
 }
@@ -230,11 +230,15 @@ class CDRFileManager:
             if fieldnames_set is None:
                 fieldnames_set = set()
 
-            for block in blocks:
-                fieldnames_set.update(block.keys())
+            # Collect all unique fieldnames from all blocks
+            # This handles cases where different records have different fields
+            block_fields = {k for block in blocks for k in block}
+            if new_fields := block_fields - fieldnames_set:
+                logger.warning(f"New fields found not in schema: {new_fields}")
+                fieldnames_set |= new_fields
 
             # Sort fieldnames for consistent output
-            fieldnames = sorted(fieldnames_set)
+            fieldnames = sorted(fieldnames_set, key=lambda x: x.lower())
 
             # Write to gzipped CSV
             with gzip_module.open(output_file, "wt", encoding="utf-8", newline="") as f:

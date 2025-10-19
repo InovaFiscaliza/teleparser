@@ -4,6 +4,7 @@ from typing import Optional, Tuple, Callable
 from io import BufferedReader, BytesIO
 from tqdm.auto import tqdm  # Use standard tqdm for compatibility with nesting
 from teleparser.buffer import BufferManager
+from teleparser.decoders.ericsson.fieldnames import ERICSSON_VOZ_FIELDS
 
 # Basic ASN.1 Reference
 # https://luca.ntop.org/Teaching/Appunti/asn1.html
@@ -42,6 +43,14 @@ class BerDecoder:
 
     parser: Callable
     buffer_manager: BufferManager
+    FIELDNAMES: set = None  # Default field names - set in __post_init__
+
+    def __post_init__(self):
+        """Initialize the memory buffer after dataclass initialization."""
+        self._data: Optional[memoryview] = None
+        self._size: int = 0
+        if self.FIELDNAMES is None:
+            self.FIELDNAMES = ERICSSON_VOZ_FIELDS
 
     @staticmethod
     def read_tag(stream: BerStream) -> Optional[bytes]:
@@ -169,7 +178,7 @@ class BerDecoder:
 
     def process(self, pbar_position=None, show_progress=True):
         """Process the BER data and return a list of parsed blocks.
-        
+
         Args:
             pbar_position: Position for nested progress bar (for hierarchical display)
             show_progress: Whether to show progress bar
@@ -182,7 +191,7 @@ class BerDecoder:
                     unit=" block",
                     leave=False,
                     position=pbar_position,
-                    colour="blue"
+                    colour="blue",
                 )
             )
         else:

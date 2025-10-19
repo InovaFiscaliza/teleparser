@@ -24,8 +24,8 @@ Project Description
 
 ## Scripts and Files
 
-| Script module | Description |
-| --- | --- |
+| Script module  | Description |
+| -------------- | ----------- |
 | <link_to_file> | description |
 
 
@@ -44,7 +44,7 @@ Tests are described in the [tests folder](./tests/README.md)
 
 # Roadmap
 
-This section presents a simplified view of the roadmap and knwon issues.
+This section presents a simplified view of the roadmap and known issues.
 
 For more details, see the [open issues](<put_link_here_to_issues_page>)
 
@@ -116,8 +116,8 @@ Project Description
 
 ## Scripts and Files
 
-| Script module | Description |
-| --- | --- |
+| Script module  | Description |
+| -------------- | ----------- |
 | <link_to_file> | description |
 
 

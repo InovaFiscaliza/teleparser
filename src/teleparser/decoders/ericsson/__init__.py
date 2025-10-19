@@ -1,7 +1,8 @@
 from .voz import EricssonVoz
 from .ber import BerDecoder
 from .ber_optimized import BerDecoderOptimized
-from .ber_two_phase import BerDecoderTwoPhase
+
+# from .ber_two_phase import BerDecoderTwoPhase
 from .volte import EricssonVolte
 from .volte_final import EricssonVolteFinal
 from teleparser.buffer import BufferManager, MemoryBufferManager
@@ -27,14 +28,14 @@ def ericsson_voz_decoder_optimized(buffer_manager):
     return BerDecoderOptimized(EricssonVoz, memory_buffer)
 
 
-def ericsson_voz_decoder_two_phase(buffer_manager):
-    """Two-phase decoder for Ericsson VOZ."""
-    # Convert BufferManager to MemoryBufferManager if needed
-    if isinstance(buffer_manager, BufferManager):
-        memory_buffer = MemoryBufferManager(buffer_manager.file_path)
-    else:
-        memory_buffer = buffer_manager
-    return BerDecoderTwoPhase(EricssonVoz, memory_buffer)
+# def ericsson_voz_decoder_two_phase(buffer_manager):
+#     """Two-phase decoder for Ericsson VOZ."""
+#     # Convert BufferManager to MemoryBufferManager if needed
+#     if isinstance(buffer_manager, BufferManager):
+#         memory_buffer = MemoryBufferManager(buffer_manager.file_path)
+#     else:
+#         memory_buffer = buffer_manager
+#     return BerDecoderTwoPhase(EricssonVoz, memory_buffer)
 
 
 def ericsson_volte_decoder(buffer_manager):
