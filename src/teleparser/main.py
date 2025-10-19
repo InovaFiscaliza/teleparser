@@ -142,8 +142,20 @@ class CDRFileManager:
             gz_files = [
                 f
                 for f in gz_files
-                if not (self.output_path / f"{f.stem}.csv.gz").is_file()
+                if not (
+                    (self.output_path / f"{f.stem}.csv.gz").is_file()
+                    or (self.output_path / f"{f.stem}.parquet").is_file()
+                )
             ]
+
+        # Warn if .parquet files exist in output directory (migration notice)
+        if self.output_path is not None:
+            parquet_files = list(self.output_path.glob("*.parquet"))
+            if parquet_files:
+                logger.warning(
+                    f"Found {len(parquet_files)} .parquet files in output directory. "
+                    "These will not be processed. Consider migrating or cleaning up old .parquet files."
+                )
 
         # Sort by size for better load balancing in parallel processing
         gz_files.sort(key=lambda x: x.stat().st_size, reverse=True)
@@ -218,9 +230,14 @@ class CDRFileManager:
             if fieldnames_set is None:
                 fieldnames_set = set()
 
-            # Collect all unique fieldnames from all blocks
-            # This handles cases where different records have different fields
-            fieldnames_set.update({k for block in blocks for k in block})
+            # Collect fieldnames during initial processing to avoid double iteration
+            if not fieldnames_set:
+                fieldnames_set = set()
+                for block in blocks:
+                    fieldnames_set.update(block.keys())
+            else:
+                for block in blocks:
+                    fieldnames_set.update(block.keys())
 
             # Sort fieldnames for consistent output
             fieldnames = sorted(fieldnames_set)
@@ -460,7 +477,7 @@ def display_summary(results, total_time, output_path):
     print(f"📄 Total records processed: {total_records}")
 
     if output_path is not None:
-        print(f"📁 Output directory: {output_path}")
+    cdr_type: str = "ericsson_voz",
     else:
         print("📦 No output directory - results returned in memory only")
 
@@ -543,13 +560,13 @@ Se --saida não for especificado, os resultados são processados em memória e n
     parser.add_argument(
         "entrada",
         type=str,
-        help="Caminho para um arquivo CDR único ou diretório",
-    )
-
-    parser.add_argument(
-        "-s",
-        "--saida",
+        "-t",
+        "--tipo",
         type=str,
+        default="ericsson_voz",
+        choices=list(DECODERS.keys()),
+        help=f"Tipo de CDR para processar. Opções: {', '.join(DECODERS.keys())} (padrão: ericsson_voz)\nNota: O valor padrão foi restaurado para manter compatibilidade com versões anteriores.",
+    )
         default=None,
         help="Caminho para o diretório de saída. Somente a tabela resultado é retornada caso None",
     )
@@ -575,8 +592,8 @@ Se --saida não for especificado, os resultados são processados em memória e n
         "-r",
         "--reprocessar",
         action="store_true",
-        default=False,
-        help="Reprocessar arquivos existentes (padrão: False)",
+        default=True,
+        help="Reprocessar arquivos existentes (padrão: True)",
     )
 
     parser.add_argument(
