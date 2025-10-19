@@ -4,6 +4,7 @@ from .ber_optimized import BerDecoderOptimized
 
 # from .ber_two_phase import BerDecoderTwoPhase
 from .volte import EricssonVolte
+from .volte_final import EricssonVolteFinal
 from teleparser.buffer import BufferManager, MemoryBufferManager
 
 
@@ -39,3 +40,7 @@ def ericsson_voz_decoder_optimized(buffer_manager):
 
 def ericsson_volte_decoder(buffer_manager):
     return EricssonVolte(buffer_manager)
+
+
+def ericsson_volte_decoder_optimized(buffer_manager):
+    return EricssonVolteFinal(buffer_manager)

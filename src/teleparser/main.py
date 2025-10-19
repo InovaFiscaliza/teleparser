@@ -21,6 +21,7 @@ from tqdm.auto import tqdm
 from teleparser.buffer import BufferManager
 from teleparser.decoders.ericsson import (
     ericsson_volte_decoder,
+    ericsson_volte_decoder_optimized,
     ericsson_voz_decoder,
     ericsson_voz_decoder_optimized,
     # ericsson_voz_decoder_two_phase,
@@ -78,6 +79,7 @@ DECODERS = {
     "ericsson_voz_optimized": ericsson_voz_decoder_optimized,
     # "ericsson_voz_two_phase": ericsson_voz_decoder_two_phase,
     "ericsson_volte": ericsson_volte_decoder,
+    "ericsson_volte_optimized": ericsson_volte_decoder_optimized,
 }
 
 
@@ -140,11 +142,23 @@ class CDRFileManager:
             gz_files = [
                 f
                 for f in gz_files
-                if not (self.output_path / f"{f.stem}.csv.gz").is_file()
+                if not (
+                    (self.output_path / f"{f.stem}.csv.gz").is_file()
+                    or (self.output_path / f"{f.stem}.parquet").is_file()
+                )
             ]
 
+        # Warn if .parquet files exist in output directory (migration notice)
+        if self.output_path is not None:
+            parquet_files = list(self.output_path.glob("*.parquet"))
+            if parquet_files:
+                logger.warning(
+                    f"Found {len(parquet_files)} .parquet files in output directory. "
+                    "These will not be processed. Consider migrating or cleaning up old .parquet files."
+                )
+
         # Sort by size for better load balancing in parallel processing
-        gz_files.sort(key=lambda x: x.stat().st_size)
+        gz_files.sort(key=lambda x: x.stat().st_size, reverse=True)
 
         # Limit to max_count files if specified
         if self.max_count is not None and self.max_count > 0:
@@ -461,7 +475,7 @@ def display_summary(results, total_time, output_path):
     print(f"📄 Total records processed: {total_records}")
 
     if output_path is not None:
-        print(f"📁 Output directory: {output_path}")
+        print(f"📦 Output directory: {output_path}")
     else:
         print("📦 No output directory - results returned in memory only")
 
@@ -544,13 +558,13 @@ Se --saida não for especificado, os resultados são processados em memória e n
     parser.add_argument(
         "entrada",
         type=str,
-        help="Caminho para um arquivo CDR único ou diretório",
-    )
-
-    parser.add_argument(
-        "-s",
-        "--saida",
+        "-t",
+        "--tipo",
         type=str,
+        default="ericsson_voz",
+        choices=list(DECODERS.keys()),
+        help=f"Tipo de CDR para processar. Opções: {', '.join(DECODERS.keys())} (padrão: ericsson_voz)\nNota: O valor padrão foi restaurado para manter compatibilidade com versões anteriores.",
+    )
         default=None,
         help="Caminho para o diretório de saída. Somente a tabela resultado é retornada caso None",
     )
@@ -576,8 +590,8 @@ Se --saida não for especificado, os resultados são processados em memória e n
         "-r",
         "--reprocessar",
         action="store_true",
-        default=False,
-        help="Reprocessar arquivos existentes (padrão: False)",
+        default=True,
+        help="Reprocessar arquivos existentes (padrão: True)",
     )
 
     parser.add_argument(
