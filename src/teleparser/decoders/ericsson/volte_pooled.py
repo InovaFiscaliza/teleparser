@@ -13,24 +13,38 @@ import threading
 from tqdm.auto import tqdm
 
 from teleparser.decoders.ericsson.volte import (
-    VendorID, AVP_DB, is_avp_flag_valid,
+    VendorID,
+    AVP_DB,
+    is_avp_flag_valid,
     # Constants
-    VENDOR_3GPP, VENDOR_ERICSSON, VENDOR_HUAWEI,
-    TYPE_OCTET_STRING, TYPE_INTEGER_32, TYPE_UNSIGNED_32, TYPE_UNSIGNED_64,
-    TYPE_UTF8_STRING, TYPE_GROUPED, TYPE_TIME, TYPE_ENUMERATED,
-    TYPE_DIAMETER_IDENTITY, TYPE_ADDRESS,
-    STRUCT_UNSIGNED_32, STRUCT_SIGNED_32, STRUCT_UNSIGNED_64, KNOWN_SIZES
+    VENDOR_3GPP,
+    VENDOR_ERICSSON,
+    VENDOR_HUAWEI,
+    TYPE_OCTET_STRING,
+    TYPE_INTEGER_32,
+    TYPE_UNSIGNED_32,
+    TYPE_UNSIGNED_64,
+    TYPE_UTF8_STRING,
+    TYPE_GROUPED,
+    TYPE_TIME,
+    TYPE_ENUMERATED,
+    TYPE_DIAMETER_IDENTITY,
+    TYPE_ADDRESS,
+    STRUCT_UNSIGNED_32,
+    STRUCT_SIGNED_32,
+    STRUCT_UNSIGNED_64,
+    KNOWN_SIZES,
 )
 
 
 class AVPObjectPool:
     """Thread-safe object pool for AVP dictionaries to reduce allocation overhead."""
-    
+
     def __init__(self, max_size=10000):
         self._pool = deque(maxlen=max_size)
         self._lock = threading.Lock()
         self._stats = {"acquired": 0, "created": 0, "released": 0}
-    
+
     def acquire(self) -> dict:
         """Get a dictionary from pool or create a new one."""
         with self._lock:
@@ -42,20 +56,22 @@ class AVPObjectPool:
             except IndexError:
                 self._stats["created"] += 1
                 return {}
-    
+
     def release(self, obj: dict):
         """Return dictionary to pool for reuse."""
         if obj:
             with self._lock:
                 self._pool.append(obj)
                 self._stats["released"] += 1
-    
+
     def get_stats(self) -> dict:
         """Get pool statistics."""
         with self._lock:
             stats = self._stats.copy()
             stats["pool_size"] = len(self._pool)
-            stats["hit_rate"] = (stats["acquired"] / max(1, stats["acquired"] + stats["created"]))
+            stats["hit_rate"] = stats["acquired"] / max(
+                1, stats["acquired"] + stats["created"]
+            )
             return stats
 
 
@@ -66,7 +82,7 @@ _nested_pool = AVPObjectPool(max_size=2000)
 
 class EricssonVoltePooled:
     """EricssonVolte decoder with memory pooling optimizations."""
-    
+
     DIAMETER_HEADER_FORMAT = struct.Struct(">B3sB3sIII")  # Big-endian format
     HEADER_SIZE = 20  # Fixed 20-byte header
     NTP_EPOCH = datetime(1900, 1, 1)  # For timestamp conversion
@@ -88,14 +104,14 @@ class EricssonVoltePooled:
         """Parse a block using memory pooling."""
         # Use main pool for the result dictionary
         result = _avp_pool.acquire()
-        
+
         try:
             while block:
                 avp, offset = EricssonVoltePooled.parse_avp_pooled(block)
                 block = block[offset:]
                 if avp:
                     result.update(avp)
-            
+
             # Return a copy and release the pooled object
             final_result = result.copy()
             return final_result
@@ -107,7 +123,7 @@ class EricssonVoltePooled:
         """Parse a single AVP using memory pooling."""
         i = 0
         header_size = 8
-        
+
         while True:
             # Parse AVP header (8 bytes)
             if (offset := len(current_block[i:])) < 8:
@@ -117,14 +133,14 @@ class EricssonVoltePooled:
             if not (avp_def := AVP_DB.get(avp_code)):
                 i += 1
                 continue  # Slide window if AVP code is unknown
-                
+
             flags = current_block[i + 4]
             avp_length = int.from_bytes(current_block[i + 5 : i + 8], byteorder="big")
-            
+
             if len(current_block[i:]) < avp_length or avp_length < 8:
                 i += 1
                 continue  # Slide window if AVP length is invalid
-            
+
             # Handle vendor flag
             if flags & 0x80:  # Vendor flag set
                 if avp_length < 12:
@@ -154,7 +170,9 @@ class EricssonVoltePooled:
             return EricssonVoltePooled.flatten_avp_pooled(avp_def.avp, avps), offset
         else:
             return {
-                avp_def.avp: EricssonVoltePooled.parse_simple_value(value_data, avp_type),
+                avp_def.avp: EricssonVoltePooled.parse_simple_value(
+                    value_data, avp_type
+                ),
             }, offset
 
     @staticmethod
@@ -163,14 +181,14 @@ class EricssonVoltePooled:
         avps = []
         current_block = binary_data
         total_offset = 0
-        
+
         while current_block:
             avp, offset = EricssonVoltePooled.parse_avp_pooled(current_block)
             current_block = current_block[offset:]  # Move to next AVP
             if avp:
                 avps.append(avp)
             total_offset += offset
-            
+
         if len(avps) == 1:
             avps = avps[0]  # If only one AVP, return it directly
         return avps, total_offset
@@ -179,7 +197,7 @@ class EricssonVoltePooled:
     def flatten_avp_pooled(prefix: str, avp: dict | list) -> dict:
         """Flatten AVP using pooled dictionaries."""
         flattened_avp = _nested_pool.acquire()
-        
+
         try:
             if isinstance(avp, dict):
                 for key, value in avp.items():
@@ -188,20 +206,27 @@ class EricssonVoltePooled:
                             value = f"{previous_value};{value}"  # Concatenate values
                         flattened_avp[key] = value
                     if isinstance(value, dict):
-                        nested_result = EricssonVoltePooled.flatten_avp_pooled(key, value)
+                        nested_result = EricssonVoltePooled.flatten_avp_pooled(
+                            key, value
+                        )
                         flattened_avp.update(nested_result)
-                        _nested_pool.release(nested_result)
+                        # Release nested_result only if it's a pooled object
+                        # (flatten_avp_pooled always returns a copy, so no need to release here)
                     elif isinstance(value, list):
                         for item in value:
-                            nested_result = EricssonVoltePooled.flatten_avp_pooled(key, item)
+                            nested_result = EricssonVoltePooled.flatten_avp_pooled(
+                                key, item
+                            )
                             flattened_avp.update(nested_result)
-                            _nested_pool.release(nested_result)
+                            # Release nested_result only if it's a pooled object
+                            # (flatten_avp_pooled always returns a copy, so no need to release here)
             elif isinstance(avp, list):
                 for item in avp:
                     nested_result = EricssonVoltePooled.flatten_avp_pooled(prefix, item)
                     flattened_avp.update(nested_result)
-                    _nested_pool.release(nested_result)
-            
+                    # Release nested_result only if it's a pooled object
+                    # (flatten_avp_pooled always returns a copy, so no need to release here)
+
             # Return a copy
             result = flattened_avp.copy()
             return result
@@ -213,15 +238,15 @@ class EricssonVoltePooled:
         """Parse a simple AVP value (same logic as original)."""
         if avp_type in (TYPE_OCTET_STRING, TYPE_UTF8_STRING, TYPE_DIAMETER_IDENTITY):
             try:
-                return binary_view.decode("utf-8").rstrip('\x00')
+                return binary_view.decode("utf-8").rstrip("\x00")
             except UnicodeDecodeError:
                 # If decoding fails, return string representation of raw bytes
                 return binary_view.hex()
         elif avp_type == TYPE_TIME:
             seconds = STRUCT_UNSIGNED_32.unpack(binary_view)[0]
-            return (EricssonVoltePooled.NTP_EPOCH + timedelta(seconds=seconds)).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            return (
+                EricssonVoltePooled.NTP_EPOCH + timedelta(seconds=seconds)
+            ).strftime("%Y-%m-%d %H:%M:%S")
         elif avp_type in (TYPE_ENUMERATED, TYPE_INTEGER_32):
             # Enumerated and Integer 32 are both 4-byte signed integers
             return STRUCT_SIGNED_32.unpack(binary_view)[0]
@@ -229,7 +254,7 @@ class EricssonVoltePooled:
             # Address format: 2 byte family + address bytes
             if len(binary_view) < 2:
                 return binary_view.hex()
-            family = int.from_bytes(binary_view[:2], 'big')
+            family = int.from_bytes(binary_view[:2], "big")
             address_bytes = binary_view[2:]
             try:
                 if family == 1:  # IPv4
@@ -237,7 +262,7 @@ class EricssonVoltePooled:
                 elif family == 2:  # IPv6
                     return socket.inet_ntop(socket.AF_INET6, address_bytes)
                 else:
-                    return binary_view.decode("utf-8", errors='replace')
+                    return binary_view.decode("utf-8", errors="replace")
             except (socket.error, UnicodeDecodeError):
                 return binary_view.hex()
         elif avp_type == TYPE_UNSIGNED_32:
@@ -289,7 +314,7 @@ class EricssonVoltePooled:
             raise ValueError(
                 f"Invalid Command-Code: {int.from_bytes(cmd_bytes)} (expected 271 for accounting)"
             )
-        
+
         start_idx = index + EricssonVoltePooled.HEADER_SIZE
         index = index + msg_length  # msg_length includes the header
         return start_idx, index, False
@@ -315,6 +340,7 @@ class EricssonVoltePooled:
         """Insert vendor information into blocks (same as original)."""
         # Import the original function to maintain compatibility
         from teleparser.decoders.ericsson.volte import EricssonVolte
+
         return EricssonVolte.insert_vendor_info(blocks)
 
     @staticmethod
@@ -327,5 +353,5 @@ class EricssonVoltePooled:
         """Get memory pool statistics."""
         return {
             "main_pool": _avp_pool.get_stats(),
-            "nested_pool": _nested_pool.get_stats()
+            "nested_pool": _nested_pool.get_stats(),
         }

@@ -17,36 +17,71 @@ from functools import partial
 from tqdm.auto import tqdm
 
 from teleparser.decoders.ericsson.volte import (
-    VendorID, AVP_DB, is_avp_flag_valid,
+    VendorID,
+    AVP_DB,
+    is_avp_flag_valid,
     # Constants
-    VENDOR_3GPP, VENDOR_ERICSSON, VENDOR_HUAWEI,
-    TYPE_OCTET_STRING, TYPE_INTEGER_32, TYPE_UNSIGNED_32, TYPE_UNSIGNED_64,
-    TYPE_UTF8_STRING, TYPE_GROUPED, TYPE_TIME, TYPE_ENUMERATED,
-    TYPE_DIAMETER_IDENTITY, TYPE_ADDRESS,
-    STRUCT_UNSIGNED_32, STRUCT_SIGNED_32, STRUCT_UNSIGNED_64, KNOWN_SIZES
+    VENDOR_3GPP,
+    VENDOR_ERICSSON,
+    VENDOR_HUAWEI,
+    TYPE_OCTET_STRING,
+    TYPE_INTEGER_32,
+    TYPE_UNSIGNED_32,
+    TYPE_UNSIGNED_64,
+    TYPE_UTF8_STRING,
+    TYPE_GROUPED,
+    TYPE_TIME,
+    TYPE_ENUMERATED,
+    TYPE_DIAMETER_IDENTITY,
+    TYPE_ADDRESS,
+    STRUCT_UNSIGNED_32,
+    STRUCT_SIGNED_32,
+    STRUCT_UNSIGNED_64,
+    KNOWN_SIZES,
 )
 
 
-@dataclass
 class AVPTriple:
     """Lightweight AVP representation for phase 1 processing."""
-    __slots__ = ['code', 'flags', 'length', 'value_start', 'value_end', 
-                 'vendor_id', 'parent_idx', 'depth', 'block_offset']
-    
-    code: int
-    flags: int
-    length: int
-    value_start: int     # Position of value in block data
-    value_end: int       # End position of value
-    vendor_id: int | None
-    parent_idx: int      # Index of parent AVP (-1 for root)
-    depth: int          # Nesting depth
-    block_offset: int   # Offset within the block for debugging
+
+    __slots__ = [
+        "code",
+        "flags",
+        "length",
+        "value_start",
+        "value_end",
+        "vendor_id",
+        "parent_idx",
+        "depth",
+        "block_offset",
+    ]
+
+    def __init__(
+        self,
+        code: int,
+        flags: int,
+        length: int,
+        value_start: int,
+        value_end: int,
+        vendor_id: int | None,
+        parent_idx: int,
+        depth: int,
+        block_offset: int,
+    ):
+        self.code = code
+        self.flags = flags
+        self.length = length
+        self.value_start = value_start
+        self.value_end = value_end
+        self.vendor_id = vendor_id
+        self.parent_idx = parent_idx
+        self.depth = depth
+        self.block_offset = block_offset
 
 
 class EricssonVolteTwoPhase:
     """EricssonVolte decoder with two-phase AVP processing optimizations."""
-    
+
     DIAMETER_HEADER_FORMAT = struct.Struct(">B3sB3sIII")  # Big-endian format
     HEADER_SIZE = 20  # Fixed 20-byte header
     NTP_EPOCH = datetime(1900, 1, 1)  # For timestamp conversion
@@ -57,6 +92,7 @@ class EricssonVolteTwoPhase:
         # Default to CPU count - 1, or at least 1 worker
         if n_workers is None:
             import os
+
             self.n_workers = max(1, os.cpu_count() - 1)
         else:
             self.n_workers = max(1, n_workers)
@@ -74,119 +110,121 @@ class EricssonVolteTwoPhase:
         avps = []
         # Stack entries: (start, end, parent_idx, depth)
         stack = [(0, len(block), -1, 0)]
-        
+
         while stack:
             pos, end_pos, parent_idx, depth = stack.pop()
-            
+
             while pos < end_pos:
                 block_offset = pos
-                
+
                 # Need at least 8 bytes for AVP header
                 if pos + 8 > end_pos:
                     break
-                
+
                 # Parse AVP header
-                code = int.from_bytes(block[pos:pos+4], byteorder="big")
-                flags = block[pos+4]
-                length = int.from_bytes(block[pos+5:pos+8], byteorder="big")
-                
+                code = int.from_bytes(block[pos : pos + 4], byteorder="big")
+                flags = block[pos + 4]
+                length = int.from_bytes(block[pos + 5 : pos + 8], byteorder="big")
+
                 # Handle vendor ID
                 vendor_id = None
                 header_size = 8
                 if flags & 0x80:  # Vendor flag set
                     if pos + 12 <= end_pos and length >= 12:
-                        vendor_id = int.from_bytes(block[pos+8:pos+12], byteorder="big")
+                        vendor_id = int.from_bytes(
+                            block[pos + 8 : pos + 12], byteorder="big"
+                        )
                         header_size = 12
                     else:
                         pos += 1  # Skip malformed AVP
                         continue
-                
+
                 # Validate AVP
                 if length < header_size or pos + length > end_pos:
                     pos += 1  # Skip malformed AVP
                     continue
-                
+
                 # Store AVP info
                 current_idx = len(avps)
-                avps.append(AVPTriple(
-                    code=code,
-                    flags=flags,
-                    length=length,
-                    value_start=pos + header_size,
-                    value_end=pos + length,
-                    vendor_id=vendor_id,
-                    parent_idx=parent_idx,
-                    depth=depth,
-                    block_offset=block_offset
-                ))
-                
+                avps.append(
+                    AVPTriple(
+                        code=code,
+                        flags=flags,
+                        length=length,
+                        value_start=pos + header_size,
+                        value_end=pos + length,
+                        vendor_id=vendor_id,
+                        parent_idx=parent_idx,
+                        depth=depth,
+                        block_offset=block_offset,
+                    )
+                )
+
                 # Schedule grouped AVP processing
                 if code in self.get_grouped_avp_codes():
-                    stack.append((pos + header_size, pos + length, current_idx, depth + 1))
-                
+                    stack.append(
+                        (pos + header_size, pos + length, current_idx, depth + 1)
+                    )
+
                 pos += length
-        
+
         return avps
 
     def get_grouped_avp_codes(self) -> set:
         """Get set of grouped AVP codes for efficient lookup."""
         # Cache this to avoid repeated computation
-        if not hasattr(self, '_grouped_avp_codes'):
+        if not hasattr(self, "_grouped_avp_codes"):
             self._grouped_avp_codes = {
-                code for code, avp_def in AVP_DB.items() 
-                if avp_def.type == TYPE_GROUPED
+                code for code, avp_def in AVP_DB.items() if avp_def.type == TYPE_GROUPED
             }
         return self._grouped_avp_codes
 
     def interpret_avp_batch(
-        self, 
-        avps: List[AVPTriple], 
-        block: bytes, 
-        start_idx: int, 
-        end_idx: int
+        self, avps: List[AVPTriple], block: bytes, start_idx: int, end_idx: int
     ) -> dict:
         """Phase 2: Interpret a batch of AVPs in parallel."""
         results = {}
-        
+
         for i in range(start_idx, min(end_idx, len(avps))):
             avp = avps[i]
-            
+
             # Skip grouped AVPs (processed by structure)
             if avp.code in self.get_grouped_avp_codes():
                 continue
-                
+
             # Get AVP definition
             avp_def = AVP_DB.get(avp.code)
             if not avp_def:
                 continue
-            
+
             # Validate flags
             if not is_avp_flag_valid(avp.flags, avp_def.acr_flag):
                 continue
-                
+
             # Parse value
-            value_data = bytes(block[avp.value_start:avp.value_end])
+            value_data = bytes(block[avp.value_start : avp.value_end])
             parsed_value = self.parse_simple_value(value_data, avp_def.type)
-            
+
             if parsed_value is not None:
                 results[avp_def.avp] = parsed_value
-        
+
         return results
 
     def parallel_interpret(self, avps: List[AVPTriple], block: bytes) -> dict:
         """Phase 2: Interpret AVP values using parallel processing."""
         if not avps:
             return {}
-        
+
         # Find leaf (non-grouped) AVPs for parallel processing
         leaf_indices = [
-            i for i, avp in enumerate(avps) 
+            i
+            for i, avp in enumerate(avps)
             if avp.code not in self.get_grouped_avp_codes()
         ]
-        
+
         if not leaf_indices:
             return {}
-        
+
         # Create batches for parallel processing
         if len(leaf_indices) < self.n_workers:
             batch_size = len(leaf_indices)
@@ -194,57 +232,61 @@ class EricssonVolteTwoPhase:
         else:
             batch_size = max(1, len(leaf_indices) // self.n_workers)
             n_workers = self.n_workers
-        
+
         batches = []
         for i in range(0, len(leaf_indices), batch_size):
-            batch_indices = leaf_indices[i:i + batch_size]
+            batch_indices = leaf_indices[i : i + batch_size]
             if batch_indices:
                 batches.append((min(batch_indices), max(batch_indices) + 1))
-        
+
         # Process batches in parallel
         if n_workers > 1:
             with ThreadPoolExecutor(max_workers=n_workers) as executor:
-                batch_results = list(executor.map(
-                    lambda batch: self.interpret_avp_batch(avps, block, batch[0], batch[1]),
-                    batches
-                ))
+                batch_results = list(
+                    executor.map(
+                        lambda batch: self.interpret_avp_batch(
+                            avps, block, batch[0], batch[1]
+                        ),
+                        batches,
+                    )
+                )
         else:
             # Sequential processing for small datasets
             batch_results = [
                 self.interpret_avp_batch(avps, block, batch[0], batch[1])
                 for batch in batches
             ]
-        
+
         # Merge results
         merged_results = {}
         for batch_result in batch_results:
             merged_results.update(batch_result)
-        
+
         return merged_results
 
     def parse_block(self, block: bytes) -> dict[str, int | str | bool]:
         """Parse a block using two-phase approach."""
         # Phase 1: Extract AVP structure (fast, non-recursive)
         avps = self.extract_avp_structure(block)
-        
+
         # Phase 2: Parallel interpretation
         results = self.parallel_interpret(avps, block)
-        
+
         return results
 
     def parse_simple_value(self, binary_view: bytes, avp_type: int) -> str | int:
         """Parse a simple AVP value (same logic as original)."""
         if avp_type in (TYPE_OCTET_STRING, TYPE_UTF8_STRING, TYPE_DIAMETER_IDENTITY):
             try:
-                return binary_view.decode("utf-8").rstrip('\x00')
+                return binary_view.decode("utf-8").rstrip("\x00")
             except UnicodeDecodeError:
                 return binary_view.hex()
         elif avp_type == TYPE_TIME:
             if len(binary_view) >= 4:
                 seconds = STRUCT_UNSIGNED_32.unpack(binary_view[:4])[0]
-                return (EricssonVolteTwoPhase.NTP_EPOCH + timedelta(seconds=seconds)).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+                return (
+                    EricssonVolteTwoPhase.NTP_EPOCH + timedelta(seconds=seconds)
+                ).strftime("%Y-%m-%d %H:%M:%S")
             return binary_view.hex()
         elif avp_type in (TYPE_ENUMERATED, TYPE_INTEGER_32):
             if len(binary_view) >= 4:
@@ -253,7 +295,7 @@ class EricssonVolteTwoPhase:
         elif avp_type == TYPE_ADDRESS:
             if len(binary_view) < 2:
                 return binary_view.hex()
-            family = int.from_bytes(binary_view[:2], 'big')
+            family = int.from_bytes(binary_view[:2], "big")
             address_bytes = binary_view[2:]
             try:
                 if family == 1:  # IPv4
@@ -261,7 +303,7 @@ class EricssonVolteTwoPhase:
                 elif family == 2:  # IPv6
                     return socket.inet_ntop(socket.AF_INET6, address_bytes)
                 else:
-                    return binary_view.decode("utf-8", errors='replace')
+                    return binary_view.decode("utf-8", errors="replace")
             except (socket.error, UnicodeDecodeError):
                 return binary_view.hex()
         elif avp_type == TYPE_UNSIGNED_32:
@@ -317,7 +359,7 @@ class EricssonVolteTwoPhase:
             raise ValueError(
                 f"Invalid Command-Code: {int.from_bytes(cmd_bytes)} (expected 271 for accounting)"
             )
-        
+
         start_idx = index + EricssonVolteTwoPhase.HEADER_SIZE
         index = index + msg_length  # msg_length includes the header
         return start_idx, index, False
@@ -342,6 +384,7 @@ class EricssonVolteTwoPhase:
     def insert_vendor_info(blocks):
         """Insert vendor information into blocks (same as original)."""
         from teleparser.decoders.ericsson.volte import EricssonVolte
+
         return EricssonVolte.insert_vendor_info(blocks)
 
     @staticmethod
@@ -352,19 +395,19 @@ class EricssonVolteTwoPhase:
     def get_stats(self):
         """Get two-phase processing statistics."""
         # Extract first block for analysis
-        first_block = next(self.blocks(), b'')
+        first_block = next(self.blocks(), b"")
         if not first_block:
             return {"avps_extracted": 0, "grouped_avps": 0, "leaf_avps": 0}
-        
+
         avps = self.extract_avp_structure(first_block)
         grouped_codes = self.get_grouped_avp_codes()
         grouped_avps = sum(1 for avp in avps if avp.code in grouped_codes)
         leaf_avps = len(avps) - grouped_avps
-        
+
         return {
             "avps_extracted": len(avps),
-            "grouped_avps": grouped_avps, 
+            "grouped_avps": grouped_avps,
             "leaf_avps": leaf_avps,
             "n_workers": self.n_workers,
-            "grouped_avp_codes": len(grouped_codes)
+            "grouped_avp_codes": len(grouped_codes),
         }
