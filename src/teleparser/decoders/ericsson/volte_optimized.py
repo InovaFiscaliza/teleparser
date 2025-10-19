@@ -11,21 +11,37 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 from typing import Generator, Tuple, NamedTuple, Callable, Dict, Any
 import socket
+import logging
 from tqdm.auto import tqdm
 
 from teleparser.decoders.ericsson.volte import (
-    VendorID, AVP_DB, is_avp_flag_valid,
+    VendorID,
+    AVP_DB,
+    is_avp_flag_valid,
     # Constants
-    VENDOR_3GPP, VENDOR_ERICSSON, VENDOR_HUAWEI,
-    TYPE_OCTET_STRING, TYPE_INTEGER_32, TYPE_UNSIGNED_32, TYPE_UNSIGNED_64,
-    TYPE_UTF8_STRING, TYPE_GROUPED, TYPE_TIME, TYPE_ENUMERATED,
-    TYPE_DIAMETER_IDENTITY, TYPE_ADDRESS,
-    STRUCT_UNSIGNED_32, STRUCT_SIGNED_32, STRUCT_UNSIGNED_64, KNOWN_SIZES
+    VENDOR_3GPP,
+    VENDOR_ERICSSON,
+    VENDOR_HUAWEI,
+    TYPE_OCTET_STRING,
+    TYPE_INTEGER_32,
+    TYPE_UNSIGNED_32,
+    TYPE_UNSIGNED_64,
+    TYPE_UTF8_STRING,
+    TYPE_GROUPED,
+    TYPE_TIME,
+    TYPE_ENUMERATED,
+    TYPE_DIAMETER_IDENTITY,
+    TYPE_ADDRESS,
+    STRUCT_UNSIGNED_32,
+    STRUCT_SIGNED_32,
+    STRUCT_UNSIGNED_64,
+    KNOWN_SIZES,
 )
 
 
 class CompiledAVP(NamedTuple):
     """Pre-compiled AVP definition for O(1) lookups."""
+
     name: str
     type: int
     flags_pattern: bytes | None
@@ -40,57 +56,57 @@ GROUPED_AVP_CODES: set = set()
 
 def create_value_parser(avp_type: int) -> Callable[[bytes], Any]:
     """Create optimized parser function for specific AVP type."""
-    
+
     def parse_unsigned_32(data: bytes) -> int:
         return STRUCT_UNSIGNED_32.unpack(data)[0]
-    
+
     def parse_unsigned_64(data: bytes) -> int:
         return STRUCT_UNSIGNED_64.unpack(data)[0]
-    
+
     def parse_signed_32(data: bytes) -> int:
         return STRUCT_SIGNED_32.unpack(data)[0]
-    
+
     def parse_utf8_string(data: bytes) -> str:
         try:
-            return data.decode('utf-8').rstrip('\x00')
+            return data.decode("utf-8").rstrip("\x00")
         except UnicodeDecodeError:
             return data.hex()
-    
+
     def parse_octet_string(data: bytes) -> str:
         # If data is small and looks like binary, return hex
         if len(data) <= 16:
             return data.hex()
         # Otherwise try to decode as UTF-8
         try:
-            return data.decode('utf-8', errors='replace').rstrip('\x00')
+            return data.decode("utf-8", errors="replace").rstrip("\x00")
         except UnicodeDecodeError:
             return data.hex()
-    
+
     def parse_time(data: bytes) -> str:
         seconds = STRUCT_UNSIGNED_32.unpack(data)[0]
         ntp_epoch = datetime(1900, 1, 1)
         return (ntp_epoch + timedelta(seconds=seconds)).strftime("%Y-%m-%d %H:%M:%S")
-    
+
     def parse_address(data: bytes) -> str:
         if len(data) < 2:
             return data.hex()
-        
-        family = int.from_bytes(data[:2], 'big')
+
+        family = int.from_bytes(data[:2], "big")
         address_bytes = data[2:]
-        
+
         try:
             if family == 1:  # IPv4
                 return socket.inet_ntoa(address_bytes)
             elif family == 2:  # IPv6
                 return socket.inet_ntop(socket.AF_INET6, address_bytes)
             else:
-                return data.decode('utf-8', errors='replace')
+                return data.decode("utf-8", errors="replace")
         except (socket.error, UnicodeDecodeError):
             return data.hex()
-    
+
     def parse_fallback(data: bytes) -> str:
         return data.hex()
-    
+
     # Return appropriate parser function
     parser_map = {
         TYPE_UNSIGNED_32: parse_unsigned_32,
@@ -103,7 +119,7 @@ def create_value_parser(avp_type: int) -> Callable[[bytes], Any]:
         TYPE_TIME: parse_time,
         TYPE_ADDRESS: parse_address,
     }
-    
+
     return parser_map.get(avp_type, parse_fallback)
 
 
@@ -111,27 +127,30 @@ def compile_flags_pattern(acr_flag: str | None) -> bytes | None:
     """Pre-compile flags validation pattern."""
     if not acr_flag:
         return None
-    
+
     # Convert flag string to expected byte value
     expected_flags = 0
-    if 'V' in acr_flag:
+    if "V" in acr_flag:
         expected_flags |= 0x80
-    if 'M' in acr_flag:
+    if "M" in acr_flag:
         expected_flags |= 0x40
-    if 'P' in acr_flag:
+    if "P" in acr_flag:
         expected_flags |= 0x20
-    
-    return expected_flags.to_bytes(1, 'big')
+
+    return expected_flags.to_bytes(1, "big")
+
+
+import logging
 
 
 def compile_avp_database():
     """Compile AVP database for optimal O(1) lookups."""
     global COMPILED_AVP_DB, GROUPED_AVP_CODES
-    
-    print("Compiling AVP database...")
+
+    logging.debug("Compiling AVP database...")
     COMPILED_AVP_DB.clear()
     GROUPED_AVP_CODES.clear()
-    
+
     for code, avp_def in AVP_DB.items():
         # Identify grouped AVPs
         if avp_def.type == TYPE_GROUPED:
@@ -139,19 +158,20 @@ def compile_avp_database():
             parser_func = lambda data: data  # Grouped AVPs handled separately
         else:
             parser_func = create_value_parser(avp_def.type)
-        
+
         # Pre-compile flags validation pattern
         flags_pattern = compile_flags_pattern(avp_def.acr_flag)
-        
+
         COMPILED_AVP_DB[code] = CompiledAVP(
             name=avp_def.avp,
             type=avp_def.type,
             flags_pattern=flags_pattern,
             vendor_id=avp_def.vendor_id,
-            parser_func=parser_func
+            parser_func=parser_func,
         )
-    
-    print(f"Compiled {len(COMPILED_AVP_DB)} AVP definitions")
+
+    logging.debug(f"Compiled {len(COMPILED_AVP_DB)} AVP definitions")
+    logging.debug(f"Compiled {len(COMPILED_AVP_DB)} AVP definitions")
 
 
 # Compile database at module load
@@ -160,7 +180,7 @@ compile_avp_database()
 
 class EricssonVolteOptimized:
     """EricssonVolte decoder with pre-compiled lookup optimizations."""
-    
+
     DIAMETER_HEADER_FORMAT = struct.Struct(">B3sB3sIII")  # Big-endian format
     HEADER_SIZE = 20  # Fixed 20-byte header
     NTP_EPOCH = datetime(1900, 1, 1)  # For timestamp conversion
@@ -192,27 +212,27 @@ class EricssonVolteOptimized:
         """Parse a single AVP using optimized pre-compiled lookups."""
         i = 0
         header_size = 8
-        
+
         while True:
             # Parse AVP header (8 bytes)
             if (offset := len(current_block[i:])) < 8:
                 return {}, offset  # Not enough data for AVP header
 
             avp_code = int.from_bytes(current_block[i : i + 4], byteorder="big")
-            
+
             # Fast lookup in compiled database
             compiled_avp = COMPILED_AVP_DB.get(avp_code)
             if not compiled_avp:
                 i += 1
                 continue  # Slide window if AVP code is unknown
-            
+
             flags = current_block[i + 4]
             avp_length = int.from_bytes(current_block[i + 5 : i + 8], byteorder="big")
-            
+
             if len(current_block[i:]) < avp_length or avp_length < 8:
                 i += 1
                 continue  # Slide window if AVP length is invalid
-            
+
             # Handle vendor flag
             if flags & 0x80:  # Vendor flag set
                 if avp_length < 12:
@@ -231,7 +251,9 @@ class EricssonVolteOptimized:
 
         # Fast flags validation using pre-compiled pattern
         if compiled_avp.flags_pattern is not None:
-            if not EricssonVolteOptimized.validate_flags_fast(flags, compiled_avp.flags_pattern):
+            if not EricssonVolteOptimized.validate_flags_fast(
+                flags, compiled_avp.flags_pattern
+            ):
                 return {}, offset  # Invalid AVP flags, skip this AVP
 
         value_data: bytes = bytes(current_block[i + header_size : i + avp_length])
@@ -255,11 +277,11 @@ class EricssonVolteOptimized:
     def validate_flags_fast(flags: int, expected_pattern: bytes) -> bool:
         """Fast flags validation using pre-compiled pattern."""
         expected = expected_pattern[0]
-        
+
         # Check reserved bits (bits 4-0 should be zero for reserved)
         if (flags & 0x1F) != 0:
             return False
-        
+
         # Check that all expected flags are present
         return (flags & expected) == expected
 
@@ -277,7 +299,9 @@ class EricssonVolteOptimized:
                     flattened_avp.update(EricssonVolteOptimized.flatten_avp(key, value))
                 elif isinstance(value, list):
                     for item in value:
-                        flattened_avp.update(EricssonVolteOptimized.flatten_avp(key, item))
+                        flattened_avp.update(
+                            EricssonVolteOptimized.flatten_avp(key, item)
+                        )
         elif isinstance(avp, list):
             for item in avp:
                 flattened_avp.update(EricssonVolteOptimized.flatten_avp(prefix, item))
@@ -341,7 +365,7 @@ class EricssonVolteOptimized:
             raise ValueError(
                 f"Invalid Command-Code: {int.from_bytes(cmd_bytes)} (expected 271 for accounting)"
             )
-        
+
         start_idx = index + EricssonVolteOptimized.HEADER_SIZE
         index = index + msg_length  # msg_length includes the header
         return start_idx, index, False
@@ -367,6 +391,7 @@ class EricssonVolteOptimized:
         """Insert vendor information into blocks (same as original)."""
         # Import the original function to maintain compatibility
         from teleparser.decoders.ericsson.volte import EricssonVolte
+
         return EricssonVolte.insert_vendor_info(blocks)
 
     @staticmethod
