@@ -1,6 +1,6 @@
 """Final optimized EricssonVolte decoder.
 
-This implementation combines the most effective optimizations while avoiding 
+This implementation combines the most effective optimizations while avoiding
 overhead-heavy approaches like excessive parallelization for small AVPs.
 
 Optimizations included:
@@ -17,18 +17,28 @@ import socket
 from tqdm.auto import tqdm
 
 from teleparser.decoders.ericsson.volte import (
-    AVP_DB, 
+    AVP_DB,
     # Constants
-    TYPE_OCTET_STRING, TYPE_INTEGER_32, TYPE_UNSIGNED_32, TYPE_UNSIGNED_64,
-    TYPE_UTF8_STRING, TYPE_GROUPED, TYPE_TIME, TYPE_ENUMERATED,
-    TYPE_DIAMETER_IDENTITY, TYPE_ADDRESS,
-    STRUCT_UNSIGNED_32, STRUCT_SIGNED_32, STRUCT_UNSIGNED_64, KNOWN_SIZES
+    TYPE_OCTET_STRING,
+    TYPE_INTEGER_32,
+    TYPE_UNSIGNED_32,
+    TYPE_UNSIGNED_64,
+    TYPE_UTF8_STRING,
+    TYPE_GROUPED,
+    TYPE_TIME,
+    TYPE_ENUMERATED,
+    TYPE_DIAMETER_IDENTITY,
+    TYPE_ADDRESS,
+    STRUCT_UNSIGNED_32,
+    STRUCT_SIGNED_32,
+    STRUCT_UNSIGNED_64,
+    KNOWN_SIZES,
 )
 
 
 class EricssonVolteFinal:
     """Final optimized EricssonVolte decoder with selected optimizations."""
-    
+
     DIAMETER_HEADER_FORMAT = struct.Struct(">B3sB3sIII")  # Big-endian format
     HEADER_SIZE = 20  # Fixed 20-byte header
     NTP_EPOCH = datetime(1900, 1, 1)  # For timestamp conversion
@@ -51,7 +61,7 @@ class EricssonVolteFinal:
         result = {}
         pos = 0
         block_len = len(block)
-        
+
         while pos < block_len:
             avp_data, offset = EricssonVolteFinal.parse_avp_optimized(block, pos)
             if avp_data:
@@ -59,38 +69,38 @@ class EricssonVolteFinal:
             pos += offset
             if offset == 0:  # Prevent infinite loop
                 break
-        
+
         return result
 
-    @staticmethod 
+    @staticmethod
     def parse_avp_optimized(block: bytes, start_pos: int) -> Tuple[dict, int]:
         """Optimized AVP parsing with reduced overhead."""
         pos = start_pos
         block_len = len(block)
-        
+
         # Sliding window search with optimizations
         for attempt in range(min(100, block_len - pos)):  # Limit search attempts
             i = pos + attempt
-            
+
             # Check if we have enough data for AVP header
             if i + 8 > block_len:
                 return {}, block_len - pos
-                
+
             # Parse AVP header
-            avp_code = int.from_bytes(block[i:i+4], byteorder="big")
-            
+            avp_code = int.from_bytes(block[i : i + 4], byteorder="big")
+
             # Fast lookup - exit early if unknown
             avp_def = AVP_DB.get(avp_code)
             if not avp_def:
                 continue
-                
+
             flags = block[i + 4]
-            avp_length = int.from_bytes(block[i + 5:i + 8], byteorder="big")
-            
+            avp_length = int.from_bytes(block[i + 5 : i + 8], byteorder="big")
+
             # Validate basic constraints
             if avp_length < 8 or i + avp_length > block_len:
                 continue
-            
+
             # Handle vendor flag
             header_size = 8
             if flags & 0x80:  # Vendor flag set
@@ -102,16 +112,16 @@ class EricssonVolteFinal:
             known_size = KNOWN_SIZES.get(avp_def.type)
             if known_size is not None and avp_length - header_size != known_size:
                 continue
-            
+
             # Fast flags validation
             if not EricssonVolteFinal.validate_flags_fast(flags, avp_def.acr_flag):
                 continue
-                
+
             # Parse value
             value_start = i + header_size
             value_end = i + avp_length
             value_data = block[value_start:value_end]
-            
+
             # Handle different AVP types
             if avp_def.type == TYPE_GROUPED:
                 # Recursive parsing for grouped AVPs
@@ -120,9 +130,11 @@ class EricssonVolteFinal:
                 return flattened, avp_length + attempt
             else:
                 # Parse simple value
-                parsed_value = EricssonVolteFinal.parse_simple_value_fast(value_data, avp_def.type)
+                parsed_value = EricssonVolteFinal.parse_simple_value_fast(
+                    value_data, avp_def.type
+                )
                 return {avp_def.avp: parsed_value}, avp_length + attempt
-        
+
         # No valid AVP found
         return {}, block_len - pos
 
@@ -131,20 +143,20 @@ class EricssonVolteFinal:
         """Fast flags validation."""
         if expected_flags is None:
             return True
-            
+
         # Check reserved bits
         if flags & 0x1F != 0:
             return False
-            
+
         # Simple flag checking
-        expected_v = 'V' in expected_flags if expected_flags else False
-        expected_m = 'M' in expected_flags if expected_flags else False 
-        expected_p = 'P' in expected_flags if expected_flags else False
-        
+        expected_v = "V" in expected_flags if expected_flags else False
+        expected_m = "M" in expected_flags if expected_flags else False
+        expected_p = "P" in expected_flags if expected_flags else False
+
         actual_v = bool(flags & 0x80)
         actual_m = bool(flags & 0x40)
         actual_p = bool(flags & 0x20)
-        
+
         # Allow more flags than expected, but require expected ones
         if expected_v and not actual_v:
             return False
@@ -152,7 +164,7 @@ class EricssonVolteFinal:
             return False
         if expected_p and not actual_p:
             return False
-            
+
         return True
 
     @staticmethod
@@ -160,7 +172,7 @@ class EricssonVolteFinal:
         """Parse grouped AVP with reduced overhead."""
         result = {}
         pos = 0
-        
+
         while pos < len(binary_data):
             avp_data, offset = EricssonVolteFinal.parse_avp_optimized(binary_data, pos)
             if avp_data:
@@ -168,7 +180,7 @@ class EricssonVolteFinal:
             pos += offset
             if offset == 0:
                 break
-                
+
         return result
 
     @staticmethod
@@ -199,47 +211,47 @@ class EricssonVolteFinal:
     @staticmethod
     def parse_simple_value_fast(binary_view: bytes, avp_type: int) -> str | int:
         """Fast simple value parsing with optimizations."""
-        
+
         # String types - optimized path
         if avp_type in (TYPE_OCTET_STRING, TYPE_UTF8_STRING, TYPE_DIAMETER_IDENTITY):
             try:
-                # Strip null bytes directly 
+                # Strip null bytes directly
                 result = binary_view.decode("utf-8")
-                return result.rstrip('\x00') if '\x00' in result else result
+                return result.rstrip("\x00") if "\x00" in result else result
             except UnicodeDecodeError:
                 return binary_view.hex()
-                
+
         # Time type - optimized path
         elif avp_type == TYPE_TIME:
             if len(binary_view) >= 4:
                 seconds = STRUCT_UNSIGNED_32.unpack(binary_view[:4])[0]
                 # Cache the epoch calculation would be even better, but this is still fast
-                return (EricssonVolteFinal.NTP_EPOCH + timedelta(seconds=seconds)).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+                return (
+                    EricssonVolteFinal.NTP_EPOCH + timedelta(seconds=seconds)
+                ).strftime("%Y-%m-%d %H:%M:%S")
             return binary_view.hex()
-            
+
         # Integer types - direct struct unpack
         elif avp_type in (TYPE_ENUMERATED, TYPE_INTEGER_32):
             if len(binary_view) >= 4:
                 return STRUCT_SIGNED_32.unpack(binary_view[:4])[0]
             return binary_view.hex()
-            
+
         elif avp_type == TYPE_UNSIGNED_32:
             if len(binary_view) >= 4:
                 return STRUCT_UNSIGNED_32.unpack(binary_view[:4])[0]
             return binary_view.hex()
-            
+
         elif avp_type == TYPE_UNSIGNED_64:
             if len(binary_view) >= 8:
                 return STRUCT_UNSIGNED_64.unpack(binary_view[:8])[0]
             return binary_view.hex()
-            
+
         # Address type - optimized path
         elif avp_type == TYPE_ADDRESS:
             if len(binary_view) < 2:
                 return binary_view.hex()
-            family = int.from_bytes(binary_view[:2], 'big')
+            family = int.from_bytes(binary_view[:2], "big")
             address_bytes = binary_view[2:]
             try:
                 if family == 1 and len(address_bytes) == 4:  # IPv4
@@ -247,10 +259,10 @@ class EricssonVolteFinal:
                 elif family == 2 and len(address_bytes) == 16:  # IPv6
                     return socket.inet_ntop(socket.AF_INET6, address_bytes)
                 else:
-                    return binary_view.decode("utf-8", errors='replace')
+                    return binary_view.decode("utf-8", errors="replace")
             except (socket.error, UnicodeDecodeError):
                 return binary_view.hex()
-                
+
         # Fallback
         else:
             return binary_view.hex()
@@ -285,7 +297,10 @@ class EricssonVolteFinal:
             (version, msg_len_bytes, flag_int, cmd_bytes, app_id, hbh_id, e2e_id) = (
                 EricssonVolteFinal.DIAMETER_HEADER_FORMAT.unpack(header)
             )
-        except struct.error:
+        except struct.error as e:
+            import logging
+
+            logging.error(f"Diameter header unpacking failed at index {index}: {e}")
             return index + len(header), index + len(header), True
 
         # Convert 24-bit fields
@@ -298,7 +313,7 @@ class EricssonVolteFinal:
         # Validate message type
         if cmd_bytes != b"\x00\x01\x0f":
             return index + len(header), index + len(header), True
-        
+
         start_idx = index + EricssonVolteFinal.HEADER_SIZE
         index = index + msg_length  # msg_length includes the header
         return start_idx, index, False
@@ -323,6 +338,7 @@ class EricssonVolteFinal:
     def insert_vendor_info(blocks):
         """Insert vendor information into blocks (same as original)."""
         from teleparser.decoders.ericsson.volte import EricssonVolte
+
         return EricssonVolte.insert_vendor_info(blocks)
 
     @staticmethod
