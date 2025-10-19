@@ -8,20 +8,13 @@ This module implements optimizations for the EricssonVolte decoder:
 
 import struct
 from datetime import datetime, timedelta
-from dataclasses import dataclass
 from typing import Generator, Tuple, NamedTuple, Callable, Dict, Any
 import socket
 import logging
 from tqdm.auto import tqdm
 
 from teleparser.decoders.ericsson.volte import (
-    VendorID,
     AVP_DB,
-    is_avp_flag_valid,
-    # Constants
-    VENDOR_3GPP,
-    VENDOR_ERICSSON,
-    VENDOR_HUAWEI,
     TYPE_OCTET_STRING,
     TYPE_INTEGER_32,
     TYPE_UNSIGNED_32,
@@ -140,9 +133,6 @@ def compile_flags_pattern(acr_flag: str | None) -> bytes | None:
     return expected_flags.to_bytes(1, "big")
 
 
-import logging
-
-
 def compile_avp_database():
     """Compile AVP database for optimal O(1) lookups."""
     global COMPILED_AVP_DB, GROUPED_AVP_CODES
@@ -250,11 +240,13 @@ class EricssonVolteOptimized:
         offset: int = i + avp_length
 
         # Fast flags validation using pre-compiled pattern
-        if compiled_avp.flags_pattern is not None:
-            if not EricssonVolteOptimized.validate_flags_fast(
+        if (
+            compiled_avp.flags_pattern is not None
+            and not EricssonVolteOptimized.validate_flags_fast(
                 flags, compiled_avp.flags_pattern
-            ):
-                return {}, offset  # Invalid AVP flags, skip this AVP
+            )
+        ):
+            return {}, offset  # Invalid AVP flags, skip this AVP
 
         value_data: bytes = bytes(current_block[i + header_size : i + avp_length])
 
@@ -269,7 +261,7 @@ class EricssonVolteOptimized:
             try:
                 parsed_value = compiled_avp.parser_func(value_data)
                 return {compiled_avp.name: parsed_value}, offset
-            except (struct.error, ValueError, UnicodeDecodeError):
+            except (struct.error, ValueError):
                 # Fallback to hex representation
                 return {compiled_avp.name: value_data.hex()}, offset
 
@@ -277,13 +269,8 @@ class EricssonVolteOptimized:
     def validate_flags_fast(flags: int, expected_pattern: bytes) -> bool:
         """Fast flags validation using pre-compiled pattern."""
         expected = expected_pattern[0]
-
-        # Check reserved bits (bits 4-0 should be zero for reserved)
-        if (flags & 0x1F) != 0:
-            return False
-
         # Check that all expected flags are present
-        return (flags & expected) == expected
+        return False if (flags & 0x1F) != 0 else (flags & expected) == expected
 
     @staticmethod
     def flatten_avp(prefix: str, avp: dict | list) -> dict:
@@ -296,15 +283,13 @@ class EricssonVolteOptimized:
                         value = f"{previous_value};{value}"  # Concatenate values
                     flattened_avp[key] = value
                 if isinstance(value, dict):
-                    flattened_avp.update(EricssonVolteOptimized.flatten_avp(key, value))
+                    flattened_avp |= EricssonVolteOptimized.flatten_avp(key, value)
                 elif isinstance(value, list):
                     for item in value:
-                        flattened_avp.update(
-                            EricssonVolteOptimized.flatten_avp(key, item)
-                        )
+                        flattened_avp |= EricssonVolteOptimized.flatten_avp(key, item)
         elif isinstance(avp, list):
             for item in avp:
-                flattened_avp.update(EricssonVolteOptimized.flatten_avp(prefix, item))
+                flattened_avp |= EricssonVolteOptimized.flatten_avp(prefix, item)
         return flattened_avp
 
     @staticmethod
@@ -367,7 +352,7 @@ class EricssonVolteOptimized:
             )
 
         start_idx = index + EricssonVolteOptimized.HEADER_SIZE
-        index = index + msg_length  # msg_length includes the header
+        index += msg_length  # msg_length includes the header
         return start_idx, index, False
 
     def process(self, pbar_position=None, show_progress=True):

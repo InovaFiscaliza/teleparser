@@ -230,14 +230,8 @@ class CDRFileManager:
             if fieldnames_set is None:
                 fieldnames_set = set()
 
-            # Collect fieldnames during initial processing to avoid double iteration
-            if not fieldnames_set:
-                fieldnames_set = set()
-                for block in blocks:
-                    fieldnames_set.update(block.keys())
-            else:
-                for block in blocks:
-                    fieldnames_set.update(block.keys())
+            for block in blocks:
+                fieldnames_set.update(block.keys())
 
             # Sort fieldnames for consistent output
             fieldnames = sorted(fieldnames_set)
@@ -477,7 +471,7 @@ def display_summary(results, total_time, output_path):
     print(f"📄 Total records processed: {total_records}")
 
     if output_path is not None:
-    cdr_type: str = "ericsson_voz",
+        print(f"📦 Output directory: {output_path}")
     else:
         print("📦 No output directory - results returned in memory only")
 

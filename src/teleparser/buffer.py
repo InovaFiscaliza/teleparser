@@ -35,7 +35,7 @@ class BufferManager:
 
 class MemoryBufferManager:
     """Manages CDR file buffer by reading entire file into memory for fast access.
-    
+
     This class reads the entire decompressed file into memory and provides
     efficient access through memoryview objects, eliminating repetitive disk I/O.
     """
@@ -88,22 +88,22 @@ class MemoryBufferManager:
     def has_data(self) -> bool:
         """Check if data is loaded in memory."""
         return self._data is not None
-        
+
     def read(self, size: int | None = -1):
         """Read data from memory buffer to maintain compatibility with BufferManager.
-        
+
         Args:
             size: Number of bytes to read, or -1 to read all data
-            
+
         Returns:
             Bytes from the current position
         """
         if self._data is None:
             self.load()
-            
+
         if size == -1 or size is None:
             return self._data
-        else:
-            result = self._data[self._position:self._position + size]
-            self._position += len(result)
-            return result
+
+        result = self._data[self._position : self._position + size]
+        self._position += len(result)
+        return result

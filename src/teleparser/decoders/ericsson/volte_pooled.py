@@ -112,9 +112,7 @@ class EricssonVoltePooled:
                 if avp:
                     result.update(avp)
 
-            # Return a copy and release the pooled object
-            final_result = result.copy()
-            return final_result
+            return result.copy()
         finally:
             _avp_pool.release(result)
 
@@ -168,12 +166,9 @@ class EricssonVoltePooled:
             if not avps:
                 return {}, offset
             return EricssonVoltePooled.flatten_avp_pooled(avp_def.avp, avps), offset
-        else:
-            return {
-                avp_def.avp: EricssonVoltePooled.parse_simple_value(
-                    value_data, avp_type
-                ),
-            }, offset
+        return {
+            avp_def.avp: EricssonVoltePooled.parse_simple_value(value_data, avp_type),
+        }, offset
 
     @staticmethod
     def parse_grouped_avp_pooled(binary_data: bytes | bytes) -> Tuple[list, int]:
@@ -227,9 +222,7 @@ class EricssonVoltePooled:
                     # Release nested_result only if it's a pooled object
                     # (flatten_avp_pooled always returns a copy, so no need to release here)
 
-            # Return a copy
-            result = flattened_avp.copy()
-            return result
+            return flattened_avp.copy()
         finally:
             _nested_pool.release(flattened_avp)
 
@@ -316,7 +309,7 @@ class EricssonVoltePooled:
             )
 
         start_idx = index + EricssonVoltePooled.HEADER_SIZE
-        index = index + msg_length  # msg_length includes the header
+        index += msg_length
         return start_idx, index, False
 
     def process(self, pbar_position=None, show_progress=True):

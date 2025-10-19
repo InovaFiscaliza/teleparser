@@ -235,8 +235,7 @@ class EricssonVolteTwoPhase:
 
         batches = []
         for i in range(0, len(leaf_indices), batch_size):
-            batch_indices = leaf_indices[i : i + batch_size]
-            if batch_indices:
+            if batch_indices := leaf_indices[i : i + batch_size]:
                 batches.append((min(batch_indices), max(batch_indices) + 1))
 
         # Process batches in parallel
@@ -269,10 +268,7 @@ class EricssonVolteTwoPhase:
         # Phase 1: Extract AVP structure (fast, non-recursive)
         avps = self.extract_avp_structure(block)
 
-        # Phase 2: Parallel interpretation
-        results = self.parallel_interpret(avps, block)
-
-        return results
+        return self.parallel_interpret(avps, block)
 
     def parse_simple_value(self, binary_view: bytes, avp_type: int) -> str | int:
         """Parse a simple AVP value (same logic as original)."""
@@ -401,9 +397,8 @@ class EricssonVolteTwoPhase:
 
         avps = self.extract_avp_structure(first_block)
         grouped_codes = self.get_grouped_avp_codes()
-        grouped_avps = sum(1 for avp in avps if avp.code in grouped_codes)
+        grouped_avps = sum(avp.code in grouped_codes for avp in avps)
         leaf_avps = len(avps) - grouped_avps
-
         return {
             "avps_extracted": len(avps),
             "grouped_avps": grouped_avps,

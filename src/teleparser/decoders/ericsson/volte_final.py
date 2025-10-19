@@ -191,19 +191,16 @@ class EricssonVolteFinal:
             for key, value in avp.items():
                 if isinstance(value, (dict, list)):
                     nested = EricssonVolteFinal.flatten_avp_fast(key, value)
-                    result.update(nested)
+                    result |= nested
                 else:
                     # Handle duplicate keys by concatenation
-                    if key in result:
-                        result[key] = f"{result[key]};{value}"
-                    else:
-                        result[key] = value
+                    result[key] = f"{result[key]};{value}" if key in result else value
+
             return result
         elif isinstance(avp, list):
             result = {}
             for item in avp:
-                nested = EricssonVolteFinal.flatten_avp_fast(prefix, item)
-                result.update(nested)
+                result |= EricssonVolteFinal.flatten_avp_fast(prefix, item)
             return result
         else:
             return {prefix: avp}
@@ -315,7 +312,7 @@ class EricssonVolteFinal:
             return index + len(header), index + len(header), True
 
         start_idx = index + EricssonVolteFinal.HEADER_SIZE
-        index = index + msg_length  # msg_length includes the header
+        index += msg_length
         return start_idx, index, False
 
     def process(self, pbar_position=None, show_progress=True):
