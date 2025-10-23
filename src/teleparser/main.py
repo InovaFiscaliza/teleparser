@@ -489,7 +489,7 @@ def main(
     output_path: Path | None = None,
     cdr_type: str = "ericsson_voz_optimized",
     workers: int = os.cpu_count() // 2,
-    reprocess: bool = True,
+    reprocess: bool = False,
     log_level: int = logging.INFO,
     max_count: int | None = None,
 ):
@@ -558,13 +558,13 @@ Se --saida não for especificado, os resultados são processados em memória e n
     parser.add_argument(
         "entrada",
         type=str,
-        "-t",
-        "--tipo",
-        type=str,
-        default="ericsson_voz",
-        choices=list(DECODERS.keys()),
-        help=f"Tipo de CDR para processar. Opções: {', '.join(DECODERS.keys())} (padrão: ericsson_voz)\nNota: O valor padrão foi restaurado para manter compatibilidade com versões anteriores.",
+        help="Caminho para o arquivo ou pasta de entrada que contém os arquivos .gz ou .zip",
     )
+
+    parser.add_argument(
+        "-s",
+        "--saida",
+        type=str,
         default=None,
         help="Caminho para o diretório de saída. Somente a tabela resultado é retornada caso None",
     )
@@ -590,8 +590,8 @@ Se --saida não for especificado, os resultados são processados em memória e n
         "-r",
         "--reprocessar",
         action="store_true",
-        default=True,
-        help="Reprocessar arquivos existentes (padrão: True)",
+        default=False,
+        help="Reprocessar arquivos existentes (padrão: False)",
     )
 
     parser.add_argument(

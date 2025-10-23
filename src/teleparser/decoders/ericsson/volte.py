@@ -6,6 +6,8 @@ from typing import Generator, Tuple
 import socket
 from tqdm.auto import tqdm
 
+from teleparser.decoders.ericsson.fieldnames import ERICSSON_VOLTE_FIELDS
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -431,11 +433,17 @@ class EricssonVolte:
     HEADER_SIZE = 20  # Fixed 20-byte header
     NTP_EPOCH = datetime(1900, 1, 1)  # For timestamp conversion
     PREFIX_HEADER_LENGTH = 2
+    FIELDNAMES: set[str] | None = ERICSSON_VOLTE_FIELDS
 
     def __init__(self, buffer_manager):
         self.buffer_manager = buffer_manager
         self._init_handler()
         self.index = 0
+
+    def __post_init__(self):
+        """Initialize the memory buffer after dataclass initialization."""
+        if self.FIELDNAMES is None:
+            self.FIELDNAMES = ERICSSON_VOLTE_FIELDS
 
     def _init_handler(self) -> None:
         """Initialize the handler for parsing AVPs"""
