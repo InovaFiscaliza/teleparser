@@ -1,6 +1,6 @@
 [project]
 name = "teleparser"
-version = "0.2.0"
+version = "0.3.0"
 description = "A tool to parse CDR files from Brazilian Mobile operators."
 readme = "README.md"
 authors = [
