@@ -20,11 +20,8 @@ from typing import Any, Dict, List, Set
 from tqdm.auto import tqdm
 from teleparser.buffer import BufferManager
 from teleparser.decoders.ericsson import (
-    ericsson_volte_decoder,
     ericsson_volte_decoder_optimized,
     ericsson_voz_decoder,
-    ericsson_voz_decoder_optimized,
-    # ericsson_voz_decoder_two_phase,
 )
 
 # Initialize a placeholder logger - will be properly configured later
@@ -76,10 +73,7 @@ def setup_logging(output_path: Path | None, log_level: int = logging.INFO):
 
 DECODERS = {
     "ericsson_voz": ericsson_voz_decoder,
-    "ericsson_voz_optimized": ericsson_voz_decoder_optimized,
-    # "ericsson_voz_two_phase": ericsson_voz_decoder_two_phase,
-    "ericsson_volte": ericsson_volte_decoder,
-    "ericsson_volte_optimized": ericsson_volte_decoder_optimized,
+    "ericsson_volte": ericsson_volte_decoder_optimized,
 }
 
 
@@ -240,11 +234,28 @@ class CDRFileManager:
             # Sort fieldnames for consistent output
             fieldnames = sorted(fieldnames_set, key=lambda x: x.lower())
 
-            # Write to gzipped CSV
-            with gzip_module.open(output_file, "wt", encoding="utf-8", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                writer.writeheader()
-                writer.writerows(blocks)
+            try:
+                import pandas as pd
+                import pyarrow
+
+                df = pd.DataFrame(blocks, columns=fieldnames, dtype="string")
+                df.astype("category", copy=False).to_parquet(
+                    output_file.with_suffix(".parquet"), index=False
+                )
+            except ImportError:
+                logger.warning(
+                    "Pandas or PyArrow not available, falling back to CSV.GZ"
+                )
+                # Write to gzipped CSV
+                with gzip_module.open(
+                    output_file.with_suffix(".csv.gz"),
+                    "wt",
+                    encoding="utf-8",
+                    newline="",
+                ) as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(blocks)
 
             logger.info(f"Data saved to {output_file} successfully")
         except Exception as e:
@@ -299,7 +310,7 @@ class CDRFileManager:
 
             # Save to disk if output_path is provided
             if output_path is not None:
-                output_file = output_path / f"{file_path.stem}.csv.gz"
+                output_file = output_path / f"{file_path.stem}.csv"
                 CDRFileManager._save(blocks, output_file, fieldnames_set)
 
             return {
@@ -573,9 +584,9 @@ Se --saida não for especificado, os resultados são processados em memória e n
         "-t",
         "--tipo",
         type=str,
-        default="ericsson_voz_optimized",
+        default="ericsson_voz",
         choices=list(DECODERS.keys()),
-        help=f"Tipo de CDR para processar. Opções: {', '.join(DECODERS.keys())} (padrão: ericsson_voz_optimized)",
+        help=f"Tipo de CDR para processar. Opções: {', '.join(DECODERS.keys())} (padrão: ericsson_voz)",
     )
 
     parser.add_argument(

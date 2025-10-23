@@ -72,7 +72,7 @@ class EricssonVolteFinal:
         while pos < block_len:
             avp_data, offset = EricssonVolteFinal.parse_avp_optimized(block, pos)
             if avp_data:
-                result.update(avp_data)
+                result |= avp_data
             pos += offset
             if offset == 0:  # Prevent infinite loop
                 break
@@ -97,8 +97,7 @@ class EricssonVolteFinal:
             avp_code = int.from_bytes(block[i : i + 4], byteorder="big")
 
             # Fast lookup - exit early if unknown
-            avp_def = AVP_DB.get(avp_code)
-            if not avp_def:
+            if not (avp_def := AVP_DB.get(avp_code)):
                 continue
 
             flags = block[i + 4]
@@ -183,7 +182,7 @@ class EricssonVolteFinal:
         while pos < len(binary_data):
             avp_data, offset = EricssonVolteFinal.parse_avp_optimized(binary_data, pos)
             if avp_data:
-                result.update(avp_data)
+                result |= avp_data
             pos += offset
             if offset == 0:
                 break
