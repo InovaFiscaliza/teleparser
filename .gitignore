@@ -178,3 +178,4 @@ data/
 output
 
 *.ducklake*
+.python-version
